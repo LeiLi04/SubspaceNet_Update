@@ -12,7 +12,7 @@ from pathlib import Path
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
-from DCD_MUSIC.src.metrics.rmspe_loss import RMSPELoss
+from src.eval.metrics.rmspe_loss import RMSPELoss
 from DCD_MUSIC.src.evaluation import get_model_based_method, evaluate_model_based
 from simulation.kalman_filter import KalmanFilter1D, BatchKalmanFilter1D
 from simulation.kalman_filter.extended import ExtendedKalmanFilter1D

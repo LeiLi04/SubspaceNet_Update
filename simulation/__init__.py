@@ -1,11 +1,15 @@
-"""
-Simulation framework for SubspaceNet experiments.
+"""Simulation compatibility package."""
 
-This module provides a clean interface for running simulations,
-both single runs and parametric scenarios.
-"""
+__all__ = ["Simulation", "ScenarioType"]
 
-from .core import Simulation
-from .scenarios import ScenarioType
 
-__all__ = ['Simulation', 'ScenarioType'] 
+def __getattr__(name):
+    if name == "Simulation":
+        from .core import Simulation
+
+        return Simulation
+    if name == "ScenarioType":
+        from .scenarios import ScenarioType
+
+        return ScenarioType
+    raise AttributeError(name)

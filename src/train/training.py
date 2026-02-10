@@ -44,6 +44,15 @@ from DCD_MUSIC.src.utils import device
 from DCD_MUSIC.src.evaluation import evaluate_dnn_model
 
 logger = logging.getLogger('SubspaceNet.training')
+_WARNING_ONCE_CACHE = set()
+
+
+def _warning_once(message: str) -> None:
+    """Log a warning only once for repeated fallback paths."""
+    if message in _WARNING_ONCE_CACHE:
+        return
+    _WARNING_ONCE_CACHE.add(message)
+    logger.warning(message)
 
 class TrainingConfig:
     """
@@ -448,7 +457,7 @@ class TrajectoryTrainer:
                     return loss, accuracy, None  # Eigen_regularization is part of the loss from training_step
                 else:
                     # Fallback if model doesn't have training_step (unlikely for SubspaceNet)
-                    logger.warning_once("Model does not have a 'training_step' method. Using generic forward and MSE loss for training.")
+                    _warning_once("Model does not have a 'training_step' method. Using generic forward and MSE loss for training.")
                     angles_pred, source_estimation, _ = self.model(step_data, single_source_count_for_forward)
                     loss = self._calculate_loss(angles_pred, angles)
                     accuracy = self._calculate_accuracy(step_sources, source_estimation)
@@ -469,7 +478,7 @@ class TrajectoryTrainer:
                         return loss, accuracy, None # Eigen_regularization is part of the loss from training_step
                 else:
                     # Fallback if model doesn't have training_step
-                    logger.warning_once("Model does not have a 'training_step' method. Using generic forward and MSE loss for near-field training.")
+                    _warning_once("Model does not have a 'training_step' method. Using generic forward and MSE loss for near-field training.")
                     angles_pred, ranges_pred, source_estimation, _ = self.model(step_data, single_source_count_for_forward)
                     angle_loss = self._calculate_loss(angles_pred, angles)
                     range_loss = self._calculate_loss(ranges_pred, ranges)
@@ -506,7 +515,7 @@ class TrajectoryTrainer:
                 return loss, accuracy, loss_components
 
             else: # Fallback if model doesn't have validation_step
-                logger.warning_once("Model does not have a 'validation_step' method. Using generic forward and MSE loss for validation.")
+                _warning_once("Model does not have a 'validation_step' method. Using generic forward and MSE loss for validation.")
                 if not is_near_field:
                     angles = step_labels
                     angles_pred, source_estimation, _ = self.model(step_data, single_source_count_for_forward)

@@ -26,7 +26,7 @@ from src.train.training import Trainer, TrainingConfig, TrajectoryTrainer
 from src.eval.evaluation import Evaluator
 from src.train.online_learning import OnlineLearning
 from simulation.kalman_filter import KalmanFilter1D, BatchKalmanFilter1D, BatchExtendedKalmanFilter1D
-from DCD_MUSIC.src.metrics.rmspe_loss import RMSPELoss
+from src.eval.metrics.rmspe_loss import RMSPELoss
 from DCD_MUSIC.src.signal_creation import Samples
 from src.utils.io import save_model_state
 from DCD_MUSIC.src.evaluation import get_model_based_method, evaluate_model_based

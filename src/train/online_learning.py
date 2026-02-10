@@ -24,9 +24,9 @@ from src.eval.evaluation import Evaluator
 from src.utils.plotting import plot_online_learning_results, plot_online_learning_trajectory
 from src.utils.utils import log_window_summary, save_model_state, log_online_learning_window_summary
 from simulation.kalman_filter import KalmanFilter1D, BatchKalmanFilter1D, BatchExtendedKalmanFilter1D
-from DCD_MUSIC.src.metrics.rmspe_loss import RMSPELoss
-from DCD_MUSIC.src.metrics.rmape_loss import RMAPELoss
-from DCD_MUSIC.src.metrics.multimoment_innovation_consistency_loss import MultiMomentInnovationConsistencyLoss
+from src.eval.metrics.rmspe_loss import RMSPELoss
+from src.eval.metrics.rmape_loss import RMAPELoss
+from src.eval.metrics.multimoment_innovation_consistency_loss import MultiMomentInnovationConsistencyLoss
 from DCD_MUSIC.src.signal_creation import Samples
 from DCD_MUSIC.src.evaluation import get_model_based_method, evaluate_model_based
 from simulation.kalman_filter.extended import ExtendedKalmanFilter1D
@@ -335,9 +335,12 @@ class OnlineLearning:
                 logger.info(f"Resetting eta to initial value {initial_eta:.4f} for trajectory {trajectory_idx + 1}")
                 self.system_model.params.eta = initial_eta
                 
-                # Reset the system model's distance noise and eta scaling
-                self.system_model.eta = self.system_model._SystemModel__set_eta()
-                if not getattr(self.system_model.params, 'nominal', True):
+                # Reset model eta/noise if helpers are available in this DCD_MUSIC version.
+                if hasattr(self.system_model, "_SystemModel__set_eta"):
+                    self.system_model.eta = self.system_model._SystemModel__set_eta()
+                else:
+                    self.system_model.eta = initial_eta
+                if (not getattr(self.system_model.params, 'nominal', True)) and hasattr(self.system_model, "get_distance_noise"):
                     self.system_model.location_noise = self.system_model.get_distance_noise(True)
                 
                 # Run single trajectory online learning
@@ -2049,8 +2052,8 @@ class OnlineLearning:
             LossMetrics object with all calculated losses
         """
         # Import loss criteria
-        from DCD_MUSIC.src.metrics.rmspe_loss import RMSPELoss
-        from DCD_MUSIC.src.metrics.rmape_loss import RMAPELoss
+        from src.eval.metrics.rmspe_loss import RMSPELoss
+        from src.eval.metrics.rmape_loss import RMAPELoss
         
         rmspe_criterion = RMSPELoss().to(device)
         rmape_criterion = RMAPELoss().to(device)
@@ -2241,7 +2244,7 @@ class OnlineLearning:
             optimal_perm: Array containing the optimal permutation indices
         """
         import torch
-        from DCD_MUSIC.src.metrics.rmspe_loss import RMSPELoss
+        from src.eval.metrics.rmspe_loss import RMSPELoss
         from itertools import permutations
         
         # Convert inputs to tensors and reshape

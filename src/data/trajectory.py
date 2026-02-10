@@ -537,11 +537,10 @@ class TrajectoryDataHandler:
                 angles = angle_trajectories[i, t, :num_sources].numpy()
                 distances = distance_trajectories[i, t, :num_sources].numpy()
                 
-                # Set the angles and distances for this step
-                if self.system_model_params.field_type.lower() == "far":
-                    self.samples_model.set_labels(num_sources, angles=angles.tolist(), distances=None)
-                else:  # near or full field
-                    self.samples_model.set_labels(num_sources, angles=angles.tolist(), distances=distances.tolist())
+                # Set labels using the DCD_MUSIC Samples API.
+                self.samples_model.set_doa(angles.tolist(), num_sources)
+                if self.system_model_params.field_type.lower() != "far":
+                    self.samples_model.set_range(distances.tolist(), num_sources)
                 
                 # Generate observation matrix
                 X = self.samples_model.samples_creation(
@@ -555,8 +554,8 @@ class TrajectoryDataHandler:
                 # Use as_tensor instead of tensor to avoid copy warnings
                 X_tensor = torch.as_tensor(X)
                 
-                # Get ground truth labels
-                Y = self.samples_model.get_labels()
+                # Ground-truth DOA labels are maintained on the samples object in radians.
+                Y = torch.as_tensor(self.samples_model.doa, dtype=torch.float32)
                 
                 # Store data for this step
                 sample_time_series.append(X_tensor)
@@ -945,10 +944,13 @@ class OnlineLearningTrajectoryGenerator:
         # Also update sv_noise_var to the same value as eta
         self.system_model_params.sv_noise_var = new_eta
         
-        # Regenerate distance noise with new eta value
-        self.samples_model.eta = self.samples_model._SystemModel__set_eta()
-        #if not getattr(self.system_model_params, 'nominal', True):
-        self.samples_model.location_noise = self.samples_model.get_distance_noise(True)
+        # Regenerate distance noise with new eta value when supported by this DCD_MUSIC version.
+        if hasattr(self.samples_model, "_SystemModel__set_eta"):
+            self.samples_model.eta = self.samples_model._SystemModel__set_eta()
+        else:
+            self.samples_model.eta = new_eta
+        if hasattr(self.samples_model, "get_distance_noise"):
+            self.samples_model.location_noise = self.samples_model.get_distance_noise(True)
         
         logger.info(f"Generator eta updated from {old_eta:.4f} to {self.system_model_params.eta:.4f} with new distance noise pattern.")
 
@@ -1062,13 +1064,11 @@ class OnlineLearningTrajectoryGenerator:
             current_true_angles, num_sources_for_step = self._generate_next_true_step()
             
             # Set labels for the Samples model (which uses the current eta from shared system_model_params)
-            if self.system_model_params.field_type.lower() == "far":
-                self.samples_model.set_labels(num_sources_for_step, angles=current_true_angles.tolist(), distances=None)
-            else: # near or full field
-                # TODO: Add actual distance generation for near-field
-                # For now, using placeholder distances if near-field
-                placeholder_distances = np.array([20.0] * num_sources_for_step) 
-                self.samples_model.set_labels(num_sources_for_step, angles=current_true_angles.tolist(), distances=placeholder_distances.tolist())
+            self.samples_model.set_doa(current_true_angles.tolist(), num_sources_for_step)
+            if self.system_model_params.field_type.lower() != "far":
+                # TODO: Add actual dynamic distance generation for near-field.
+                placeholder_distances = np.array([20.0] * num_sources_for_step)
+                self.samples_model.set_range(placeholder_distances.tolist(), num_sources_for_step)
             
             # Generate noisy observation matrix using the current system_model_params.eta
             # samples_creation returns (array_output, true_clean_signal, true_noise, sources_positions)
@@ -1077,9 +1077,8 @@ class OnlineLearningTrajectoryGenerator:
             window_observations_list.append(torch.as_tensor(observation_matrix, dtype=torch.complex64))
             window_sources_nums_list.append(num_sources_for_step)
             
-            # Store ground truth for this step using the actual labels from samples_model (in radians)
-            # This ensures consistency with the units used by the model
-            true_label_for_step = self.samples_model.get_labels().cpu().numpy()
+            # Store ground truth for this step (radians).
+            true_label_for_step = np.asarray(self.samples_model.doa, dtype=np.float32)
             window_true_labels_list.append(true_label_for_step)
 
             self.current_step_in_session +=1

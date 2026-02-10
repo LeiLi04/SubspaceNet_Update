@@ -8,6 +8,7 @@ configuration objects defined in the schema module.
 import sys
 import os
 import importlib
+import inspect
 from typing import Dict, Any, Optional, List
 import warnings
 from pathlib import Path
@@ -22,6 +23,30 @@ sys.path.append('./DCD_MUSIC/src')
 
 # Set up logging
 logger = logging.getLogger("SubspaceNet.factory")
+
+
+def _instantiate_with_compatible_kwargs(cls: Any, kwargs: Dict[str, Any], class_name: str) -> Any:
+    """Instantiate a class while filtering unsupported keyword arguments."""
+    init_sig = inspect.signature(cls.__init__)
+    params = init_sig.parameters
+
+    accepts_var_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+    if accepts_var_kwargs:
+        return cls(**kwargs)
+
+    allowed_keys = {
+        name for name, p in params.items()
+        if name != "self" and p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    }
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_keys}
+    dropped_keys = sorted(set(kwargs.keys()) - set(filtered_kwargs.keys()))
+    if dropped_keys:
+        logger.warning(
+            "%s does not accept kwargs %s; dropping them for compatibility",
+            class_name,
+            dropped_keys,
+        )
+    return cls(**filtered_kwargs)
 
 def _import_from_dcd_music(module_path: str, class_name: str) -> Any:
     """
@@ -68,6 +93,18 @@ def _create_system_model_params(config: Config) -> Any:
     
     # Set parameters from configuration
     for key, value in config_dict.items():
+        if key == "field_type" and isinstance(value, str):
+            lower = value.lower()
+            if lower == "far":
+                value = "Far"
+            elif lower == "near":
+                value = "Near"
+        if key == "signal_type" and isinstance(value, str):
+            lower = value.lower()
+            if lower == "narrowband":
+                value = "NarrowBand"
+            elif lower == "broadband":
+                value = "Broadband"
         if key == 'eta':
             logger.info(f"FACTORY DEBUG: eta being set in SystemModelParams: {value}")
         if key == 'snr':
@@ -97,8 +134,12 @@ def create_system_model(config: Config) -> Any:
     # Import SystemModel
     SystemModel = _import_from_dcd_music("src.system_model", "SystemModel")
     
-    # Create system model using the nominal parameter from config
-    system_model = SystemModel(system_model_params, nominal=config.system_model.nominal)
+    # Create system model using the nominal parameter when supported by the DCD_MUSIC version.
+    try:
+        system_model = SystemModel(system_model_params, nominal=config.system_model.nominal)
+    except TypeError:
+        # Backward compatibility: older DCD_MUSIC SystemModel does not accept `nominal`.
+        system_model = SystemModel(system_model_params)
     
     return system_model
 
@@ -194,8 +235,7 @@ def create_model(config: Config, system_model: Any) -> Any:
         if regularization == "null":
             regularization = None
         
-        # Create model
-        model = SubspaceNet(
+        model_kwargs = dict(
             tau=tau,
             diff_method=diff_method,
             train_loss_type=train_loss_type,
@@ -204,8 +244,9 @@ def create_model(config: Config, system_model: Any) -> Any:
             regularization=regularization,
             variant=variant,
             norm_layer=norm_layer,
-            batch_norm=batch_norm
+            batch_norm=batch_norm,
         )
+        model = _instantiate_with_compatible_kwargs(SubspaceNet, model_kwargs, "SubspaceNet")
         
         return model
         
@@ -220,16 +261,16 @@ def create_model(config: Config, system_model: Any) -> Any:
         variant = model_params.get("variant", "small")
         norm_layer = model_params.get("norm_layer", False)
         
-        # Create model
-        model = DCDMUSIC(
+        model_kwargs = dict(
             tau=tau,
             system_model=system_model,
             diff_method=diff_method,
             train_loss_type=train_loss_type,
             regularization=regularization,
             variant=variant,
-            norm_layer=norm_layer
+            norm_layer=norm_layer,
         )
+        model = _instantiate_with_compatible_kwargs(DCDMUSIC, model_kwargs, "DCDMUSIC")
         
         return model
     
