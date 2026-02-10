@@ -1,0 +1,4 @@
+# Data-group defaults for the refactored layout.
+create_data: true
+save_dataset: false
+samples_size: 256

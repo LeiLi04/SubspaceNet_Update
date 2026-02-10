@@ -1,0 +1,6 @@
+# Model-group defaults for the refactored layout.
+type: SubspaceNet
+params:
+  diff_method: esprit
+  train_loss_type: rmspe
+  tau: 8

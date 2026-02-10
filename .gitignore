@@ -23,6 +23,10 @@ wheels/
 
 # Experiment results
 experiments/results/
+outputs/*
+!outputs/checkpoints/.gitkeep
+!outputs/logs/.gitkeep
+!outputs/figures/.gitkeep
 experiments/debug_logs/git
 # Models
 *.pth
@@ -52,4 +56,7 @@ ENV/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# Local runtime cache
+.cache/

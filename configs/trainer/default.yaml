@@ -1,0 +1,5 @@
+# Trainer-group defaults for the refactored layout.
+max_epochs: 30
+batch_size: 256
+learning_rate: 0.001
+weight_decay: 1e-9

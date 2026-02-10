@@ -1,0 +1,11 @@
+defaults:
+  - default
+  - data: default
+  - model: default
+  - trainer: default
+  - callbacks: default
+  - _self_
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
