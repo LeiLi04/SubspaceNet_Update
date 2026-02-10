@@ -19,9 +19,9 @@ from config_handler import setup_configuration
 from experiments.runner import run_experiment
 from cli.commands import show_command, save_command
 from cli.options import config_option, output_option, override_option
-from simulation.core import Simulation
-from utils.logging_utils import setup_logging_from_config
-from utils.plotting import plot_scenario_results
+from src.train.core import Simulation
+from src.utils.logging_utils import setup_logging_from_config
+from src.utils.plotting import plot_scenario_results
 
 # Device setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -273,7 +273,7 @@ def evaluate_command(config: str, output: Optional[str], override: List[str],
                 
                 # --- Plotting 2D heatmap for Kalman noise sweep ---
                 try:
-                    from utils.plotting import plot_2d_kalman_noise_sweep
+                    from src.utils.plotting import plot_2d_kalman_noise_sweep
                     plot_path = plot_2d_kalman_noise_sweep(scenario_results, output_dir)
                     logger.info(f"Saved 2D Kalman noise heatmap to {plot_path}")
                 except Exception as e:
@@ -284,7 +284,7 @@ def evaluate_command(config: str, output: Optional[str], override: List[str],
 
                 # --- Plotting loss vs. swept parameter ---
                 try:
-                    from utils.plotting import plot_loss_vs_scenario
+                    from src.utils.plotting import plot_loss_vs_scenario
                     plot_path = plot_loss_vs_scenario(scenario_results, scenario, output_dir)
                     logger.info(f"Saved loss plot to {plot_path}")
                 except Exception as e:
@@ -360,7 +360,7 @@ def simulate_command(config: str, output: Optional[str], override: List[str],
             
             # Plot scenario results if it's an SNR scenario
             if scenario.lower() == 'snr' and mode == 'online_learning':
-                from utils.plotting import plot_scenario_results, plot_performance_improvement_table
+                from src.utils.plotting import plot_scenario_results, plot_performance_improvement_table
                 plot_scenario_results(results, sim.output_dir)
                 plot_performance_improvement_table(results, sim.output_dir)
         else:
@@ -511,7 +511,7 @@ def online_learning_command(config: str, output: Optional[str], override: List[s
             
             # Generate eta comparison plots
             try:
-                from utils.plotting import plot_eta_comparison_4d_grid
+                from src.utils.plotting import plot_eta_comparison_4d_grid
                 logger.info("Starting eta comparison plotting...")
                 saved_plots = plot_eta_comparison_4d_grid(scenario_results, output_dir)
                 logger.info(f"Eta comparison plotting completed: {len(saved_plots)} plots saved")

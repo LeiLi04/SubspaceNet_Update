@@ -1,8 +1,15 @@
-"""
-Simulation runner components.
+"""Compatibility package for migrated runner modules."""
 
-This package contains the core runner components for simulations:
-- data.py: Data handling (loading/creating datasets)
-- training.py: Model training
-- evaluation.py: Evaluation and metrics collection
-""" 
+from src.data.trajectory import create_online_learning_dataset
+from src.eval.evaluation import Evaluator
+from src.train.online_learning import OnlineLearning
+from src.train.training import OnlineTrainer, TrajectoryTrainer, TrainingConfig
+
+__all__ = [
+    "TrainingConfig",
+    "TrajectoryTrainer",
+    "OnlineTrainer",
+    "Evaluator",
+    "OnlineLearning",
+    "create_online_learning_dataset",
+]

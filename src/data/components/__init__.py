@@ -1,0 +1,1 @@
+"""Reusable data components."""

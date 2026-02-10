@@ -303,7 +303,7 @@ def create_trajectory_data_handler(config: Config, system_model: Any) -> Any:
     """
     try:
         # Import the TrajectoryDataHandler class
-        from simulation.runners.data import TrajectoryDataHandler
+        from src.data.trajectory import TrajectoryDataHandler
         
         # Create the data handler with system model
         handler = TrajectoryDataHandler(
