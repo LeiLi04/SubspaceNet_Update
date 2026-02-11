@@ -1,0 +1,192 @@
+\documentclass{article}
+
+% ICML style (make sure icml2025.sty is available when compiling).
+\usepackage{icml2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{enumitem}
+
+\title{SubspaceNet for Non-Stationary DOA Tracking:\\
+Windowed EKF Adaptation with Innovation-Consistency Objectives}
+
+\author{Anonymous Authors\\
+Anonymous Institution\\
+\texttt{anonymous@anonymous.edu}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Direction-of-arrival (DOA) estimation in dynamic scenes requires not only accurate per-frame predictions but also stable temporal tracking under changing source motion and array mismatch.
+This paper presents a trajectory-aware DOA pipeline built around SubspaceNet and a windowed online adaptation mechanism with Extended Kalman Filter (EKF) feedback.
+Our formulation supports multiple trajectory generators (e.g., random walk and non-linear sine-acceleration), explicit process/measurement noise control, and unsupervised or weakly supervised online objectives derived from EKF innovation statistics.
+We further introduce a practical evaluation protocol for non-stationary calibration regimes by varying perturbation strength over time and reporting window-level tracking quality.
+Across synthetic tracking scenarios, our method provides a reproducible framework for studying when online adaptation improves temporal DOA consistency over static inference baselines.
+\end{abstract}
+
+\section{Introduction}
+Classical subspace methods such as MUSIC and ESPRIT are effective for stationary or slowly varying scenarios, but they can degrade when source trajectories are highly dynamic or when array characteristics drift over time [CITATION NEEDED].
+Recent deep-learning approaches improve robustness in challenging regimes, yet most operate in a frame-wise manner and do not explicitly optimize for sequential consistency [CITATION NEEDED].
+
+In this work, we focus on non-stationary DOA tracking where both latent source motion and observation conditions evolve.
+Our codebase implements trajectory-aware data generation, sequence-based training, and online adaptation around a SubspaceNet backbone.
+The online stage operates on sliding windows and uses EKF-derived signals to trigger and shape local updates.
+
+\textbf{One-sentence contribution.}
+We present a trajectory-aware DOA estimation pipeline that couples a SubspaceNet predictor with windowed EKF-based online adaptation and innovation-consistency objectives to track non-stationary source dynamics under time-varying array perturbations.
+
+\textbf{Main contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+    \item A unified trajectory-learning setup for dynamic DOA estimation, including random, random-walk, and non-linear motion generators.
+    \item A windowed online adaptation mechanism that can optimize supervised or unsupervised objectives using EKF feedback signals.
+    \item Innovation-consistency style losses (e.g., $K\!\cdot\!y$, $y^\top S^{-1} y$, and multi-moment variants) for adaptation under limited labels.
+    \item A practical non-stationary evaluation protocol over trajectory windows and perturbation sweeps (e.g., SNR/source-count/calibration settings).
+\end{enumerate}
+
+\section{Related Work}
+\paragraph{Classical DOA estimation.}
+Subspace methods (e.g., MUSIC, Root-MUSIC, ESPRIT) form a standard baseline family for DOA estimation [CITATION NEEDED].
+They provide strong interpretability but rely on assumptions that are stressed by dynamic and mismatched settings.
+
+\paragraph{Deep DOA estimation.}
+Neural approaches improve robustness to noise, coherence, and limited snapshots [CITATION NEEDED].
+However, many studies target static snapshots and do not explicitly model long-horizon trajectory consistency.
+
+\paragraph{Filtering and online adaptation.}
+Kalman-style filters are natural for sequential latent-state estimation [CITATION NEEDED].
+Our work combines a neural predictor with windowed EKF feedback and online updates, emphasizing adaptation objectives that can be used with limited or no labels.
+
+\section{Problem Formulation}
+We consider a uniform linear array with $N$ sensors observing up to $M$ sources over trajectory horizon $T_{\text{traj}}$.
+At each time step $t$, the latent DOA state is denoted by $\boldsymbol{\theta}_t \in \mathbb{R}^{M_t}$, where $M_t \le M$ can vary.
+
+Given observation tensor $\mathbf{X}_t \in \mathbb{C}^{N \times T_s}$ (with $T_s$ snapshots), the model predicts DOA estimates $\hat{\boldsymbol{\theta}}_t$.
+The trajectory setting introduces temporal dynamics:
+\begin{equation}
+\boldsymbol{\theta}_{t+1} = f(\boldsymbol{\theta}_t, \mathbf{u}_t) + \boldsymbol{\epsilon}_t,
+\end{equation}
+where $f(\cdot)$ may represent random walk or non-linear motion, and $\boldsymbol{\epsilon}_t$ is process noise.
+
+For online adaptation, we process sliding windows
+\begin{equation}
+\mathcal{W}_k = \{t_k, t_k+1, \dots, t_k + L - 1\},
+\end{equation}
+with window size $L$ and stride $s$.
+Within each window, EKF refinement produces filtered predictions and innovation statistics used both for evaluation and optional adaptation losses.
+
+\section{Method}
+\subsection{Trajectory-aware dataset and batching}
+The data layer generates trajectories under configurable motion families (random, random walk, linear, circular, static, and non-linear variants) with optional variable source counts.
+Each sample contains step-wise tensors and labels with padding-aware collation for batch training.
+
+\subsection{Backbone predictor}
+We use SubspaceNet as the core predictor.
+For each step in a trajectory, the model outputs DOA estimates and optional auxiliary terms used by the training loss.
+Training can be configured for angle-only or joint objectives (angle/range where applicable).
+
+\subsection{Windowed EKF refinement}
+Given pre-EKF predictions $\hat{\boldsymbol{\theta}}^{\text{pre}}_t$, an EKF module computes filtered states:
+\begin{equation}
+\hat{\boldsymbol{\theta}}^{\text{ekf}}_t = \mathrm{EKF}\!\left(\hat{\boldsymbol{\theta}}^{\text{pre}}_t, \mathbf{P}_{t-1}, \mathbf{Q}, \mathbf{R}\right),
+\end{equation}
+with standard covariance recursion and innovation terms.
+
+\subsection{Online adaptation objectives}
+Our framework supports multiple window-level training references:
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+    \item supervised/unsupervised RMSPE or RMAPE;
+    \item Kalman innovation proxy $\|K_t y_t\|$;
+    \item normalized innovation statistic $y_t^\top S_t^{-1}y_t$;
+    \item multi-moment innovation consistency losses.
+\end{itemize}
+Adaptation is activated by configurable triggers (e.g., loss thresholds and start-window constraints), and optimization is performed with bounded iterations per window.
+
+\section{Experimental Setup}
+\subsection{Scenarios}
+We evaluate under synthetic trajectory scenarios with configurable:
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+    \item source motion type (random walk and non-linear sine-acceleration);
+    \item source count $M$ and SNR sweeps;
+    \item calibration perturbation magnitude (e.g., $\eta$ progression);
+    \item field settings (far-field by default, near-field supported by configuration).
+\end{itemize}
+
+\subsection{Baselines}
+We compare:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+    \item SubspaceNet without online adaptation;
+    \item SubspaceNet + EKF (no online updates);
+    \item SubspaceNet + EKF + online adaptation (ours);
+    \item optional classical methods (MUSIC/Root-MUSIC/ESPRIT) where configured.
+\end{enumerate}
+
+\subsection{Metrics}
+Primary metrics include RMSPE/RMAPE on DOA trajectories, plus window-level covariance and innovation diagnostics.
+We also report EKF gain statistics and adaptation-trigger statistics to characterize stability.
+
+\section{Results}
+\subsection{Main quantitative comparison}
+\textbf{Placeholder:} insert the main table with averaged RMSPE/RMAPE across trajectories and windows.
+
+\begin{table}[t]
+\caption{Main tracking results on dynamic DOA scenarios.}
+\label{tab:main}
+\centering
+\begin{tabular}{lcc}
+\toprule
+Method & RMSPE $\downarrow$ & RMAPE $\downarrow$ \\
+\midrule
+SubspaceNet (static) & [TO FILL] & [TO FILL] \\
+SubspaceNet + EKF & [TO FILL] & [TO FILL] \\
+SubspaceNet + EKF + Online (Ours) & [TO FILL] & [TO FILL] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablations on online objectives}
+\textbf{Placeholder:} compare configured/supervised/unsupervised and innovation-based losses.
+Report adaptation stability and convergence behavior per window.
+
+\subsection{Robustness under non-stationarity}
+\textbf{Placeholder:} include sweeps over SNR, source count, and perturbation level.
+Highlight where online adaptation is most beneficial.
+
+\section{Discussion}
+Our implementation indicates that combining neural DOA predictors with filtering-aware online adaptation is a practical strategy for non-stationary settings.
+The framework is especially useful when labels are sparse but sequential consistency signals are available via innovation statistics.
+At the same time, benefits depend on trigger policy, window granularity, and filter-noise calibration.
+
+\section{Limitations}
+This work currently relies on synthetic trajectories and controlled perturbation models.
+Real-array transfer, domain shift, and computational overhead in strict real-time settings remain open.
+Further, objective selection for online updates may require scenario-specific tuning.
+
+\section{Conclusion}
+We introduced a trajectory-aware SubspaceNet pipeline with EKF-guided windowed online adaptation for dynamic DOA estimation.
+The framework unifies trajectory simulation, sequence training, filter-informed diagnostics, and multiple adaptation objectives in a reproducible setup.
+Future work will validate on real-world datasets and investigate stronger uncertainty-aware adaptation criteria.
+
+\section*{Reproducibility Statement}
+The repository includes configuration-driven experiment pipelines, trajectory generators, and online-learning controls through YAML files.
+To improve reproducibility for publication, we will release fixed random seeds, exact run scripts, and finalized evaluation manifests in the camera-ready version.
+
+\section*{Acknowledgements}
+Removed for anonymous review.
+
+% Keep placeholders instead of unverified citations as requested.
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
