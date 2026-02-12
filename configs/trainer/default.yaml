@@ -1,4 +1,5 @@
 # Trainer-group defaults for the refactored layout.
+_target_: src.train.component_factories.TrainerComponentFactory
 max_epochs: 30
 batch_size: 256
 learning_rate: 0.001

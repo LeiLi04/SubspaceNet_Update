@@ -168,12 +168,6 @@ def create_dataset(config: Config, system_model: Any) -> Any:
         # Import TimeSeriesDataset from DCD_MUSIC
         TimeSeriesDataset = _import_from_dcd_music("src.data_handler", "TimeSeriesDataset")
         
-        # Import Samples class from DCD_MUSIC
-        Samples = _import_from_dcd_music("src.signal_creation", "Samples")
-        
-        # Create a Samples object (needed for TimeSeriesDataset)
-        samples_model = Samples(system_model.params)
-        
         # Set the dataset path
         # Use a fixed path relative to the workspace
         datasets_path = Path('data/datasets').absolute()
@@ -182,15 +176,27 @@ def create_dataset(config: Config, system_model: Any) -> Any:
         
         # Create dataset using the create_dataset function from DCD_MUSIC
         create_dataset_func = _import_from_dcd_music("src.data_handler", "create_dataset")
-        dataset, _ = create_dataset_func(
-            samples_model=samples_model,
+        dataset_kwargs = dict(
             samples_size=config.dataset.samples_size,
             save_datasets=config.dataset.save_dataset,
             datasets_path=datasets_path,
             true_doa=config.dataset.true_doa_train,
             true_range=config.dataset.true_range_train,
-            phase="train"
+            phase="train",
         )
+        try:
+            dataset, _ = create_dataset_func(
+                system_model_params=system_model.params,
+                **dataset_kwargs,
+            )
+        except TypeError:
+            # Import Samples class from DCD_MUSIC for older signatures.
+            Samples = _import_from_dcd_music("src.signal_creation", "Samples")
+            samples_model = Samples(system_model.params)
+            dataset, _ = create_dataset_func(
+                samples_model=samples_model,
+                **dataset_kwargs,
+            )
         
         return dataset
     except Exception as e:

@@ -1,0 +1,5 @@
+# Canonical training defaults for Hydra main entry.
+enabled: true
+use_lightning: false
+epochs: 30
+batch_size: 256

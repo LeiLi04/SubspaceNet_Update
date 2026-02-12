@@ -63,6 +63,7 @@ class ModelConfig(BaseModel):
 class TrainingConfig(BaseModel):
     """Training configuration parameters."""
     enabled: bool = True
+    use_lightning: bool = False
     epochs: int = 10
     batch_size: int = 32
     optimizer: Literal["Adam", "SGD", "RMSprop"] = "Adam"
@@ -132,6 +133,12 @@ class TrajectoryConfig(BaseModel):
     mult_noise_omega0: float = 0.0    # Base angular velocity (rad/s)
     mult_noise_amp: float = 0.5       # Amplitude of multiplicative term (unitless)
     mult_noise_base_std: float = 0.1  # Base noise standard deviation (rad)
+
+    # Near-field dynamic range generation (online/offline compatible defaults)
+    near_field_range_min: float = 20.0
+    near_field_range_max: float = 80.0
+    near_field_range_step_mean: float = 0.5
+    near_field_range_step_std: float = 0.2
 
 
 class KalmanFilterConfig(BaseModel):

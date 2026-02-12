@@ -1,8 +1,22 @@
 """
-Data handling for trajectory-based DOA simulations.
+Algorithm summary:
+Trajectory-based DOA data pipeline that synthesizes source-motion sequences and maps them to
+array observations for both offline training and online adaptation.
 
-This module handles the creation and processing of synthetic datasets
-with trajectory support for direction-of-arrival estimation.
+Symbol legend:
+- S: number of trajectories/samples
+- L: trajectory length (time steps)
+- M: number of sources (fixed or variable)
+- N: number of sensors/antennas
+- T: number of temporal snapshots per step
+- X: observation matrix, X in R(N x T)
+- theta: DOA angles, theta in R(M)
+- r: source ranges for near-field, r in R(M)
+- eta: geometry/noise control parameter for the signal model
+
+Core tensor flow:
+Trajectory params -> (theta, r) per step -> Samples.samples_creation -> X[N, T]
+-> trajectory stack [L, N, T] -> batch stack [B, L, N, T].
 """
 
 import torch
@@ -27,19 +41,26 @@ logger = logging.getLogger('SubspaceNet.data')
 
 class TrajectoryDataHandler:
     """
-    Handles trajectory-based data creation and loading for DOA estimation.
-    
-    This class provides methods to generate synthetic datasets with trajectory
-    support, where angles (DOAs) follow specific patterns over time.
+    Trajectory dataset creation and loading controller.
+
+    Converts trajectory parameters into trainable samples by generating theta/r trajectories
+    first and then calling `Samples` to create observation matrices X.
     """
     
     def __init__(self, system_model_params, config=None):
         """
-        Initialize the data handler with system model parameters.
-        
+        Initialize the handler with system-model parameters and runtime config.
+
         Args:
-            system_model_params: SystemModelParams instance
-            config: Optional configuration dictionary
+            system_model_params (SystemModelParams): System parameter object.
+            config (Optional[Any]): Runtime config with `trajectory` section.
+
+        Returns:
+            None.
+
+        Math & Logic:
+            This function does not run numerical updates; it wires dependencies.
+            Observations are generated later via X = f(theta, r, eta, noise).
         """
         self.system_model_params = system_model_params
         self.config = config
@@ -53,21 +74,31 @@ class TrajectoryDataHandler:
                      dataset_path: Optional[Path] = None,
                      custom_trajectory_fn: Optional[Callable] = None) -> Tuple[Dataset, Any]:
         """
-        Create a synthetic dataset with trajectory support.
-        
+        Create an offline synthetic trajectory dataset.
+
         Args:
-            samples_size: Number of distinct samples/trajectories
-            trajectory_length: Length of each trajectory
-            trajectory_type: Type of trajectory to generate
-            save_dataset: Whether to save the dataset
-            dataset_path: Path where to save the dataset
-            custom_trajectory_fn: Custom function for trajectory generation
-            
+            samples_size (int): Number of trajectories S.
+            trajectory_length (int): Per-trajectory time length L.
+            trajectory_type (Union[TrajectoryType, str]): Trajectory mode.
+            save_dataset (bool): Whether to persist dataset to H5.
+            dataset_path (Optional[Path]): Output folder path.
+            custom_trajectory_fn (Optional[Callable]): Custom trajectory callback.
+
         Returns:
-            Tuple of (dataset, samples_model)
+            Tuple[Dataset, Any]:
+            - dataset: `TrajectoryDataset`, core item shape [L, N, T]
+            - samples_model: `Samples` instance
+
+        Math & Logic:
+            For each (s, t), generate theta_{s,t}, r_{s,t} then map to
+            X_{s,t} = g(theta_{s,t}, r_{s,t}, eta). Final output stacks by time as
+            X_s in R(L x N x T).
         """
         logger.info(f"Creating dataset with {samples_size} trajectories of length {trajectory_length}")
         
+        # ==========================================================================
+        # STEP 01: 轨迹生成 (Trajectory Synthesis)
+        # ==========================================================================
         # Generate the trajectories
         trajectory_data = self._generate_trajectories(
             samples_size, 
@@ -76,9 +107,15 @@ class TrajectoryDataHandler:
             custom_trajectory_fn
         )
         
+        # ==========================================================================
+        # STEP 02: 观测与标签构建 (Observation/Label Construction)
+        # ==========================================================================
         # Create observations and labels based on trajectories
         time_series, labels, sources_num = self._create_observations(trajectory_data)
         
+        # ==========================================================================
+        # STEP 03: 数据集封装与可选保存 (Dataset Packaging & Optional Save)
+        # ==========================================================================
         # Create the dataset object
         dataset = TrajectoryDataset(time_series, labels, sources_num)
         
@@ -94,14 +131,17 @@ class TrajectoryDataHandler:
                    filename: Path,
                    dataset_path: Path) -> Dataset:
         """
-        Load a dataset from file.
-        
+        Load trajectory dataset from an H5 file.
+
         Args:
-            filename: Name of the dataset file
-            dataset_path: Path to the dataset
-            
+            filename (Path): Dataset filename.
+            dataset_path (Path): Dataset directory.
+
         Returns:
-            Loaded dataset
+            Dataset: loaded `TrajectoryDataset`.
+
+        Math & Logic:
+            This is an I/O wrapper only; decode logic is implemented in `TrajectoryDataset.load`.
         """
         logger.info(f"Loading dataset from {dataset_path / filename}")
         dataset = TrajectoryDataset(None, None, None)
@@ -116,19 +156,30 @@ class TrajectoryDataHandler:
         custom_trajectory_fn: Optional[Callable] = None
     ) -> Tuple[Tuple[torch.Tensor, torch.Tensor], List[int]]:
         """
-        Generate angle and distance trajectories.
-        
+        Generate angle/range trajectory tensors (theta, r trajectories).
+
         Args:
-            samples_size: Number of distinct trajectories
-            trajectory_length: Length of each trajectory
-            trajectory_type: Type of trajectory to generate
-            custom_trajectory_fn: Custom function for trajectory generation
-            
+            samples_size (int): Number of trajectories S.
+            trajectory_length (int): Number of time steps L.
+            trajectory_type (Union[TrajectoryType, str]): Trajectory mode.
+            custom_trajectory_fn (Optional[Callable]): Custom trajectory callback.
+
         Returns:
-            Tuple containing:
-            - Tuple of (angle_trajectories, distance_trajectories)
-            - List of sources per trajectory
+            Tuple[Tuple[torch.Tensor, torch.Tensor], List[int]]:
+            - angle_trajectories: Shape [S, L, M_max]
+            - distance_trajectories: Shape [S, L, M_max]
+            - sources_per_trajectory: per-sample valid source counts, length S
+
+        Math & Logic:
+            Generic recurrence: theta_{t+1} = F(theta_t, t) + w_t, w_t in R(M).
+            Examples:
+            - RANDOM_WALK: F(theta_t, t) = theta_t
+            - SINE_ACCEL_NONLINEAR: F(theta_t, t) = 0.99 * theta_t + kappa * sin(omega0 * t)
+            - MULT_NOISE_NONLINEAR: F(theta_t, t) = theta_t + omega0, with state-dependent noise
         """
+        # ==========================================================================
+        # STEP 01: 输入标准化与源数定义 (Input Canonicalization & Source Count)
+        # ==========================================================================
         # Convert string to enum if needed
         if isinstance(trajectory_type, str):
             trajectory_type = TrajectoryType(trajectory_type)
@@ -168,7 +219,10 @@ class TrajectoryDataHandler:
             sa_omega0 = cfg.trajectory.sine_accel_omega0
             sa_kappa = cfg.trajectory.sine_accel_kappa
             sa_noise_sd = cfg.trajectory.sine_accel_noise_std
-            logger.info(f"Using sine acceleration non-linear model with ω₀={sa_omega0}, κ={sa_kappa}, σ={sa_noise_sd}")
+            logger.info(
+                f"Using sine acceleration non-linear model with omega0={sa_omega0}, "
+                f"kappa={sa_kappa}, noise_std={sa_noise_sd}"
+            )
         
         # Parameters for multiplicative noise non-linear model
         mn_omega0 = 0.0
@@ -178,7 +232,10 @@ class TrajectoryDataHandler:
             mn_omega0 = cfg.trajectory.mult_noise_omega0
             mn_amp = cfg.trajectory.mult_noise_amp
             mn_base_sd = cfg.trajectory.mult_noise_base_std
-            logger.info(f"Using multiplicative noise non-linear model with ω₀={mn_omega0}, amp={mn_amp}, σ={mn_base_sd}")
+            logger.info(
+                f"Using multiplicative noise non-linear model with "
+                f"omega0={mn_omega0}, amp={mn_amp}, base_std={mn_base_sd}"
+            )
         
         # Log trajectory type information before starting generation
         if trajectory_type == TrajectoryType.RANDOM:
@@ -194,11 +251,21 @@ class TrajectoryDataHandler:
         elif trajectory_type == TrajectoryType.FULL_RANDOM:
             logger.info("Using FULL_RANDOM trajectory type: completely independent random angles for each source and step")
         elif trajectory_type == TrajectoryType.SINE_ACCEL_NONLINEAR:
-            logger.info("Using SINE_ACCEL_NONLINEAR trajectory type: θ_{k+1} = θ_k + κ sin(ω0 * t) + η_k (oscillatory model)")
+            logger.info(
+                "Using SINE_ACCEL_NONLINEAR trajectory type: "
+                "theta_{k+1} = theta_k + kappa * sin(omega0 * t) + noise_k (oscillatory model)"
+            )
         elif trajectory_type == TrajectoryType.MULT_NOISE_NONLINEAR:
-            logger.info("Using MULT_NOISE_NONLINEAR trajectory type: θ_{k+1} = θ_k + ω0 T + σ(θ_k) η_k")
+            logger.info(
+                "Using MULT_NOISE_NONLINEAR trajectory type: "
+                "theta_{k+1} = theta_k + omega0 * T + sigma(theta_k) * noise_k"
+            )
         
-        # Create empty trajectories arrays
+        # ==========================================================================
+        # STEP 02: 张量预分配 (Tensor Pre-allocation)
+        # ==========================================================================
+        # step 2.1a) Why: 用 M_max 作为统一宽度，支持 M_s 可变轨迹批处理。
+        # Shape Flow: variable M_s -> padded M_max -> [S, L, M_max]
         max_sources = max(sources_per_trajectory)
         angle_trajectories = torch.zeros(
             (samples_size, trajectory_length, max_sources), 
@@ -209,16 +276,27 @@ class TrajectoryDataHandler:
             dtype=torch.float32
         )
         
-        # Generate trajectories
+        # ==========================================================================
+        # STEP 03: 逐样本轨迹生成 (Per-sample Trajectory Unrolling)
+        # ==========================================================================
         for i, num_sources in enumerate(sources_per_trajectory):
+            # --------------------------------------------------------------------------
+            # step 3.1: 距离轨迹递推 (Range Trajectory Recurrence)
+            # --------------------------------------------------------------------------
+            # step 3.1a) Shape Flow: scalar 20.0 -> [1, M_s] seed
             # Initialize all sources at distance 20
             for s in range(num_sources):
                 distance_trajectories[i, 0, s] = 20.0
             
+            # step 3.1b) Shape Flow: [M_s] + scalar 1.0 (Broadcast) -> [M_s]
+            # Why: 1.0 表示每时间步固定径向增量（常速假设）
             # Each step increases distance by 1
             for t in range(1, trajectory_length):
                 distance_trajectories[i, t, :num_sources] = distance_trajectories[i, t-1, :num_sources] + 1.0
             
+            # --------------------------------------------------------------------------
+            # step 3.2: 角度模型分支 (Angle Dynamics by TrajectoryType)
+            # --------------------------------------------------------------------------
             # Generate angle trajectories based on selected type
             if trajectory_type == TrajectoryType.SINE_ACCEL_NONLINEAR:
                 # Start with random angles
@@ -276,6 +354,7 @@ class TrajectoryDataHandler:
                 
                 # Apply multiplicative noise model: θ_{k+1} = θ_k + ω0 T + σ(θ_k) η_k
                 for t in range(1, trajectory_length):
+                    # step 3.2a) Shape Flow: θ_prev [M_s] -> θ_prev_rad [M_s] -> std [M_s] -> θ_new [M_s]
                     theta_prev = angle_trajectories[i, t-1, :num_sources]
                     # Convert to radians for trigonometric functions
                     theta_prev_rad = theta_prev * (np.pi / 180.0)
@@ -323,6 +402,7 @@ class TrajectoryDataHandler:
                 # Apply state-space model: θ_k = θ_{k-1} + w_k
                 # where w_k is zero-mean Gaussian noise with std_dev = random_walk_std_dev
                 for t in range(1, trajectory_length):
+                    # step 3.2b) Shape Flow: θ_{t-1}[M_s] + w_k[M_s] -> θ_t[M_s]
                     # Generate process noise
                     w_k = torch.randn(num_sources) * random_walk_std_dev
                     
@@ -357,6 +437,7 @@ class TrajectoryDataHandler:
                 
                 # Linear interpolation
                 for t in range(1, trajectory_length):
+                    # step 3.2c) Why: α = t/(L-1) 为线性插值系数，α ∈ [0, 1]
                     alpha = t / (trajectory_length - 1)
                     angle_trajectories[i, t, :num_sources] = (1 - alpha) * angle_trajectories[i, 0, :num_sources] + alpha * end_angles
             
@@ -506,25 +587,39 @@ class TrajectoryDataHandler:
     def _create_observations(self, 
                            trajectory_data: Tuple[Tuple[torch.Tensor, torch.Tensor], List[int]]) -> Tuple[List, List, List]:
         """
-        Create observations and labels from angle and distance trajectories.
-        
+        从轨迹参数生成观测矩阵与标签 (trajectory -> observation).
+
         Args:
-            trajectory_data: Tuple containing:
-                - Tuple of (angle_trajectories, distance_trajectories)
-                - List of sources per trajectory
-                
+            trajectory_data (Tuple[Tuple[Tensor, Tensor], List[int]]):
+                - angle_trajectories: [S, L, M_max]
+                - distance_trajectories: [S, L, M_max]
+                - sources_per_trajectory: 长度 S
+
         Returns:
-            Tuple of (time_series, labels, sources_num)
+            Tuple[List, List, List]:
+            - time_series: 长度 S，每项为 Tensor[L, N, T]
+            - labels: 长度 S，每项为长度 L 的角度标签列表（弧度）
+            - sources_num: 长度 S，每项为长度 L 的源数列表
+
+        Math & Logic:
+            对每个时间步执行 X = samples_creation(...)[0]，并将真值标签写为
+            Y = doa ∈ ℝ^M。最终 `torch.stack` 在时间维度聚合得到 [L, N, T]。
         """
         (angle_trajectories, distance_trajectories), sources_per_trajectory = trajectory_data
         
         samples_size, trajectory_length, _ = angle_trajectories.shape
         
+        # ==========================================================================
+        # STEP 01: 容器初始化 (Container Initialization)
+        # ==========================================================================
         # Initialize containers
         time_series = []
         labels = []
         sources_num = []
         
+        # ==========================================================================
+        # STEP 02: 逐轨迹逐时间步观测生成 (Per-trajectory, Per-step Observation Synthesis)
+        # ==========================================================================
         # For each sample
         for i in range(samples_size):
             sample_time_series = []
@@ -534,6 +629,7 @@ class TrajectoryDataHandler:
             # For each step in trajectory
             for t in range(trajectory_length):
                 num_sources = sources_per_trajectory[i]
+                # step 2.1a) Shape Flow: [M_max] -> slice by M_s -> [M_s]
                 angles = angle_trajectories[i, t, :num_sources].numpy()
                 distances = distance_trajectories[i, t, :num_sources].numpy()
                 
@@ -556,6 +652,7 @@ class TrajectoryDataHandler:
                 
                 # Ground-truth DOA labels are maintained on the samples object in radians.
                 Y = torch.as_tensor(self.samples_model.doa, dtype=torch.float32)
+                # step 2.1b) Shape Flow: X [N, T], Y [M_s]
                 
                 # Store data for this step
                 sample_time_series.append(X_tensor)
@@ -616,9 +713,11 @@ class TrajectoryDataHandler:
 
 class TrajectoryDataset(Dataset):
     """
-    Dataset class for trajectory-based DOA estimation.
-    
-    Extends the original TimeSeriesDataset to support trajectories.
+    轨迹式 DOA 数据集封装器 (trajectory-aware Dataset).
+
+    支持两种模式：
+    1) 内存模式：直接返回已构建的 `time_series/labels/sources_num`
+    2) H5 延迟加载模式：按索引读取并动态拼接轨迹
     """
     
     def __init__(self, time_series, labels, sources_num):
@@ -651,13 +750,19 @@ class TrajectoryDataset(Dataset):
     
     def __getitem__(self, idx):
         """
-        Get a trajectory.
-        
+        获取一条轨迹样本 (single trajectory item).
+
         Args:
-            idx: Index of the trajectory
-            
+            idx (int): 轨迹索引。Shape: scalar.
+
         Returns:
-            Tuple of (time_series, sources_num, labels) for the trajectory
+            Tuple[Tensor, List[int], List[Tensor]]:
+            - time_series: Shape [L, N, T]
+            - sources_num: 长度 L
+            - labels: 长度 L，每步标签大小可变（取决于 M_t）
+
+        Math & Logic:
+            H5 模式下执行按步读取再堆叠：stack({X_t}_{t=1..L}) -> X ∈ ℂ^(L×N×T)。
         """
         if self.path is None:
             return self.time_series[idx], self.sources_num[idx], self.labels[idx]
@@ -817,16 +922,29 @@ class TrajectoryDataset(Dataset):
     
     def _collate_trajectories(self, batch):
         """
-        Custom collate function for trajectory batches.
-        
+        轨迹批处理拼接函数 (custom collate for variable-source trajectories).
+
         Args:
-            batch: List of (time_series, sources_num, labels) tuples
-            
+            batch: List of (time_series, sources_num, labels)
+                - time_series: [L_i, N, T]
+                - sources_num: List[int], len=L_i
+                - labels: List[Tensor], len=L_i
+
         Returns:
-            Collated batch with padded trajectories
+            Tuple[Tensor, Tensor, Tensor]:
+            - padded_time_series: [B, L_max, N, T]
+            - padded_sources_num: [B, L_max]
+            - padded_labels: [B, L_max, M_max]
+
+        Math & Logic:
+            通过零填充实现可变长度/可变源数的统一批处理表示：
+            X_pad[b, :L_b] = X_b，Y_pad[b, t, :M_{b,t}] = Y_{b,t}。
         """
         time_series, sources_num, labels = zip(*batch)
         
+        # ==========================================================================
+        # STEP 01: 批次统计 (Batch Shape Statistics)
+        # ==========================================================================
         # Find maximum values for padding
         max_trajectory_length = max(ts.shape[0] for ts in time_series)
         max_sources = max(max(src) for src in sources_num)
@@ -837,6 +955,9 @@ class TrajectoryDataset(Dataset):
         # Get dimensions of time series
         _, n_sensors, n_snapshots = time_series[0].shape
         
+        # ==========================================================================
+        # STEP 02: 填充张量分配 (Padded Tensor Allocation)
+        # ==========================================================================
         # Initialize padded tensors
         padded_time_series = torch.zeros(
             (batch_size, max_trajectory_length, n_sensors, n_snapshots),
@@ -853,6 +974,9 @@ class TrajectoryDataset(Dataset):
             dtype=torch.long
         )
         
+        # ==========================================================================
+        # STEP 03: 数据拷贝与对齐 (Copy & Align)
+        # ==========================================================================
         # Fill padded tensors
         for i, (ts, src, lbl) in enumerate(zip(time_series, sources_num, labels)):
             traj_len = ts.shape[0]
@@ -866,6 +990,7 @@ class TrajectoryDataset(Dataset):
             # Copy labels (with padding for varying number of sources)
             for t in range(traj_len):
                 n_src = src[t]
+                # Shape Flow: lbl[t] [n_src] -> padded_labels[i, t, :n_src]
                 padded_labels[i, t, :n_src] = lbl[t]
         
         return padded_time_series, padded_sources_num, padded_labels
@@ -874,24 +999,28 @@ class TrajectoryDataset(Dataset):
 # NEW Class: OnlineLearningTrajectoryGenerator
 class OnlineLearningTrajectoryGenerator:
     """
-    Generates a single, continuous trajectory on-demand for online learning.
-    Maintains the state of the true underlying trajectory and allows for
-    dynamic updates to system parameters like 'eta' which affect newly
-    generated noisy observations.
+    在线学习轨迹生成器 (on-demand continuous trajectory generator).
+
+    维护状态量 `last_true_angles`，每次请求窗口时向前推进时间步，并基于当前 η 生成新观测。
     """
     def __init__(self, system_model_params: SystemModelParams, 
                  trajectory_config: TrajectoryConfig, 
                  initial_eta: float,
                  num_sources: Union[int, Tuple[int, int]]):
         """
-        Initializes the generator.
+        初始化在线轨迹生成器。
 
         Args:
-            system_model_params: The shared SystemModelParams instance. 
-                                 Changes to this instance (e.g., eta) will affect generation.
-            trajectory_config: Configuration for the trajectory generation (e.g., type, std_dev).
-            initial_eta: The initial value for eta.
-            num_sources: Number of sources (M). Can be an int or a tuple (min_M, max_M) for variable sources.
+            system_model_params (SystemModelParams): 共享系统参数实例。Shape: N/A.
+            trajectory_config (TrajectoryConfig): 在线轨迹配置。Shape: N/A.
+            initial_eta (float): 初始 η。Shape: scalar.
+            num_sources (Union[int, Tuple[int, int]]): 源数设定。Shape: scalar or pair.
+
+        Returns:
+            None.
+
+        Math & Logic:
+            初始化角度状态 θ₀，并设置 η 使后续 `Samples` 生成与当前在线域一致。
         """
         self.system_model_params = system_model_params
         self.trajectory_config = trajectory_config
@@ -911,6 +1040,10 @@ class OnlineLearningTrajectoryGenerator:
 
         self.angle_min = -self.system_model_params.doa_range / 2
         self.angle_max = self.system_model_params.doa_range / 2
+        self.range_min = float(getattr(self.trajectory_config, "near_field_range_min", 20.0))
+        self.range_max = float(getattr(self.trajectory_config, "near_field_range_max", 80.0))
+        self.range_step_mean = float(getattr(self.trajectory_config, "near_field_range_step_mean", 0.5))
+        self.range_step_std = float(getattr(self.trajectory_config, "near_field_range_step_std", 0.2))
         
         # State for the true underlying trajectory
         angles = (torch.rand(self.current_M) * 60 - 30).numpy()  # Uniform in [-30, 30]
@@ -931,13 +1064,28 @@ class OnlineLearningTrajectoryGenerator:
                         angles[middle_idx + i] = angles[middle_idx + i - 1] + 7.0
         
         self.last_true_angles = np.array(angles)
-        # TODO: Add self.last_true_ranges for near-field if needed and make it dynamic based on field_type
+        self.last_true_ranges = np.random.uniform(self.range_min, self.range_max, size=self.current_M).astype(np.float32)
+        self._linear_end_angles = np.random.uniform(self.angle_min, self.angle_max, size=self.current_M).astype(np.float32)
+        self._circular_centers = np.random.uniform(self.angle_min, self.angle_max, size=self.current_M).astype(np.float32)
+        self._circular_radii = np.random.uniform(0.05, 3.0, size=self.current_M).astype(np.float32)
+        self._circular_phases = np.random.uniform(0.0, 2 * np.pi, size=self.current_M).astype(np.float32)
 
         self.current_step_in_session = 0
         logger.info(f"OnlineLearningTrajectoryGenerator initialized. eta={self.system_model_params.eta:.4f}, M={self.current_M}, type={self.trajectory_config.trajectory_type.value}")
 
     def update_eta(self, new_eta: float):
-        """Updates the eta value in the shared SystemModelParams."""
+        """
+        在线更新 η 参数并刷新关联噪声状态。
+
+        Args:
+            new_eta (float): 新 η 值。Shape: scalar.
+
+        Returns:
+            None.
+
+        Math & Logic:
+            η_new 直接写入共享参数；若底层模型暴露重建接口，则同步重建距离噪声模式。
+        """
         old_eta = self.system_model_params.eta
         self.system_model_params.eta = new_eta
         
@@ -954,14 +1102,42 @@ class OnlineLearningTrajectoryGenerator:
         
         logger.info(f"Generator eta updated from {old_eta:.4f} to {self.system_model_params.eta:.4f} with new distance noise pattern.")
 
+    def _reinitialize_motion_states(self) -> None:
+        """Reinitialize angle/range latent states when source count changes."""
+        self.last_true_angles = (
+            torch.rand(self.current_M) * (self.angle_max - self.angle_min) + self.angle_min
+        ).numpy()
+        self.last_true_ranges = np.random.uniform(self.range_min, self.range_max, size=self.current_M).astype(np.float32)
+        self._linear_end_angles = np.random.uniform(self.angle_min, self.angle_max, size=self.current_M).astype(np.float32)
+        self._circular_centers = np.random.uniform(self.angle_min, self.angle_max, size=self.current_M).astype(np.float32)
+        self._circular_radii = np.random.uniform(0.05, 3.0, size=self.current_M).astype(np.float32)
+        self._circular_phases = np.random.uniform(0.0, 2 * np.pi, size=self.current_M).astype(np.float32)
+
+    def _update_dynamic_ranges(self) -> np.ndarray:
+        """Update near-field ranges using configurable random-walk dynamics."""
+        steps = np.random.normal(self.range_step_mean, self.range_step_std, size=self.current_M).astype(np.float32)
+        next_ranges = self.last_true_ranges + steps
+        self.last_true_ranges = np.clip(next_ranges, self.range_min, self.range_max).astype(np.float32)
+        return self.last_true_ranges.copy()
+
     def _generate_next_true_step(self) -> Tuple[np.ndarray, int]:
-        """Generates the next set of true angles (and potentially ranges) and the number of sources for this step."""
+        """
+        生成下一个时刻的真值角度与源数。
+
+        Returns:
+            Tuple[np.ndarray, int]:
+            - true_angles: Shape [M_t]
+            - current_M: 当前源数 M_t
+
+        Math & Logic:
+            统一形式：θ_{t+1} = F(θ_t, t) + ε_t，其中 ε_t 可为加性或状态相关噪声。
+        """
         if self.M_is_variable: # Potentially change M at each step if configured
              # Simple heuristic: 10% chance to change M
             if torch.rand(1).item() < 0.1:
                 self.current_M = torch.randint(self.min_M, self.max_M + 1, (1,)).item()
-                # If M changes, re-initialize angles for the new number of sources
-                self.last_true_angles = (torch.rand(self.current_M) * (self.angle_max - self.angle_min) + self.angle_min).numpy()
+                # If M changes, re-initialize latent trajectory states for the new number of sources.
+                self._reinitialize_motion_states()
 
 
         # Trajectory generation logic (e.g., random walk)
@@ -974,6 +1150,18 @@ class OnlineLearningTrajectoryGenerator:
             noise = (torch.randn(self.current_M) * std_dev).numpy()
             next_angles = self.last_true_angles + noise
             self.last_true_angles = np.clip(next_angles, self.angle_min, self.angle_max)
+        elif self.trajectory_config.trajectory_type == TrajectoryType.LINEAR:
+            horizon = max(2, int(getattr(self.trajectory_config, "trajectory_length", 100)))
+            phase = (self.current_step_in_session % horizon) / float(horizon - 1)
+            next_angles = (1.0 - phase) * self.last_true_angles + phase * self._linear_end_angles
+            self.last_true_angles = np.clip(next_angles, self.angle_min, self.angle_max).astype(np.float32)
+            if phase >= 0.999:
+                self._linear_end_angles = np.random.uniform(self.angle_min, self.angle_max, size=self.current_M).astype(np.float32)
+        elif self.trajectory_config.trajectory_type == TrajectoryType.CIRCULAR:
+            omega = 2.0 * np.pi / max(2, int(getattr(self.trajectory_config, "trajectory_length", 100)))
+            phase = omega * float(self.current_step_in_session)
+            next_angles = self._circular_centers + self._circular_radii * np.sin(phase + self._circular_phases)
+            self.last_true_angles = np.clip(next_angles, self.angle_min, self.angle_max).astype(np.float32)
         elif self.trajectory_config.trajectory_type == TrajectoryType.STATIC:
             # Angles remain the same as self.last_true_angles (initialized once)
             pass # No change needed for static
@@ -1037,38 +1225,43 @@ class OnlineLearningTrajectoryGenerator:
             self.last_true_angles = np.clip(next_angles, self.angle_min, self.angle_max)
         else: # Default to RANDOM if not specified or other types not implemented here yet
             self.last_true_angles = (torch.rand(self.current_M) * (self.angle_max - self.angle_min) + self.angle_min).numpy()
-            
-        # TODO: Implement other trajectory types (LINEAR, CIRCULAR etc.) if needed for online generation
-        # TODO: Handle near-field ranges generation based on self.system_model_params.field_type
         
         return self.last_true_angles.copy(), self.current_M
 
     def get_next_window(self, window_size: int) -> Tuple[torch.Tensor, List[int], List[np.ndarray]]:
         """
-        Generates the next window of trajectory data.
+        生成下一个在线窗口数据。
 
         Args:
-            window_size: The number of time steps in the window.
+            window_size (int): 窗口步数 W。Shape: scalar.
 
         Returns:
-            A tuple containing:
-            - observations_tensor: Tensor of shape [window_size, N_antennas, T_snapshots_per_step]
-            - sources_nums_list: List of source counts for each step in the window.
-            - true_labels_list: List of true angle (and range) np.arrays for each step.
+            Tuple[torch.Tensor, List[int], List[np.ndarray]]:
+            - observations_tensor: Shape [W, N, T]
+            - sources_nums_list: 长度 W
+            - true_labels_list: 长度 W，每项 shape [M_t]
+
+        Math & Logic:
+            按时间串行展开 W 步，并执行 stack({X_t}) -> X_window ∈ ℂ^(W×N×T)。
         """
+        # ==========================================================================
+        # STEP 01: 窗口容器初始化 (Window Container Initialization)
+        # ==========================================================================
         window_observations_list = []
         window_sources_nums_list = []
         window_true_labels_list = []
 
+        # ==========================================================================
+        # STEP 02: 逐步推进轨迹并生成观测 (Step-wise Unrolling)
+        # ==========================================================================
         for step_in_window in range(window_size):
             current_true_angles, num_sources_for_step = self._generate_next_true_step()
             
             # Set labels for the Samples model (which uses the current eta from shared system_model_params)
             self.samples_model.set_doa(current_true_angles.tolist(), num_sources_for_step)
             if self.system_model_params.field_type.lower() != "far":
-                # TODO: Add actual dynamic distance generation for near-field.
-                placeholder_distances = np.array([20.0] * num_sources_for_step)
-                self.samples_model.set_range(placeholder_distances.tolist(), num_sources_for_step)
+                current_ranges = self._update_dynamic_ranges()[:num_sources_for_step]
+                self.samples_model.set_range(current_ranges.tolist(), num_sources_for_step)
             
             # Generate noisy observation matrix using the current system_model_params.eta
             # samples_creation returns (array_output, true_clean_signal, true_noise, sources_positions)
@@ -1083,6 +1276,10 @@ class OnlineLearningTrajectoryGenerator:
 
             self.current_step_in_session +=1
 
+        # ==========================================================================
+        # STEP 03: 窗口堆叠输出 (Window Stack & Return)
+        # ==========================================================================
+        # Shape Flow: List[W × (N, T)] -> torch.stack -> [W, N, T]
         # Stack observations for the window: [window_size, N_antennas, T_snapshots_per_step]
         observations_tensor = torch.stack(window_observations_list)
         
@@ -1092,17 +1289,20 @@ class OnlineLearningTrajectoryGenerator:
 # REFACTORED OnlineLearningDataset class
 class OnlineLearningDataset(Dataset):
     """
-    Dataset for online learning that generates data on-the-fly using a
-    trajectory generator. It does not pre-compute or store the entire trajectory.
+    在线学习数据集封装 (on-the-fly window dataset).
+
+    不预生成全量轨迹，仅在 `__getitem__` 时调用生成器产出一个窗口。
     """
     
     def __init__(self, generator: OnlineLearningTrajectoryGenerator, 
                  total_num_windows: int, window_size: int):
         """
+        初始化在线数据集视图。
+
         Args:
-            generator: An instance of OnlineLearningTrajectoryGenerator.
-            total_num_windows: The total number of windows this dataset will yield.
-            window_size: The size of each window (number of steps).
+            generator (OnlineLearningTrajectoryGenerator): 在线轨迹生成器。Shape: N/A.
+            total_num_windows (int): 可生成窗口总数。Shape: scalar.
+            window_size (int): 单窗口长度 W。Shape: scalar.
         """
         self.generator = generator
         self.total_num_windows = total_num_windows
@@ -1119,8 +1319,16 @@ class OnlineLearningDataset(Dataset):
     
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, List[int], List[np.ndarray]]:
         """
-        Generates and returns the next window of data.
-        The `idx` is used to ensure we don't generate more windows than `total_num_windows`.
+        生成并返回一个窗口数据。
+
+        Args:
+            idx (int): 访问索引，仅用于越界控制。Shape: scalar.
+
+        Returns:
+            Tuple[Tensor, List[int], List[np.ndarray]]:
+            - window observations: [W, N, T]
+            - per-step source counts: len=W
+            - per-step labels: len=W
         """
         if idx < 0 or idx >= self.total_num_windows:
             raise IndexError(f"Index {idx} out of bounds for OnlineLearningDataset of size {self.total_num_windows}")
@@ -1163,24 +1371,30 @@ class OnlineLearningDataset(Dataset):
 
     def _collate_windows(self, batch: List[Tuple[torch.Tensor, List[int], List[np.ndarray]]]) -> Tuple[torch.Tensor, torch.Tensor, List[List[np.ndarray]]]:
         """
-        Custom collate function for batches of windows.
-        Typically, batch_size will be 1 for online learning.
-        
+        在线窗口批处理函数。
+
         Args:
-            batch: A list of tuples, where each tuple is (time_series_window_tensor, sources_num_list, labels_list_of_arrays).
-                   - time_series_window_tensor: [window_size, N, T]
-                   - sources_num_list: List[int] of M for each step in the window
-                   - labels_list_of_arrays: List[np.ndarray] of true labels for each step
-            
+            batch: 列表元素为 (time_series_window_tensor, sources_num_list, labels_list_of_arrays)
+                - time_series_window_tensor: [W, N, T]
+                - sources_num_list: len=W
+                - labels_list_of_arrays: len=W，单步标签长度可变
+
         Returns:
-            Collated batch:
-            - Batched time_series: Tensor[batch_size, window_size, N, T]
-            - Batched sources_num: Tensor[batch_size, window_size] (long)
-            - Batched labels: List of lists of np.ndarray, outer list for batch, inner for window steps.
+            Tuple[Tensor, Tensor, List[List[np.ndarray]]]:
+            - batched_time_series: [B, W, N, T]
+            - batched_sources_num: [B, W]
+            - batched_labels: Python list，保留变长标签结构
         """
+        # ==========================================================================
+        # STEP 01: 批次解包 (Batch Unzip)
+        # ==========================================================================
         # Unzip the batch
         time_series_windows, sources_num_lists, labels_lists = zip(*batch)
         
+        # ==========================================================================
+        # STEP 02: 张量堆叠 (Tensor Stacking)
+        # ==========================================================================
+        # Shape Flow: B × [W, N, T] -> [B, W, N, T]
         # Stack time_series tensors along a new batch dimension
         # Each time_series_window is already [window_size, N, T]
         batched_time_series = torch.stack(time_series_windows) # -> [batch_size, window_size, N, T]
@@ -1206,17 +1420,25 @@ def create_online_learning_dataset(
     stride: int # Stride determines the "granularity" or "density" of windows over the total duration
 ) -> OnlineLearningDataset:
     """
-    Creates an OnlineLearningDataset that generates data on-the-fly.
+    创建在线学习数据集（按需窗口生成）。
 
     Args:
-        system_model_params: The shared SystemModelParams instance.
-        config: The main simulation configuration object.
-        window_size: The number of time steps in each generated window.
-        stride: The step size between the start of consecutive windows. This, along with
-                trajectory_length and window_size, determines the total number of windows.
+        system_model_params (SystemModelParams): 共享系统模型参数。Shape: N/A.
+        config (Config): 全局配置对象。Shape: N/A.
+        window_size (int): 窗口长度 W。Shape: scalar.
+        stride (int): 相邻窗口起点步长。Shape: scalar.
+
     Returns:
-        An OnlineLearningDataset instance.
+        OnlineLearningDataset: 可迭代窗口数据集实例。
+
+    Math & Logic:
+        窗口数公式：
+        num_possible_windows = ((total_duration_steps - window_size) // stride) + 1
+        其中 total_duration_steps ≥ window_size 且 stride > 0。
     """
+    # ==========================================================================
+    # STEP 01: 参数读取与合法性校验 (Config Readout & Validation)
+    # ==========================================================================
     online_config = config.online_learning
     
     # total_duration_steps is the total number of individual simulation steps planned for the online learning session.
@@ -1236,6 +1458,9 @@ def create_online_learning_dataset(
     if total_duration_steps < window_size:
         raise ValueError(f"Online learning total_duration_steps ({total_duration_steps}) must be >= window_size ({window_size}).")
 
+    # ==========================================================================
+    # STEP 02: 窗口数量计算 (Window Count Computation)
+    # ==========================================================================
     # Calculate the total number of unique windows that can be formed from the total_duration_steps
     # This defines how many times we can call __getitem__ before exhausting the dataset.
     num_possible_windows = (total_duration_steps - window_size) // stride + 1
@@ -1259,6 +1484,9 @@ def create_online_learning_dataset(
     # Also pass M (number of sources) which can be fixed or a range from system_model_params
     num_sources_M = config.system_model.M 
 
+    # ==========================================================================
+    # STEP 03: 生成器与数据集构建 (Generator + Dataset Assembly)
+    # ==========================================================================
     generator = OnlineLearningTrajectoryGenerator(
         system_model_params=system_model_params,
         trajectory_config=config.trajectory, # For type, random_walk_std_dev etc.

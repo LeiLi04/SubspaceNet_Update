@@ -1,0 +1,6 @@
+# Canonical system-model defaults for Hydra main entry.
+N: 8
+M: 3
+T: 200
+snr: 10
+

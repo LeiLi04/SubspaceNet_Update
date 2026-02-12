@@ -1,9 +1,14 @@
 defaults:
   - default
+  - system_model: default
+  - dataset: default
+  - training: default
+  - simulation: default
   - data: default
   - model: default
   - trainer: default
   - callbacks: default
+  - runtime: default
   - _self_
 
 hydra:

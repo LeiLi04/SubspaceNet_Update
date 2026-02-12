@@ -1,4 +1,5 @@
 # Model-group defaults for the refactored layout.
+_target_: src.train.component_factories.ModelComponentFactory
 type: SubspaceNet
 params:
   diff_method: esprit

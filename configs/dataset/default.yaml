@@ -1,0 +1,3 @@
+# Canonical dataset defaults for Hydra main entry.
+samples_size: 256
+

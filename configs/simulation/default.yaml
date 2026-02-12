@@ -1,0 +1,6 @@
+# Canonical simulation defaults for Hydra main entry.
+train_model: false
+evaluate_model: true
+load_model: true
+save_model: true
+

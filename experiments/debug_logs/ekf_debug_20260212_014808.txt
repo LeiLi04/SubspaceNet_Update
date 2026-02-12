@@ -1,0 +1,2 @@
+2026-02-12 01:48:08,609 - INFO - EKF debug logging enabled. Logs will be saved to: experiments\debug_logs\ekf_debug_20260212_014808.txt
+2026-02-12 01:48:08,666 - INFO - EKF debug logging enabled. Logs will be saved to: experiments\debug_logs\ekf_debug_20260212_014808.txt

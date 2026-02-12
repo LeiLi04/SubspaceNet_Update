@@ -3,23 +3,3 @@
 # Keep this file as the canonical root for the new folder layout.
 
 legacy_config: configs/default_config.yaml
-
-system_model:
-  N: 8
-  M: 3
-  T: 200
-  snr: 10
-
-dataset:
-  samples_size: 256
-
-training:
-  enabled: true
-  epochs: 30
-  batch_size: 256
-
-simulation:
-  train_model: false
-  evaluate_model: true
-  load_model: true
-  save_model: true

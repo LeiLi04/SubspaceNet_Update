@@ -365,10 +365,40 @@ class Simulation:
             val_split = val_prop / (train_prop + val_prop) if (train_prop + val_prop) > 0 else 0
             
             # Create train and validation dataloaders
-            self.train_dataloader, self.valid_dataloader = dataset.get_dataloaders(
-                batch_size=self.config.training.batch_size,
-                validation_split=val_split
-            )
+            if hasattr(dataset, "get_dataloaders"):
+                self.train_dataloader, self.valid_dataloader = dataset.get_dataloaders(
+                    batch_size=self.config.training.batch_size,
+                    validation_split=val_split
+                )
+            else:
+                # Compatibility fallback for datasets that do not expose get_dataloaders.
+                from torch.utils.data import DataLoader, random_split
+
+                total_len = len(dataset)
+                train_len = int(total_len * (1.0 - val_split))
+                val_len = total_len - train_len
+                if train_len <= 0 and total_len > 0:
+                    train_len = 1
+                    val_len = max(0, total_len - 1)
+                if val_len <= 0 and total_len > 1:
+                    val_len = 1
+                    train_len = total_len - 1
+
+                train_ds, val_ds = random_split(
+                    dataset,
+                    [train_len, val_len],
+                    generator=torch.Generator().manual_seed(42),
+                )
+                self.train_dataloader = DataLoader(
+                    train_ds,
+                    batch_size=self.config.training.batch_size,
+                    shuffle=True,
+                )
+                self.valid_dataloader = DataLoader(
+                    val_ds,
+                    batch_size=self.config.training.batch_size,
+                    shuffle=False,
+                )
             
             logger.info(f"Created dataloaders: train={len(self.train_dataloader)}, val={len(self.valid_dataloader)}")
             
@@ -479,23 +509,36 @@ class Simulation:
     def _create_standard_dataset(self) -> Any:
         """Create a standard (non-trajectory) dataset."""
         # Directly create the dataset using DCD_MUSIC components
-        from DCD_MUSIC.src.signal_creation import Samples
         from DCD_MUSIC.src.data_handler import create_dataset
         
         try:
-            samples_model = Samples(self.system_model.params)
-            # Store samples_model for potential later use
-            self.components["samples_model"] = samples_model
-            
-            dataset, _ = create_dataset(
-                samples_model=samples_model,
+            dataset_kwargs = dict(
                 samples_size=self.config.dataset.samples_size,
                 save_datasets=self.config.dataset.save_dataset,
                 datasets_path=Path("data/datasets").absolute(),
                 true_doa=self.config.dataset.true_doa_train,
                 true_range=self.config.dataset.true_range_train,
-                phase="train"
+                phase="train",
             )
+
+            # Preferred signature in current DCD_MUSIC versions.
+            try:
+                dataset, samples_model = create_dataset(
+                    system_model_params=self.system_model.params,
+                    **dataset_kwargs,
+                )
+            except TypeError:
+                # Backward compatibility for older signatures that expect samples_model.
+                from DCD_MUSIC.src.signal_creation import Samples
+
+                samples_model = Samples(self.system_model.params)
+                dataset, _ = create_dataset(
+                    samples_model=samples_model,
+                    **dataset_kwargs,
+                )
+
+            # Store samples_model for potential later use
+            self.components["samples_model"] = samples_model
             return dataset
         except Exception as e:
             logger.error(f"Failed to create standard dataset: {e}")
@@ -521,9 +564,16 @@ class Simulation:
     def _run_training_pipeline(self) -> None:
         """Execute the training pipeline with trajectory support."""
         logger.info("Starting training pipeline")
-        
+
         # Determine if we should use trajectory-based training
         use_trajectory_training = self.config.trajectory.enabled
+        use_lightning_training = bool(getattr(self.config.training, "use_lightning", False))
+
+        if use_lightning_training:
+            mode = "trajectory" if use_trajectory_training else "non-trajectory"
+            logger.info("Using Lightning-native trainer path for %s training", mode)
+            self._run_lightning_training_pipeline()
+            return
         
         # Create TrainingConfig
         training_config = TrainingConfig(
@@ -592,6 +642,53 @@ class Simulation:
         self.components["model"] = self.trained_model
         
         logger.info("Training completed")
+
+    def _run_lightning_training_pipeline(self) -> None:
+        """Execute training via PyTorch Lightning Trainer.fit (non-trajectory path)."""
+        try:
+            import pytorch_lightning as pl
+        except Exception as exc:
+            raise RuntimeError(
+                "pytorch_lightning is required for training.use_lightning=true, but import failed."
+            ) from exc
+
+        from src.models.lit_module import LegacyLightningModule
+        logging.getLogger("lightning_utilities.core.rank_zero").setLevel(logging.ERROR)
+        logging.getLogger("pytorch_lightning.utilities.rank_zero").setLevel(logging.ERROR)
+        logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
+
+        # Wrap legacy model with LightningModule adapter.
+        lightning_model = LegacyLightningModule(
+            model=self.model,
+            learning_rate=float(self.config.training.learning_rate),
+        )
+
+        accelerator = "gpu" if torch.cuda.is_available() else "cpu"
+        devices = 1
+        max_epochs = int(getattr(self.config.training, "epochs", 1))
+        logger.info(
+            "Lightning Trainer config: accelerator=%s devices=%s max_epochs=%s",
+            accelerator,
+            devices,
+            max_epochs,
+        )
+
+        trainer = pl.Trainer(
+            max_epochs=max_epochs,
+            accelerator=accelerator,
+            devices=devices,
+            logger=False,
+            enable_checkpointing=False,
+            enable_progress_bar=True,
+        )
+
+        trainer.fit(lightning_model, train_dataloaders=self.train_dataloader, val_dataloaders=self.valid_dataloader)
+
+        # Keep downstream expectations unchanged: trained_model remains raw model object.
+        self.trained_model = lightning_model.model
+        self.components["trainer"] = trainer
+        self.components["model"] = self.trained_model
+        logger.info("Lightning-native training completed")
         
     def _run_evaluation_pipeline(self) -> None:
         """
@@ -1141,19 +1238,30 @@ class Simulation:
     
     def _create_standard_test_dataset(self, samples_size: int) -> Any:
         """Create a standard (non-trajectory) dataset for testing."""
-        from DCD_MUSIC.src.signal_creation import Samples
         from DCD_MUSIC.src.data_handler import create_dataset
-        
-        samples_model = Samples(self.system_model.params)
-        dataset, _ = create_dataset(
-            samples_model=samples_model,
+
+        dataset_kwargs = dict(
             samples_size=samples_size,
             save_datasets=False,  # Don't save test datasets
             datasets_path=Path("data/datasets").absolute(),
             true_doa=self.config.dataset.true_doa_test if hasattr(self.config.dataset, "true_doa_test") else self.config.dataset.true_doa_train,
             true_range=self.config.dataset.true_range_test if hasattr(self.config.dataset, "true_range_test") else self.config.dataset.true_range_train,
-            phase="test"
+            phase="test",
         )
+
+        try:
+            dataset, _ = create_dataset(
+                system_model_params=self.system_model.params,
+                **dataset_kwargs,
+            )
+        except TypeError:
+            from DCD_MUSIC.src.signal_creation import Samples
+
+            samples_model = Samples(self.system_model.params)
+            dataset, _ = create_dataset(
+                samples_model=samples_model,
+                **dataset_kwargs,
+            )
         return dataset 
 
     def _load_and_apply_weights(self, model_path: Path, device: torch.device) -> Tuple[bool, Optional[str]]:
