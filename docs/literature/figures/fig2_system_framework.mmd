@@ -1,0 +1,19 @@
+flowchart TB
+  subgraph S1["Front-end estimation"]
+    X["Snapshots / features\nX_t (or covariance)"] --> G["DoA estimator\ng_psi(X_t)"]
+    G --> H["DoA estimate\nhat(theta)_t"]
+  end
+
+  subgraph S2["Downstream tracking"]
+    H --> KF["Tracker (KF/EKF/UKF)\nupdate"]
+    KF --> TP["Prediction\ntilde(theta)_t"]
+  end
+
+  subgraph S3["Online adaptation"]
+    TP --> INN["Innovation / residual\ny_t = tilde(theta)_t - hat(theta)_t"]
+    H --> INN
+    INN --> TRIG["Drift detector\n(window stats > threshold)"]
+    TRIG --> UPD["Online update of psi\n(unsupervised objective)\nMSIE / consistency"]
+  end
+
+  UPD --> G

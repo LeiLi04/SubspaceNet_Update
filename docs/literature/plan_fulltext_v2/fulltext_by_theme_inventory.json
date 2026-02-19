@@ -1,0 +1,173 @@
+[
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Bekhtaoui 等 - 2023 - Direction of arrival tracking using adaptive robust subspace decomposition and Kalman filter.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Bekhtaoui 等 - 2023 - Direction of arrival tracking using adaptive robust subspace decomposition and Kalman filter.pdf",
+    "theme": "General_Bayesian_KF_DOA_Tracking",
+    "filename": "Bekhtaoui 等 - 2023 - Direction of arrival tracking using adaptive robust subspace decomposition and Kalman filter.pdf",
+    "size_bytes": 1129809,
+    "sha256": "15246c2f702ca291fe4e65f94292192ff6a3f39c7e5fb6242f952dabfbba0cfc",
+    "doi": "10.1109/ssd58187.2023.10411231"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Dongkeon Kong和Joohwan Chun - 2000 - A fast DOA tracking algorithm based on the extended Kalman filter.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Dongkeon Kong和Joohwan Chun - 2000 - A fast DOA tracking algorithm based on the extended Kalman filter.pdf",
+    "theme": "General_Bayesian_KF_DOA_Tracking",
+    "filename": "Dongkeon Kong和Joohwan Chun - 2000 - A fast DOA tracking algorithm based on the extended Kalman filter.pdf",
+    "size_bytes": 301386,
+    "sha256": "ba23dee48476e5de353ddcf565853cf38f74594788a1e620880d1b0b1ce9c66f",
+    "doi": ""
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Gao 等 - 2015 - A Sequential Bayesian Algorithm for DOA Tracking in Time‐Varying Environments.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Gao 等 - 2015 - A Sequential Bayesian Algorithm for DOA Tracking in Time‐Varying Environments.pdf",
+    "theme": "General_Bayesian_KF_DOA_Tracking",
+    "filename": "Gao 等 - 2015 - A Sequential Bayesian Algorithm for DOA Tracking in Time‐Varying Environments.pdf",
+    "size_bytes": 340473,
+    "sha256": "fe488ed6acd04545ce7eefba1acac1d031eea2322d7b8c0527550358dad9903d",
+    "doi": "10.1049/cje.2015.01.023"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/IRSI2001.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/IRSI2001.pdf",
+    "theme": "General_Bayesian_KF_DOA_Tracking",
+    "filename": "IRSI2001.pdf",
+    "size_bytes": 4659574,
+    "sha256": "fafdd9c703aca079a95bdad67b6d1e43e6dc8e345281700c206e0d4b2367c6ed",
+    "doi": ""
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Rahman和Adhikari - 2024 - Tracking a Plane Wave Direction using Sparse Arrays with an Extended Kalman Filter.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Rahman和Adhikari - 2024 - Tracking a Plane Wave Direction using Sparse Arrays with an Extended Kalman Filter.pdf",
+    "theme": "General_Bayesian_KF_DOA_Tracking",
+    "filename": "Rahman和Adhikari - 2024 - Tracking a Plane Wave Direction using Sparse Arrays with an Extended Kalman Filter.pdf",
+    "size_bytes": 812183,
+    "sha256": "8659cde0fd152ac393b3c71963f562716ae7d0eac2d048b2797768b6015f2f99",
+    "doi": "10.1109/naecon61878.2024.10670645"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Other_DOA_Tracking/Wang - 2024 - Direction of Arrival Tracking using Orthogonal Dipoles.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Other_DOA_Tracking/Wang - 2024 - Direction of Arrival Tracking using Orthogonal Dipoles.pdf",
+    "theme": "Other_DOA_Tracking",
+    "filename": "Wang - 2024 - Direction of Arrival Tracking using Orthogonal Dipoles.pdf",
+    "size_bytes": 1771531,
+    "sha256": "7bb1943ea1264458a8e69604d0749d7ebb993004f79b38d1e6dbb80adb61896a",
+    "doi": "10.1109/icsip61881.2024.10671444"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Radar_MIMO_DOA_Tracking/Salari和Chan - 2026 - DOA Tracking Combining Compressive Sampling and Kalman Filtering for MIMO Radars Operating in Clutte.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Radar_MIMO_DOA_Tracking/Salari和Chan - 2026 - DOA Tracking Combining Compressive Sampling and Kalman Filtering for MIMO Radars Operating in Clutte.pdf",
+    "theme": "Radar_MIMO_DOA_Tracking",
+    "filename": "Salari和Chan - 2026 - DOA Tracking Combining Compressive Sampling and Kalman Filtering for MIMO Radars Operating in Clutte.pdf",
+    "size_bytes": 765310,
+    "sha256": "23fba5b2ca75c39b89b50bcff2136fc4ba8d5d2313264461a42d6616e72eac3f",
+    "doi": "10.1109/access.2026.3654100"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Radar_MIMO_DOA_Tracking/Tl 等 - 2025 - Enhanced Passive Radar DOA Estimation Using Wigner-Ville Distribution and MUSIC Algorithm in Noisy E.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Radar_MIMO_DOA_Tracking/Tl 等 - 2025 - Enhanced Passive Radar DOA Estimation Using Wigner-Ville Distribution and MUSIC Algorithm in Noisy E.pdf",
+    "theme": "Radar_MIMO_DOA_Tracking",
+    "filename": "Tl 等 - 2025 - Enhanced Passive Radar DOA Estimation Using Wigner-Ville Distribution and MUSIC Algorithm in Noisy E.pdf",
+    "size_bytes": 1101985,
+    "sha256": "4ff8473a606d57050833c324f1b1103398f1b1abe8629910c47c835bcc9b1e57",
+    "doi": "10.1109/icmnwc66779.2025.11354296"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Speech_Speaker_DOA_Tracking/Cohen 等 - 2025 - Synthetic Aperture Local Conformal Autoencoder for Semi-Supervised Speaker’s DOA Tracking.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Speech_Speaker_DOA_Tracking/Cohen 等 - 2025 - Synthetic Aperture Local Conformal Autoencoder for Semi-Supervised Speaker’s DOA Tracking.pdf",
+    "theme": "Speech_Speaker_DOA_Tracking",
+    "filename": "Cohen 等 - 2025 - Synthetic Aperture Local Conformal Autoencoder for Semi-Supervised Speaker’s DOA Tracking.pdf",
+    "size_bytes": 3304341,
+    "sha256": "1214a315f26cba9af0e2035243ba473385e846d2717f1237f7bfe7f13afde634",
+    "doi": "10.1109/taslpro.2025.3587465"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Speech_Speaker_DOA_Tracking/Soussana 等 - 2024 - Multi-Speaker DOA Tracking Algorithm Utilizing Probability Hypothesis Density Filter and Weighted Hi.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Speech_Speaker_DOA_Tracking/Soussana 等 - 2024 - Multi-Speaker DOA Tracking Algorithm Utilizing Probability Hypothesis Density Filter and Weighted Hi.pdf",
+    "theme": "Speech_Speaker_DOA_Tracking",
+    "filename": "Soussana 等 - 2024 - Multi-Speaker DOA Tracking Algorithm Utilizing Probability Hypothesis Density Filter and Weighted Hi.pdf",
+    "size_bytes": 572657,
+    "sha256": "1dfdfae0c29774e292f28a0eec798328a1452ddc4d6e969a3703bf2f770d19f6",
+    "doi": "10.1109/iwaenc61483.2024.10693986"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Bresciani 等 - 2020 - Comparative analysis of EKF and Particle Filter performance for an acoustic tracking system for AUVs.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Bresciani 等 - 2020 - Comparative analysis of EKF and Particle Filter performance for an acoustic tracking system for AUVs.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Bresciani 等 - 2020 - Comparative analysis of EKF and Particle Filter performance for an acoustic tracking system for AUVs.pdf",
+    "size_bytes": 2120932,
+    "sha256": "0963ae64c4f55339b816c6e9066023cee8c7b8d2f130a0dce08a6615540e488e",
+    "doi": "10.1109/ieeeconf38699.2020.9389288"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Hou 等 - 2023 - Robust underwater direction-of-arrival tracking based on variational Bayesian extended Kalman filter.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Hou 等 - 2023 - Robust underwater direction-of-arrival tracking based on variational Bayesian extended Kalman filter.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Hou 等 - 2023 - Robust underwater direction-of-arrival tracking based on variational Bayesian extended Kalman filter.pdf",
+    "size_bytes": 4667979,
+    "sha256": "96792792ba7a5357291117a1acc20bf1f76bae0ee00ad15821598eda4c03a101",
+    "doi": "10.1121/10.0016837"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Hou 等 - 2025 - Robust DOA Tracking of an Underwater Target in Non-Gaussian and Nonstationary Environmental Noise.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Hou 等 - 2025 - Robust DOA Tracking of an Underwater Target in Non-Gaussian and Nonstationary Environmental Noise.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Hou 等 - 2025 - Robust DOA Tracking of an Underwater Target in Non-Gaussian and Nonstationary Environmental Noise.pdf",
+    "size_bytes": 21455582,
+    "sha256": "85d19e7dcf658ff9134bdac22b71fd800ce41cde61fc8165067de4f8cecbb614",
+    "doi": "10.1109/taes.2025.3585897"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Ou 等 - 2024 - Direction-of-Arrival Tracking Loop for Single-Vector Hydrophone.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Ou 等 - 2024 - Direction-of-Arrival Tracking Loop for Single-Vector Hydrophone.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Ou 等 - 2024 - Direction-of-Arrival Tracking Loop for Single-Vector Hydrophone.pdf",
+    "size_bytes": 1609530,
+    "sha256": "57a0d9a1cc1f003538f15f6ea51540f482cc57640d43f571988f5cd2891cc46a",
+    "doi": "10.1109/coa58979.2024.10723661"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - A Fast Variational Bayesian Adaptive Extended Kalman Filter for Robust Underwater Direction-of-Arriv.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - A Fast Variational Bayesian Adaptive Extended Kalman Filter for Robust Underwater Direction-of-Arriv.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Zhang 等 - 2023 - A Fast Variational Bayesian Adaptive Extended Kalman Filter for Robust Underwater Direction-of-Arriv.pdf",
+    "size_bytes": 10049263,
+    "sha256": "20c31cf1ef04c3cb965fa7568c26f57f8f1d50a2ed17e8deaefe5a05600f5b93",
+    "doi": "10.1109/jsen.2023.3275318"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - A Method of Multiple Targets DOA Tracking with Vector Hydrophone Based on Unite Processing in Time a.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - A Method of Multiple Targets DOA Tracking with Vector Hydrophone Based on Unite Processing in Time a.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Zhang 等 - 2023 - A Method of Multiple Targets DOA Tracking with Vector Hydrophone Based on Unite Processing in Time a.pdf",
+    "size_bytes": 672450,
+    "sha256": "10e0a233e69757e2ea6b8138367129b6093c82974af4b6f84858a606f2743366",
+    "doi": "10.1109/icicse58435.2023.10211837"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - Robust Underwater Direction-of-Arrival Tracking with Uncertain Measurement Noise.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - Robust Underwater Direction-of-Arrival Tracking with Uncertain Measurement Noise.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Zhang 等 - 2023 - Robust Underwater Direction-of-Arrival Tracking with Uncertain Measurement Noise.pdf",
+    "size_bytes": 654860,
+    "sha256": "f31b9aa149b96566a7d340be85948c53f3a073544ea3274371710a9a92e57da4",
+    "doi": "10.1007/978-981-19-6613-2_663"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2025 - Frequency-domain Robust Underwater Direction-of-arrival Tracking.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2025 - Frequency-domain Robust Underwater Direction-of-arrival Tracking.pdf",
+    "theme": "Underwater_Acoustic_DOA_Tracking",
+    "filename": "Zhang 等 - 2025 - Frequency-domain Robust Underwater Direction-of-arrival Tracking.pdf",
+    "size_bytes": 2463554,
+    "sha256": "24a163e9f22256610928cfa1beca7b4eeec1349cecbcf80e4a7cf9388db3bc8f",
+    "doi": "10.1109/icicsp66564.2025.11338321"
+  },
+  {
+    "path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext_by_theme/Wireless_Antenna_Array_DOA_Tracking/Tang和Manikas - 2020 - Direction-of-Arrival Tracking of Multiple Fast-Moving Sources in Antenna Array based Access Networks.pdf",
+    "rel_path": "docs/literature/fulltext_by_theme/Wireless_Antenna_Array_DOA_Tracking/Tang和Manikas - 2020 - Direction-of-Arrival Tracking of Multiple Fast-Moving Sources in Antenna Array based Access Networks.pdf",
+    "theme": "Wireless_Antenna_Array_DOA_Tracking",
+    "filename": "Tang和Manikas - 2020 - Direction-of-Arrival Tracking of Multiple Fast-Moving Sources in Antenna Array based Access Networks.pdf",
+    "size_bytes": 733288,
+    "sha256": "49fcd309c46d93aa940a72602068090fdf0e7cd54be8150f724dd7d4fe2c42e4",
+    "doi": ""
+  }
+]

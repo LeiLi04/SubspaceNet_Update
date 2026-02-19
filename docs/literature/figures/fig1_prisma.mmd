@@ -1,0 +1,11 @@
+flowchart TB
+  A["Records identified through database searching (exports)\n(n = 632)"] --> B["Duplicates removed\n(n = 34)"]
+  B --> C["Records after duplicates removed\n(n = 598)"]
+  C --> D["Records screened (title/abstract, auto v2)\n(n = 598)"]
+  D --> E["Records excluded after title/abstract\n(n = 441)"]
+  D --> F["Records included after title/abstract (auto v2)\n(n = 157)"]
+
+  F --> G["Reports sought for retrieval\n(prioritized subset = Final-25)\n(n = 25)"]
+  G --> H["Reports not retrieved\n(n = 1)\n(S13: E2 no full text)"]
+  G --> I["Reports assessed for eligibility\n(n = 24)"]
+  I --> J["Studies included in synthesis\n(full-text assessed subset)\n(n = 24)"]

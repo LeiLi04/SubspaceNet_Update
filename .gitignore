@@ -60,3 +60,20 @@ Thumbs.db
 
 # Local runtime cache
 .cache/
+
+# Literature review (avoid committing full texts / subscription exports)
+docs/literature/fulltext/
+docs/literature/fulltext_by_theme/
+docs/literature/exports/
+docs/literature/plan_*/text/
+docs/literature/plan_*/fulltext_txt/
+docs/literature/plan_*/ocr_tables/
+docs/literature/plan_*/ocr_figures/
+docs/literature/plan_*/arxiv_text/
+docs/literature/plan_*/**/*.pdf
+docs/literature/plan_*/**/*.png
+docs/literature/plan_*/**/*.jpg
+docs/literature/plan_*/**/*.jpeg
+
+# Reference PDFs (keep out of git)
+docs/reference_original/*.pdf

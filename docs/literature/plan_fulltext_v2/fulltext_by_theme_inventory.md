@@ -1,0 +1,34 @@
+# Fulltext Inventory (By Theme)
+
+Total PDFs: 19
+
+## By Theme
+- Underwater_Acoustic_DOA_Tracking: 8
+- General_Bayesian_KF_DOA_Tracking: 5
+- Radar_MIMO_DOA_Tracking: 2
+- Speech_Speaker_DOA_Tracking: 2
+- Other_DOA_Tracking: 1
+- Wireless_Antenna_Array_DOA_Tracking: 1
+
+## Files
+| Theme | File | DOI (detected) | Rel path |
+|---|---|---|---|
+| General_Bayesian_KF_DOA_Tracking | Bekhtaoui 等 - 2023 - Direction of arrival tracking using adaptive robust subspace decomposition and Kalman filter.pdf | 10.1109/ssd58187.2023.10411231 | `docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Bekhtaoui 等 - 2023 - Direction of arrival tracking using adaptive robust subspace decomposition and Kalman filter.pdf` |
+| General_Bayesian_KF_DOA_Tracking | Dongkeon Kong和Joohwan Chun - 2000 - A fast DOA tracking algorithm based on the extended Kalman filter.pdf |  | `docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Dongkeon Kong和Joohwan Chun - 2000 - A fast DOA tracking algorithm based on the extended Kalman filter.pdf` |
+| General_Bayesian_KF_DOA_Tracking | Gao 等 - 2015 - A Sequential Bayesian Algorithm for DOA Tracking in Time‐Varying Environments.pdf | 10.1049/cje.2015.01.023 | `docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Gao 等 - 2015 - A Sequential Bayesian Algorithm for DOA Tracking in Time‐Varying Environments.pdf` |
+| General_Bayesian_KF_DOA_Tracking | IRSI2001.pdf |  | `docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/IRSI2001.pdf` |
+| General_Bayesian_KF_DOA_Tracking | Rahman和Adhikari - 2024 - Tracking a Plane Wave Direction using Sparse Arrays with an Extended Kalman Filter.pdf | 10.1109/naecon61878.2024.10670645 | `docs/literature/fulltext_by_theme/General_Bayesian_KF_DOA_Tracking/Rahman和Adhikari - 2024 - Tracking a Plane Wave Direction using Sparse Arrays with an Extended Kalman Filter.pdf` |
+| Other_DOA_Tracking | Wang - 2024 - Direction of Arrival Tracking using Orthogonal Dipoles.pdf | 10.1109/icsip61881.2024.10671444 | `docs/literature/fulltext_by_theme/Other_DOA_Tracking/Wang - 2024 - Direction of Arrival Tracking using Orthogonal Dipoles.pdf` |
+| Radar_MIMO_DOA_Tracking | Salari和Chan - 2026 - DOA Tracking Combining Compressive Sampling and Kalman Filtering for MIMO Radars Operating in Clutte.pdf | 10.1109/access.2026.3654100 | `docs/literature/fulltext_by_theme/Radar_MIMO_DOA_Tracking/Salari和Chan - 2026 - DOA Tracking Combining Compressive Sampling and Kalman Filtering for MIMO Radars Operating in Clutte.pdf` |
+| Radar_MIMO_DOA_Tracking | Tl 等 - 2025 - Enhanced Passive Radar DOA Estimation Using Wigner-Ville Distribution and MUSIC Algorithm in Noisy E.pdf | 10.1109/icmnwc66779.2025.11354296 | `docs/literature/fulltext_by_theme/Radar_MIMO_DOA_Tracking/Tl 等 - 2025 - Enhanced Passive Radar DOA Estimation Using Wigner-Ville Distribution and MUSIC Algorithm in Noisy E.pdf` |
+| Speech_Speaker_DOA_Tracking | Cohen 等 - 2025 - Synthetic Aperture Local Conformal Autoencoder for Semi-Supervised Speaker’s DOA Tracking.pdf | 10.1109/taslpro.2025.3587465 | `docs/literature/fulltext_by_theme/Speech_Speaker_DOA_Tracking/Cohen 等 - 2025 - Synthetic Aperture Local Conformal Autoencoder for Semi-Supervised Speaker’s DOA Tracking.pdf` |
+| Speech_Speaker_DOA_Tracking | Soussana 等 - 2024 - Multi-Speaker DOA Tracking Algorithm Utilizing Probability Hypothesis Density Filter and Weighted Hi.pdf | 10.1109/iwaenc61483.2024.10693986 | `docs/literature/fulltext_by_theme/Speech_Speaker_DOA_Tracking/Soussana 等 - 2024 - Multi-Speaker DOA Tracking Algorithm Utilizing Probability Hypothesis Density Filter and Weighted Hi.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Bresciani 等 - 2020 - Comparative analysis of EKF and Particle Filter performance for an acoustic tracking system for AUVs.pdf | 10.1109/ieeeconf38699.2020.9389288 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Bresciani 等 - 2020 - Comparative analysis of EKF and Particle Filter performance for an acoustic tracking system for AUVs.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Hou 等 - 2023 - Robust underwater direction-of-arrival tracking based on variational Bayesian extended Kalman filter.pdf | 10.1121/10.0016837 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Hou 等 - 2023 - Robust underwater direction-of-arrival tracking based on variational Bayesian extended Kalman filter.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Hou 等 - 2025 - Robust DOA Tracking of an Underwater Target in Non-Gaussian and Nonstationary Environmental Noise.pdf | 10.1109/taes.2025.3585897 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Hou 等 - 2025 - Robust DOA Tracking of an Underwater Target in Non-Gaussian and Nonstationary Environmental Noise.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Ou 等 - 2024 - Direction-of-Arrival Tracking Loop for Single-Vector Hydrophone.pdf | 10.1109/coa58979.2024.10723661 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Ou 等 - 2024 - Direction-of-Arrival Tracking Loop for Single-Vector Hydrophone.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Zhang 等 - 2023 - A Fast Variational Bayesian Adaptive Extended Kalman Filter for Robust Underwater Direction-of-Arriv.pdf | 10.1109/jsen.2023.3275318 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - A Fast Variational Bayesian Adaptive Extended Kalman Filter for Robust Underwater Direction-of-Arriv.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Zhang 等 - 2023 - A Method of Multiple Targets DOA Tracking with Vector Hydrophone Based on Unite Processing in Time a.pdf | 10.1109/icicse58435.2023.10211837 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - A Method of Multiple Targets DOA Tracking with Vector Hydrophone Based on Unite Processing in Time a.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Zhang 等 - 2023 - Robust Underwater Direction-of-Arrival Tracking with Uncertain Measurement Noise.pdf | 10.1007/978-981-19-6613-2_663 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2023 - Robust Underwater Direction-of-Arrival Tracking with Uncertain Measurement Noise.pdf` |
+| Underwater_Acoustic_DOA_Tracking | Zhang 等 - 2025 - Frequency-domain Robust Underwater Direction-of-arrival Tracking.pdf | 10.1109/icicsp66564.2025.11338321 | `docs/literature/fulltext_by_theme/Underwater_Acoustic_DOA_Tracking/Zhang 等 - 2025 - Frequency-domain Robust Underwater Direction-of-arrival Tracking.pdf` |
+| Wireless_Antenna_Array_DOA_Tracking | Tang和Manikas - 2020 - Direction-of-Arrival Tracking of Multiple Fast-Moving Sources in Antenna Array based Access Networks.pdf |  | `docs/literature/fulltext_by_theme/Wireless_Antenna_Array_DOA_Tracking/Tang和Manikas - 2020 - Direction-of-Arrival Tracking of Multiple Fast-Moving Sources in Antenna Array based Access Networks.pdf` |

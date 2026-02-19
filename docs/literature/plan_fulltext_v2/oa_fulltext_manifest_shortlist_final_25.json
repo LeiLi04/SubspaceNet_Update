@@ -1,0 +1,302 @@
+[
+  {
+    "doi": "10.1038/s41598-025-03276-1",
+    "title": "MIMO radar DOA element position error correction method based on overlapping reference element matrix reconstruction",
+    "oa_pdf_url": "https://www.nature.com/articles/s41598-025-03276-1.pdf",
+    "landing_url": "https://doi.org/10.1038/s41598-025-03276-1",
+    "attempted_urls": [
+      "https://www.nature.com/articles/s41598-025-03276-1.pdf"
+    ],
+    "status": "ok",
+    "http_status": 200,
+    "out_path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext/oa/10.1038_s41598-025-03276-1.pdf",
+    "sha256": "6a0dc43adfd85b266fc5e88b584f080b49f8f703512920f5350dc79ebb461864",
+    "bytes": 2816107,
+    "note": null
+  },
+  {
+    "doi": "10.3390/fi6010155",
+    "title": "A Novel DOA Estimation Algorithm Using Array Rotation Technique",
+    "oa_pdf_url": "https://www.mdpi.com/1999-5903/6/1/155/pdf?version=1395071975",
+    "landing_url": "https://doi.org/10.3390/fi6010155",
+    "attempted_urls": [
+      "https://www.mdpi.com/1999-5903/6/1/155/pdf?version=1395071975",
+      "https://mdpi-res.com/d_attachment/futureinternet/futureinternet-06-00155/article_deploy/futureinternet-06-00155.pdf"
+    ],
+    "status": "ok",
+    "http_status": 200,
+    "out_path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext/oa/10.3390_fi6010155.pdf",
+    "sha256": "f464b614f746a134ed4c42b132209f1bde1e28cd91e7c8931a2c26e51674410d",
+    "bytes": 354619,
+    "note": null
+  },
+  {
+    "doi": "10.3390/rs15020420",
+    "title": "Robust Underwater Direction-of-Arrival Tracking Based on AI-Aided Variational Bayesian Extended Kalman Filter",
+    "oa_pdf_url": "https://www.mdpi.com/2072-4292/15/2/420/pdf?version=1673916666",
+    "landing_url": "https://doi.org/10.3390/rs15020420",
+    "attempted_urls": [
+      "https://www.mdpi.com/2072-4292/15/2/420/pdf?version=1673916666",
+      "https://mdpi-res.com/d_attachment/remotesensing/remotesensing-15-00420/article_deploy/remotesensing-15-00420.pdf"
+    ],
+    "status": "ok",
+    "http_status": 200,
+    "out_path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext/oa/10.3390_rs15020420.pdf",
+    "sha256": "8174d4399945033e9ef33c0eef6d67adac70f330d7d8044daf11b03c3e39cdf0",
+    "bytes": 1383779,
+    "note": null
+  },
+  {
+    "doi": "10.1109/access.2026.3654100",
+    "title": "DOA Tracking Combining Compressive Sampling and Kalman Filtering for MIMO Radars Operating in Cluttered Environment",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/access.2026.3654100",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/icicsp66564.2025.11338321",
+    "title": "Frequency-domain Robust Underwater Direction-of-arrival Tracking",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/icicsp66564.2025.11338321",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/icsip61881.2024.10671444",
+    "title": "Direction of Arrival Tracking using Orthogonal Dipoles",
+    "oa_pdf_url": null,
+    "landing_url": "http://dx.doi.org/10.1109/icsip61881.2024.10671444",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/naecon61878.2024.10670645",
+    "title": "Tracking a Plane Wave Direction using Sparse Arrays with an Extended Kalman Filter",
+    "oa_pdf_url": null,
+    "landing_url": "http://dx.doi.org/10.1109/naecon61878.2024.10670645",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/icmnwc66779.2025.11354296",
+    "title": "Enhanced Passive Radar DOA Estimation Using Wigner-Ville Distribution and MUSIC Algorithm in Noisy Environments",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/icmnwc66779.2025.11354296",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/jsen.2023.3275318",
+    "title": "A Fast Variational Bayesian Adaptive Extended Kalman Filter for Robust Underwater Direction-of-Arrival Tracking",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/jsen.2023.3275318",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1121/10.0016837",
+    "title": "Robust underwater direction-of-arrival tracking based on variational Bayesian extended Kalman filter",
+    "oa_pdf_url": "https://pubs.aip.org/asa/jel/article-pdf/doi/10.1121/10.0016837/16749024/014801_1_online.pdf",
+    "landing_url": "https://doi.org/10.1121/10.0016837",
+    "attempted_urls": [
+      "https://pubs.aip.org/asa/jel/article-pdf/doi/10.1121/10.0016837/16749024/014801_1_online.pdf"
+    ],
+    "status": "blocked",
+    "http_status": 403,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "HTTP 403"
+  },
+  {
+    "doi": "10.1186/s13634-018-0541-0",
+    "title": "2-D DOA tracking using variational sparse Bayesian learning embedded with Kalman filter",
+    "oa_pdf_url": "https://asp-eurasipjournals.springeropen.com/track/pdf/10.1186/s13634-018-0541-0",
+    "landing_url": "https://doi.org/10.1186/s13634-018-0541-0",
+    "attempted_urls": [
+      "https://asp-eurasipjournals.springeropen.com/track/pdf/10.1186/s13634-018-0541-0"
+    ],
+    "status": "ok",
+    "http_status": 200,
+    "out_path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext/oa/10.1186_s13634-018-0541-0.pdf",
+    "sha256": "66fe64246be938f14a15c50ca320d2f959d16ccbcc88bb12a976b8a9d764d21b",
+    "bytes": 2391913,
+    "note": null
+  },
+  {
+    "doi": "10.1109/ssd58187.2023.10411231",
+    "title": "Direction of arrival tracking using adaptive robust subspace decomposition and Kalman filter",
+    "oa_pdf_url": null,
+    "landing_url": "http://dx.doi.org/10.1109/ssd58187.2023.10411231",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1049/cje.2015.01.023",
+    "title": "A Sequential Bayesian Algorithm for DOA Tracking in Time‐Varying Environments",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1049/cje.2015.01.023",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/taes.2025.3585897",
+    "title": "Robust DOA Tracking of an Underwater Target in Non-Gaussian and Nonstationary Environmental Noise",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/taes.2025.3585897",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1007/978-981-19-6613-2_663",
+    "title": "Robust Underwater Direction-of-Arrival Tracking with Uncertain Measurement Noise",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1007/978-981-19-6613-2_663",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/coa58979.2024.10723661",
+    "title": "Direction-of-Arrival Tracking Loop for Single-Vector Hydrophone",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/coa58979.2024.10723661",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/ieeeconf38699.2020.9389288",
+    "title": "Comparative analysis of EKF and Particle Filter performance for an acoustic tracking system for AUVs exploiting bearing-only measurements",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/ieeeconf38699.2020.9389288",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/iwaenc61483.2024.10693986",
+    "title": "Multi-Speaker DOA Tracking Algorithm Utilizing Probability Hypothesis Density Filter and Weighted Histogram of SRP-PHAT",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/iwaenc61483.2024.10693986",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/taslpro.2025.3587465",
+    "title": "Synthetic Aperture Local Conformal Autoencoder for Semi-Supervised Speaker’s DOA Tracking",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/taslpro.2025.3587465",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/icicse58435.2023.10211837",
+    "title": "A Method of Multiple Targets DOA Tracking with Vector Hydrophone Based on Unite Processing in Time and Frequency Domain",
+    "oa_pdf_url": null,
+    "landing_url": "http://dx.doi.org/10.1109/icicse58435.2023.10211837",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/icc40277.2020.9148870",
+    "title": "Direction-of-Arrival Tracking of Multiple Fast-Moving Sources in Antenna Array based Access Networks",
+    "oa_pdf_url": null,
+    "landing_url": "https://doi.org/10.1109/icc40277.2020.9148870",
+    "attempted_urls": [],
+    "status": "missing",
+    "http_status": null,
+    "out_path": null,
+    "sha256": null,
+    "bytes": null,
+    "note": "No PDF URL candidates"
+  },
+  {
+    "doi": "10.1109/twc.2021.3085753",
+    "title": "Multi Direction-of-Arrival Tracking Using Rigid and Flexible Antenna Arrays",
+    "oa_pdf_url": "https://ieeexplore.ieee.org/ielx7/7693/9610145/09463756.pdf",
+    "landing_url": "https://doi.org/10.1109/twc.2021.3085753",
+    "attempted_urls": [
+      "https://ieeexplore.ieee.org/ielx7/7693/9610145/09463756.pdf"
+    ],
+    "status": "ok",
+    "http_status": 200,
+    "out_path": "/Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext/oa/10.1109_twc.2021.3085753.pdf",
+    "sha256": "37c281e41e78522414a38a4c4aea7188a508471aa10f1418ca75c3380f757d58",
+    "bytes": 3832114,
+    "note": null
+  }
+]
