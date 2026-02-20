@@ -1071,3 +1071,241 @@ $$
 > [!TIP]
 > **直觉结论（高动态场景）**
 > 在高速动态任务里，“折中聚焦”常以分辨率/偏置为代价；“分时复用”以刷新率为代价。哪种更危险取决于任务：如果必须区分相近目标并给出精确角度，分辨率损失往往更致命；如果目标快速穿越扇区，刷新率不足也会带来漏检风险。
+
+# Q：关于 Uli 文章 4.1 Experiment Setup 部分的疑问
+
+> 原文摘录（你贴的这一段）：
+>
+> “遵循由 $\theta_{i+1}=\theta_i+[3,-3,2]\odot\sin(\omega_0\cdot t)+w_i$ 给出的演化模型（2），其中 $\omega_0=[-0.15,0.25,0.15]$，$w_i$ 是标准偏差为 0.03 的 i.i.d. 高斯噪声。在随机选择的块中引入分布偏移，以模拟部署中遇到的校准漂移。这些偏移模拟了两种类型的阵列缺陷：（i）距离失调，表示与标称半波长间距的偏差，被建模为均匀扰动 $\delta_n\sim U(-\eta,\eta)$，$\eta\in\{0.3,0.9,1.2\}$，影响相位响应；以及（ii）几何噪声，表示额外的转向矢量扰动，建模为方差为 0.9 的加性复高斯噪声 $\epsilon_{n,\theta}$。综合效应产生了一个受扰的转向矩阵：…”
+
+## Q1：什么叫 source 在 100 个 blocks 上移动？
+
+核心对齐点：**block 是时间段**；source 的 “move” 指 **block 与 block 之间 DoA 更新**，而不是在单个 block 内连续变化。
+
+- 第 $i$ 个 block：收集 $T$ 个 snapshots（例如 $T=200$ 或 $T=20$）
+- 同一个 block 内：通常假设 DoA 近似不变（便于构造 $X_i\in\mathbb{C}^{N\times T}$）
+- 从 block $i\to i+1$：更新一次 DoA，表示源“移动一小步”
+
+因此，“source 在 100 个 blocks 上移动” 可以理解为：
+
+- 他们仿真了 **100 个连续时间片段（100 个 block）**；
+- 在每个 block 的边界处更新一次 $\theta_i$，得到长度为 100 的 DoA 轨迹（共更新 99 次）。
+
+## Q2：DoA 是怎么“移动”的？（演化模型）
+
+论文给的演化式：
+
+$$
+\theta_{i+1}=\theta_i + [3,-3,2]\odot \sin(\omega_0\cdot t) + w_i,\quad
+\omega_0=[-0.15,0.25,0.15],\quad w_i\sim\mathcal{N}(0,0.03^2).
+$$
+
+逐项理解：
+
+- $\theta_i$：第 $i$ 个 block 的真实 DoA（这里是 3 个源，所以是 3 维）
+- $[3,-3,2]$：每个源角度摆动幅度（单位在实现里可能做过归一化；但直觉上就是“摆动幅度”）
+- $\omega_0$：每个源的“摆动频率/节奏”
+- $\odot$：逐元素乘法，让每个源使用自己的幅度与频率
+- $w_i$：过程噪声，让轨迹不是完全光滑的正弦而带有随机抖动
+
+## Q3：校准漂移（calibration drift）到底在“漂移”什么？
+
+一句话：**不是只有 $\theta_i$ 在变；他们还在某些随机 block 开始让“阵列响应”变了**，也就是 steering vector / steering matrix 发生变化，从而造成 **distribution shift（输入分布漂移）**。
+
+### A) 理想阵列：steering vector 是“角度 → 相位模式”的映射
+
+对理想 ULA（窄带、远场平面波），第 $n$ 个阵元的导向向量元素常写为：
+
+$$
+[a(\theta)]_n = e^{-j\frac{2\pi}{\lambda} d_n \sin\theta}.
+$$
+
+其中 $d_n$ 是第 $n$ 个阵元相对参考阵元的名义位置（理想 ULA 常取 $d_n=(n-1)\frac{\lambda}{2}$）。
+
+### B) 漂移怎么建模：阵列缺陷导致 $a(\theta)$ 变成“受扰版本”
+
+论文里用两类缺陷叠加来模拟漂移：
+
+1) **距离失调（distance miscalibration）**：阵元位置/等效间距偏差
+
+$$
+\delta_n\sim U(-\eta,\eta),\quad \eta\in\{0.3,0.9,1.2\}.
+$$
+
+它会进入相位项，使 $d_n$ 变为 $d_n+\delta_n$：
+
+$$
+e^{-j\frac{2\pi}{\lambda}(d_n+\delta_n)\sin\theta}.
+$$
+
+2) **几何噪声（geometric noise）**：对 steering entry 的额外加性扰动
+
+$$
+\epsilon_{n,\theta}\sim \mathcal{CN}(0,0.9).
+$$
+
+综合后得到受扰 steering（论文式 (6) 的语义）：
+
+$$
+[a(\theta)]^{\star}_n
+= e^{-j\frac{2\pi}{\lambda}(d_n+\delta_n)\sin\theta} + \epsilon_{n,\theta}.
+$$
+
+### C) 为什么这就是 distribution shift？
+
+训练（或理想仿真）时观测模型是：
+
+$$
+X = A_{\text{ideal}}(\theta)S + V,
+$$
+
+漂移发生后变为：
+
+$$
+X = A_{\text{perturbed}}(\theta)S + V.
+$$
+
+即使 $\theta$ 不变，只要 $A(\theta)$ 变了，同一个角度对应的“空间特征/相位模式”就变了，于是 $X$ 的统计分布也会变。
+
+## 补充：为什么 $[a(\theta)]_n = e^{-j\frac{2\pi}{\lambda} d_n \sin\theta}$ 里会出现 $\sin\theta$？
+
+直觉：它表达的是 **路径差 $\rightarrow$ 相位差**。
+
+- 对窄带平面波，空间相位项可写成 $e^{-j\mathbf{k}^\top\mathbf{r}_n}$，其中 $|\mathbf{k}|=2\pi/\lambda$
+- ULA 沿 $x$ 轴排布：$\mathbf{r}_n=[d_n,0,0]^\top$
+- 若 $\theta$ 定义为相对 broadside（阵列法向）的偏转角，则波矢在 $x$ 方向的分量与 $\sin\theta$ 成正比，得到
+
+$$
+\mathbf{k}^\top\mathbf{r}_n = \frac{2\pi}{\lambda} d_n \sin\theta
+\Rightarrow
+[a(\theta)]_n = e^{-j\frac{2\pi}{\lambda} d_n \sin\theta}.
+$$
+
+## 数值例子：$N=4,\ d=\lambda/2,\ \theta=30^\circ$
+
+用相邻阵元路径差解释最直接：
+
+1) 相邻路径差
+
+$$
+\Delta r = d\sin\theta = \frac{\lambda}{2}\cdot \sin 30^\circ = \frac{\lambda}{4}.
+$$
+
+2) 相邻相位差
+
+$$
+\Delta\phi = \frac{2\pi}{\lambda}\Delta r
+= \frac{2\pi}{\lambda}\cdot \frac{\lambda}{4}
+= \frac{\pi}{2}.
+$$
+
+3) steering vector（相对第 1 个阵元）
+
+$$
+[a(\theta)]_n = e^{-j(n-1)\Delta\phi}
+\Rightarrow
+a(30^\circ)=\begin{bmatrix}1\\-j\\-1\\j\end{bmatrix}.
+$$
+
+这也解释了为什么经典选择 $d=\lambda/2$：当 $\theta\in[-90^\circ,90^\circ]$ 时，$\Delta\phi=\pi\sin\theta\in[-\pi,\pi]$，相邻相位差不容易“绕圈”产生方向歧义（栅瓣/空间混叠风险更低）。
+
+## 复高斯（complex Gaussian）是什么？
+
+“复高斯（complex Gaussian）”就是**取值在复平面上的高斯随机变量**。它不是“两个高斯凑一起”那么随意，而是有一套标准定义，主要用来建模通信/阵列里常见的 **I/Q（同相/正交）噪声**、热噪声、以及 steering vector 的随机扰动 $\epsilon_{n,\theta}$。
+
+---
+
+### 1) 复高斯随机变量的定义
+
+一个复随机变量写成：
+
+$$
+z = x + j y
+$$
+
+如果 $(x,y)$ 这对二维实随机变量**联合服从二维高斯分布**，就说 $z$ 是复高斯。
+
+最常用、最“标准”的情况是 **圆对称复高斯**（circularly symmetric complex Gaussian）：
+
+$$
+z \sim \mathcal{CN}(0,\sigma^2)
+$$
+
+它等价于：
+
+- $x \sim \mathcal{N}(0,\sigma^2/2)$
+- $y \sim \mathcal{N}(0,\sigma^2/2)$
+- $x$ 和 $y$ 相互独立（同方差）
+
+直觉上：它在复平面上就是一个以 0 为中心的“圆形云团”，没有偏向任何方向，这就是“圆对称”的含义。
+
+---
+
+### 2) 复高斯里的“方差 $\sigma^2$”指什么？
+
+对 $z\sim\mathcal{CN}(0,\sigma^2)$，这里的 $\sigma^2$ 指的是：
+
+$$
+\mathbb{E}[|z|^2] = \sigma^2
+$$
+
+并且实部、虚部各分摊一半：
+
+$$
+\mathbb{E}[x^2]=\mathbb{E}[y^2]=\sigma^2/2.
+$$
+
+---
+
+### 3) 概率密度长什么样？
+
+若 $z\sim \mathcal{CN}(\mu,\sigma^2)$，其二维密度是：
+
+$$
+p(z)=\frac{1}{\pi\sigma^2}\exp\left(-\frac{|z-\mu|^2}{\sigma^2}\right).
+$$
+
+其中 $|z-\mu|^2=(x-\mu_x)^2+(y-\mu_y)^2$。分母里出现 $\pi\sigma^2$（而不是实高斯的 $\sqrt{2\pi\sigma^2}$），因为这是二维密度（复平面 = 2D）。
+
+---
+
+### 4) 为什么通信/阵列里特别常用复高斯？
+
+很多噪声来自大量独立微小扰动的叠加（热噪声、散射、多径的随机叠加），按中心极限定理趋近高斯；同时信号处理常用复基带表示（I/Q），所以噪声自然写成复数形式并用复高斯建模。
+
+---
+
+### 5) 回到论文：$\epsilon_{n,\theta}$ 的“复高斯扰动”意味着什么？
+
+论文里把几何噪声建模为：
+
+$$
+\epsilon_{n,\theta}\sim\mathcal{CN}(0,0.9).
+$$
+
+意思是：对每个阵元 $n$（以及可能对每个角度 $\theta$ 或每次生成 steering 时），他们往理想 steering entry 上**加一个随机复数扰动**：
+
+$$
+[a(\theta)]^{\star}_n = e^{-j\frac{2\pi}{\lambda}(d_n+\delta_n)\sin\theta} + \epsilon_{n,\theta}.
+$$
+
+这会同时扰动：
+
+- **幅度**（加性复数会改变模长）
+- **相位**（会改变相角）
+
+因此它不只是“相位偏一点”，而是 steering vector 的复值整体被污染，用来模拟阵列响应的非理想性。
+
+---
+
+### 6) 一个很直观的采样方式
+
+如果要在仿真里生成 $z\sim\mathcal{CN}(0,\sigma^2)$，常用做法：
+
+- 采 $x\sim\mathcal{N}(0,\sigma^2/2)$
+- 采 $y\sim\mathcal{N}(0,\sigma^2/2)$
+- 令 $z=x+j y$
+
+对论文里的 $\sigma^2=0.9$，就是 $x,y$ 的方差各为 $0.45$。
+
+> 如果后续需要更深入：还可以继续补充“非圆对称复高斯”（会涉及 pseudo-variance / impropriety）以及为什么很多通信论文默认使用圆对称 $\mathcal{CN}(0,\sigma^2)$。
