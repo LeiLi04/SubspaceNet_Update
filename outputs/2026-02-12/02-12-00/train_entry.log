@@ -1,0 +1,43 @@
+[2026-02-12 02:12:00,102][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-12 02:12:00,107][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 02:12:00,107][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 02:12:00,111][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 02:12:00,113][SubspaceNet.hydra][WARNING] - Native Hydra instantiation failed, falling back to legacy bridge: SubspaceNet.set_diff_method: Method esprit is not defined for SubspaceNet in Near Field scenario
+[2026-02-12 02:12:00,121][SubspaceNet.hydra][INFO] - Applying 27 Hydra-derived overrides to legacy config
+[2026-02-12 02:12:00,121][SubspaceNet][INFO] - Creating system model...
+[2026-02-12 02:12:00,122][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 02:12:00,122][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 02:12:00,122][SubspaceNet][INFO] - Creating trajectory data handler...
+[2026-02-12 02:12:00,122][SubspaceNet][INFO] - Trajectory data handler created successfully
+[2026-02-12 02:12:00,122][SubspaceNet][INFO] - Creating model...
+[2026-02-12 02:12:00,122][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 02:12:00,123][SubspaceNet][ERROR] - Failed to create components from config: SubspaceNet.set_diff_method: Method esprit is not defined for SubspaceNet in Near Field scenario
+Traceback (most recent call last):
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train_entry.py", line 170, in main
+    model = model_factory.build(system_model=system_model) if model_factory else None
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\component_factories.py", line 36, in build
+    return create_model(self.cfg_obj, system_model)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\config\factory.py", line 255, in create_model
+    model = _instantiate_with_compatible_kwargs(SubspaceNet, model_kwargs, "SubspaceNet")
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\config\factory.py", line 49, in _instantiate_with_compatible_kwargs
+    return cls(**filtered_kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\models_pack\subspacenet.py", line 70, in __init__
+    self.set_diff_method(diff_method, system_model)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\models_pack\subspacenet.py", line 204, in set_diff_method
+    raise Exception(f"SubspaceNet.set_diff_method:"
+Exception: SubspaceNet.set_diff_method: Method esprit is not defined for SubspaceNet in Near Field scenario
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\config\factory.py", line 409, in create_components_from_config
+    model = create_model(config, system_model)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\config\factory.py", line 255, in create_model
+    model = _instantiate_with_compatible_kwargs(SubspaceNet, model_kwargs, "SubspaceNet")
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\config\factory.py", line 49, in _instantiate_with_compatible_kwargs
+    return cls(**filtered_kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\models_pack\subspacenet.py", line 70, in __init__
+    self.set_diff_method(diff_method, system_model)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\models_pack\subspacenet.py", line 204, in set_diff_method
+    raise Exception(f"SubspaceNet.set_diff_method:"
+Exception: SubspaceNet.set_diff_method: Method esprit is not defined for SubspaceNet in Near Field scenario

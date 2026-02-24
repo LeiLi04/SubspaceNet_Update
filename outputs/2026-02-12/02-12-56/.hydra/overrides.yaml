@@ -1,0 +1,12 @@
+- +scenario=training
+- +trajectory.enabled=true
+- training.use_lightning=true
+- training.epochs=1
+- training.batch_size=2
+- simulation.train_model=true
+- simulation.load_model=false
+- simulation.evaluate_model=false
+- dataset.samples_size=8
+- +system_model.field_type=near
+- +model.params.field_type=Near
+- model.params.diff_method=music_1D

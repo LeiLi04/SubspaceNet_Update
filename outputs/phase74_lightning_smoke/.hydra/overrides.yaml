@@ -1,0 +1,9 @@
+- +scenario=training
+- simulation.load_model=false
+- simulation.train_model=true
+- simulation.evaluate_model=false
+- training.enabled=true
+- training.use_lightning=true
+- training.epochs=1
+- dataset.samples_size=8
+- data.samples_size=8

@@ -1,0 +1,34 @@
+[2026-02-12 01:31:24,691][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-12 01:31:24,699][SubspaceNet.hydra][INFO] - Applying 20 Hydra-derived overrides to legacy config
+[2026-02-12 01:31:24,699][SubspaceNet][INFO] - Creating system model...
+[2026-02-12 01:31:24,699][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 01:31:24,699][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 01:31:24,699][SubspaceNet][INFO] - Creating trajectory data handler...
+[2026-02-12 01:31:24,699][SubspaceNet][INFO] - Trajectory data handler created successfully
+[2026-02-12 01:31:24,701][SubspaceNet][INFO] - Creating model...
+[2026-02-12 01:31:24,701][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 01:31:24,702][SubspaceNet][INFO] - Model created successfully
+[2026-02-12 01:31:24,702][SubspaceNet][INFO] - Training is disabled; skipping trainer creation
+[2026-02-12 01:31:24,702][src.train.core][INFO] - Simulation initialized with output directory: D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-12 01:31:24,702][src.train.core][INFO] - Trajectory mode: Enabled
+[2026-02-12 01:31:24,702][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 01:31:24,702][src.train.core][INFO] - Starting data pipeline for scenario: training
+[2026-02-12 01:31:24,702][src.train.core][INFO] - Using trajectory-based data pipeline
+[2026-02-12 01:31:24,702][SubspaceNet.data][INFO] - Creating dataset with 8 trajectories of length 30
+[2026-02-12 01:31:24,702][SubspaceNet.data][INFO] - Generating trajectories with angle range: [-30.0, 30.0]
+[2026-02-12 01:31:24,702][SubspaceNet.data][INFO] - Using random walk with std dev: 5.0
+[2026-02-12 01:31:24,887][SubspaceNet.data][INFO] - Trajectory plot saved to: experiments\results\trajectory_plots\trajectory_verification_20260212_013124.png
+[2026-02-12 01:31:24,920][src.train.core][INFO] - Creating dataloaders with batch size: 256
+[2026-02-12 01:31:24,921][src.train.core][INFO] - Using split: test=0.20, val=0.20, train=0.60
+[2026-02-12 01:31:24,921][SubspaceNet.data][INFO] - Training dataset size: 6
+[2026-02-12 01:31:24,921][SubspaceNet.data][INFO] - Validation dataset size: 2
+[2026-02-12 01:31:24,922][src.train.core][INFO] - Created dataloaders: train=1, val=1
+[2026-02-12 01:31:24,922][src.train.core][INFO] - Creating test dataset: 1 samples (20%)
+[2026-02-12 01:31:24,922][SubspaceNet.data][INFO] - Creating dataset with 1 trajectories of length 30
+[2026-02-12 01:31:24,922][SubspaceNet.data][INFO] - Generating trajectories with angle range: [-30.0, 30.0]
+[2026-02-12 01:31:24,922][SubspaceNet.data][INFO] - Using random walk with std dev: 5.0
+[2026-02-12 01:31:25,053][SubspaceNet.data][INFO] - Trajectory plot saved to: experiments\results\trajectory_plots\trajectory_verification_20260212_013124.png
+[2026-02-12 01:31:25,058][src.train.core][INFO] - Created test dataloader with 1 batches
+[2026-02-12 01:31:25,058][src.train.core][INFO] - Skipping training (simulation.train_model=False)
+[2026-02-12 01:31:25,058][src.train.core][INFO] - Saving results to D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-12 01:31:25,058][SubspaceNet.hydra][INFO] - Hydra run finished: success

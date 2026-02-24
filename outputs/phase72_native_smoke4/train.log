@@ -1,0 +1,19 @@
+[2026-02-12 01:48:08,830][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-12 01:48:08,834][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 01:48:08,834][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 01:48:08,837][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 01:48:08,840][src.train.core][INFO] - Simulation initialized with output directory: D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-12 01:48:08,840][src.train.core][INFO] - Trajectory mode: Disabled
+[2026-02-12 01:48:08,841][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 01:48:08,841][src.train.core][INFO] - Starting data pipeline for scenario: training
+[2026-02-12 01:48:08,841][src.train.core][INFO] - Creating new dataset
+[2026-02-12 01:48:08,847][src.train.core][INFO] - Creating dataloaders with batch size: 256
+[2026-02-12 01:48:08,847][src.train.core][INFO] - Using split: test=0.20, val=0.20, train=0.60
+[2026-02-12 01:48:08,847][src.train.core][ERROR] - Error running training: 'TimeSeriesDataset' object has no attribute 'get_dataloaders'
+Traceback (most recent call last):
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 132, in run_training
+    self._run_data_pipeline(scenario="training")
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 368, in _run_data_pipeline
+    self.train_dataloader, self.valid_dataloader = dataset.get_dataloaders(
+AttributeError: 'TimeSeriesDataset' object has no attribute 'get_dataloaders'
+[2026-02-12 01:48:08,847][SubspaceNet.hydra][INFO] - Hydra run finished: error

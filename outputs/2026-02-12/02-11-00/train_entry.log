@@ -1,0 +1,78 @@
+[2026-02-12 02:11:00,826][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-12 02:11:00,830][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 02:11:00,830][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 02:11:00,835][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 02:11:00,836][src.train.core][INFO] - Simulation initialized with output directory: D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-12 02:11:00,836][src.train.core][INFO] - Trajectory mode: Enabled
+[2026-02-12 02:11:00,838][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 02:11:00,839][src.train.core][INFO] - Starting data pipeline for scenario: training
+[2026-02-12 02:11:00,839][src.train.core][INFO] - Using trajectory-based data pipeline
+[2026-02-12 02:11:00,839][SubspaceNet.data][INFO] - Creating dataset with 256 trajectories of length 10
+[2026-02-12 02:11:00,839][SubspaceNet.data][INFO] - Generating trajectories with angle range: [-30.0, 30.0]
+[2026-02-12 02:11:00,839][SubspaceNet.data][INFO] - Using RANDOM trajectory type: completely random angles at each step
+[2026-02-12 02:11:01,083][SubspaceNet.data][INFO] - Trajectory plot saved to: experiments\results\trajectory_plots\trajectory_verification_20260212_021101.png
+[2026-02-12 02:11:01,441][src.train.core][INFO] - Creating dataloaders with batch size: 2
+[2026-02-12 02:11:01,441][src.train.core][INFO] - Using split: test=0.20, val=0.20, train=0.60
+[2026-02-12 02:11:01,442][SubspaceNet.data][INFO] - Training dataset size: 192
+[2026-02-12 02:11:01,442][SubspaceNet.data][INFO] - Validation dataset size: 64
+[2026-02-12 02:11:01,442][src.train.core][INFO] - Created dataloaders: train=96, val=32
+[2026-02-12 02:11:01,442][src.train.core][INFO] - Creating test dataset: 51 samples (20%)
+[2026-02-12 02:11:01,442][SubspaceNet.data][INFO] - Creating dataset with 51 trajectories of length 10
+[2026-02-12 02:11:01,442][SubspaceNet.data][INFO] - Generating trajectories with angle range: [-30.0, 30.0]
+[2026-02-12 02:11:01,442][SubspaceNet.data][INFO] - Using RANDOM trajectory type: completely random angles at each step
+[2026-02-12 02:11:01,583][SubspaceNet.data][INFO] - Trajectory plot saved to: experiments\results\trajectory_plots\trajectory_verification_20260212_021101.png
+[2026-02-12 02:11:01,657][src.train.core][INFO] - Created test dataloader with 26 batches
+[2026-02-12 02:11:01,657][src.train.core][INFO] - Running training pipeline (training.enabled=True, simulation.train_model=True)
+[2026-02-12 02:11:01,657][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 02:11:01,658][src.train.core][INFO] - Using Lightning-native trainer path for trajectory training
+[2026-02-12 02:11:03,239][src.train.core][INFO] - Lightning Trainer config: accelerator=cpu devices=1 max_epochs=1
+[2026-02-12 02:11:03,267][src.train.core][ERROR] - Error running training: only integer tensors of a single element can be converted to an index
+Traceback (most recent call last):
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 155, in run_training
+    self._run_training_pipeline()
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 575, in _run_training_pipeline
+    self._run_lightning_training_pipeline()
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 685, in _run_lightning_training_pipeline
+    trainer.fit(lightning_model, train_dataloaders=self.train_dataloader, val_dataloaders=self.valid_dataloader)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 584, in fit
+    call._call_and_handle_interrupt(
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 630, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path, weights_only=weights_only)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1079, in _run
+    results = self._run_stage()
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1121, in _run_stage
+    self._run_sanity_check()
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1150, in _run_sanity_check
+    val_loop.run()
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\loops\utilities.py", line 179, in _decorator
+    return loop_run(self, *args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\loops\evaluation_loop.py", line 146, in run
+    self._evaluation_step(batch, batch_idx, dataloader_idx, dataloader_iter)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\loops\evaluation_loop.py", line 441, in _evaluation_step
+    output = call._call_strategy_hook(trainer, hook_name, *step_args)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\call.py", line 329, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\strategies\strategy.py", line 412, in validation_step
+    return self.lightning_module.validation_step(*args, **kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\models\lit_module.py", line 270, in validation_step
+    loss_step, acc_step = self._trajectory_step_forward(
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\models\lit_module.py", line 177, in _trajectory_step_forward
+    preds, source_estimation, _ = self.model(step_data, sources_arg)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\models_pack\subspacenet.py", line 127, in forward
+    method_output = self.diff_method(Rz, sources_num)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\methods_pack\esprit.py", line 18, in forward
+    signal_subspace, _, sources_estimation, regularization = self.subspace_separation(
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\methods_pack\subspace_method.py", line 51, in subspace_separation
+    signal_subspace = sorted_eigvectors[:, :, :number_of_sources]
+TypeError: only integer tensors of a single element can be converted to an index
+[2026-02-12 02:11:03,270][SubspaceNet.hydra][INFO] - Hydra run finished: error

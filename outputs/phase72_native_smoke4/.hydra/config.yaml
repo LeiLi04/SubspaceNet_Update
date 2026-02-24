@@ -1,0 +1,43 @@
+legacy_config: configs/default_config.yaml
+system_model:
+  'N': 8
+  M: 3
+  T: 200
+  snr: 10
+dataset:
+  samples_size: 8
+training:
+  enabled: false
+  epochs: 30
+  batch_size: 256
+simulation:
+  train_model: false
+  evaluate_model: false
+  load_model: false
+  save_model: true
+data:
+  _target_: src.train.component_factories.DataComponentFactory
+  create_data: true
+  save_dataset: false
+  samples_size: 8
+model:
+  _target_: src.train.component_factories.ModelComponentFactory
+  type: SubspaceNet
+  params:
+    diff_method: esprit
+    train_loss_type: rmspe
+    tau: 8
+trainer:
+  _target_: src.train.component_factories.TrainerComponentFactory
+  max_epochs: 30
+  batch_size: 256
+  learning_rate: 0.001
+  weight_decay: 1.0e-09
+callbacks:
+  model_checkpoint:
+    save_top_k: 1
+    monitor: val_loss
+runtime:
+  _target_: src.train.runtime_runner.SimulationRuntimeRunner
+  scenario: ${oc.select:scenario,training}
+scenario: training

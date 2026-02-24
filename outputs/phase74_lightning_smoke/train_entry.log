@@ -1,0 +1,84 @@
+[2026-02-12 01:56:13,008][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-12 01:56:13,012][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 01:56:13,012][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 01:56:13,015][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 01:56:13,025][SubspaceNet.factory][ERROR] - Failed to import Trainer from DCD_MUSIC.src.training: module 'DCD_MUSIC.src.training' has no attribute 'Trainer'
+[2026-02-12 01:56:13,025][SubspaceNet.factory][ERROR] - Failed to create trainer: Failed to import Trainer from DCD_MUSIC.src.training
+[2026-02-12 01:56:13,025][src.train.core][INFO] - Simulation initialized with output directory: D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-12 01:56:13,025][src.train.core][INFO] - Trajectory mode: Disabled
+[2026-02-12 01:56:13,028][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 01:56:13,028][src.train.core][INFO] - Starting data pipeline for scenario: training
+[2026-02-12 01:56:13,028][src.train.core][INFO] - Creating new dataset
+[2026-02-12 01:56:13,031][src.train.core][INFO] - Creating dataloaders with batch size: 256
+[2026-02-12 01:56:13,031][src.train.core][INFO] - Using split: test=0.20, val=0.20, train=0.60
+[2026-02-12 01:56:13,032][src.train.core][INFO] - Created dataloaders: train=1, val=1
+[2026-02-12 01:56:13,032][src.train.core][INFO] - Creating test dataset: 1 samples (20%)
+[2026-02-12 01:56:13,032][src.train.core][INFO] - Created test dataloader with 1 batches
+[2026-02-12 01:56:13,032][src.train.core][INFO] - Running training pipeline (training.enabled=True, simulation.train_model=True)
+[2026-02-12 01:56:13,032][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 01:56:13,032][src.train.core][INFO] - Using Lightning-native trainer path for non-trajectory training
+[2026-02-12 01:56:14,599][src.train.core][INFO] - Lightning Trainer config: accelerator=cpu devices=1 max_epochs=30
+[2026-02-12 01:56:14,612][pytorch_lightning.utilities.rank_zero][INFO] - GPU available: False, used: False
+[2026-02-12 01:56:14,614][pytorch_lightning.utilities.rank_zero][INFO] - TPU available: False, using: 0 TPU cores
+[2026-02-12 01:56:14,621][pytorch_lightning.callbacks.model_summary][INFO] - 
+  | Name  | Type        | Params | Mode  | FLOPs
+------------------------------------------------------
+0 | model | SubspaceNet | 41.8 K | train | 0    
+------------------------------------------------------
+41.8 K    Trainable params
+0         Non-trainable params
+41.8 K    Total params
+0.167     Total estimated model params size (MB)
+10        Modules in train mode
+0         Modules in eval mode
+0         Total Flops
+[2026-02-12 01:56:14,640][src.train.core][ERROR] - Error running training: only integer tensors of a single element can be converted to an index
+Traceback (most recent call last):
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 155, in run_training
+    self._run_training_pipeline()
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 574, in _run_training_pipeline
+    self._run_lightning_training_pipeline()
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\train\core.py", line 686, in _run_lightning_training_pipeline
+    trainer.fit(lightning_model, train_dataloaders=self.train_dataloader, val_dataloaders=self.valid_dataloader)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 584, in fit
+    call._call_and_handle_interrupt(
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 630, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path, weights_only=weights_only)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1079, in _run
+    results = self._run_stage()
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1121, in _run_stage
+    self._run_sanity_check()
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1150, in _run_sanity_check
+    val_loop.run()
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\loops\utilities.py", line 179, in _decorator
+    return loop_run(self, *args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\loops\evaluation_loop.py", line 146, in run
+    self._evaluation_step(batch, batch_idx, dataloader_idx, dataloader_iter)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\loops\evaluation_loop.py", line 441, in _evaluation_step
+    output = call._call_strategy_hook(trainer, hook_name, *step_args)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\trainer\call.py", line 329, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\pytorch_lightning\strategies\strategy.py", line 412, in validation_step
+    return self.lightning_module.validation_step(*args, **kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\models\lit_module.py", line 116, in validation_step
+    loss, acc = self._compute_loss_and_acc(batch)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\src\models\lit_module.py", line 72, in _compute_loss_and_acc
+    preds = self._select_prediction(self.model(x, sources_num))
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\models_pack\subspacenet.py", line 127, in forward
+    method_output = self.diff_method(Rz, sources_num)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\ProgramData\miniconda3\envs\doa\lib\site-packages\torch\nn\modules\module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\methods_pack\esprit.py", line 18, in forward
+    signal_subspace, _, sources_estimation, regularization = self.subspace_separation(
+  File "D:\LiLei\Python_projects\SubspaceNet_Update\DCD_MUSIC\src\methods_pack\subspace_method.py", line 51, in subspace_separation
+    signal_subspace = sorted_eigvectors[:, :, :number_of_sources]
+TypeError: only integer tensors of a single element can be converted to an index
+[2026-02-12 01:56:14,644][SubspaceNet.hydra][INFO] - Hydra run finished: error

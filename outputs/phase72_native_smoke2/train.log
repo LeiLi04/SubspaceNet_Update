@@ -1,0 +1,13 @@
+[2026-02-12 01:45:39,530][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-12 01:45:39,534][SubspaceNet.factory][INFO] - FACTORY DEBUG: snr being set in SystemModelParams: 10.0
+[2026-02-12 01:45:39,535][SubspaceNet.factory][INFO] - FACTORY DEBUG: eta being set in SystemModelParams: 0.0
+[2026-02-12 01:45:39,539][SubspaceNet.factory][WARNING] - SubspaceNet does not accept kwargs ['batch_norm', 'norm_layer', 'regularization', 'train_loss_type', 'variant']; dropping them for compatibility
+[2026-02-12 01:45:39,541][src.train.core][INFO] - Simulation initialized with output directory: D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-12 01:45:39,541][src.train.core][INFO] - Trajectory mode: Disabled
+[2026-02-12 01:45:39,543][src.train.core][INFO] - Starting training pipeline
+[2026-02-12 01:45:39,543][src.train.core][INFO] - Starting data pipeline for scenario: training
+[2026-02-12 01:45:39,543][src.train.core][INFO] - Creating new dataset
+[2026-02-12 01:45:39,547][src.train.core][ERROR] - Failed to create standard dataset: create_dataset() got an unexpected keyword argument 'samples_model'
+[2026-02-12 01:45:39,547][src.train.core][ERROR] - Failed to create or load dataset
+[2026-02-12 01:45:39,547][src.train.core][ERROR] - Data pipeline failed, skipping training
+[2026-02-12 01:45:39,547][SubspaceNet.hydra][INFO] - Hydra run finished: error
