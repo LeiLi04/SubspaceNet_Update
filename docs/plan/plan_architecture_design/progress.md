@@ -1,57 +1,56 @@
-# Progress Log: Lightning + Hydra _target_ Migration (Phase 1-3)
+# Progress Log: Refactor SubspaceNet_Update to architecture-design Template
 
 ## Metadata
-- Created At: 2026-02-24T17:43:26+0100
-- Last Updated At: 2026-02-24T18:09:01+0100
+- Created At: 2026-02-24T20:00:00
+- Last Updated At: 2026-02-24T21:00:00
 
 ## Session Log
 
-### 2026-02-24T17:43~17:50+0100 — Baseline and Path Alignment
+### 2026-02-24T20:00 — Planning Session
 
-- Checked current repository status and discovered active module layout is already renamed (`*_module`).
-- Re-aligned migration edits to:
-  - `src/model_module/*`
-  - `src/data_module/*`
-  - `src/trainer_module/*`
+- Explored current project structure
+- Identified ~50% alignment with architecture-design template (v2.0.0)
+- Created 7-phase refactoring plan
+- Created planning files (task_plan.md, findings.md, progress.md)
 
-### 2026-02-24T17:50~17:55+0100 — Phase 1 Implementation
+### 2026-02-24T17:43~18:09+0100 — Phase 1-3 Execution (sub-agent)
 
-- Added model-specific Lightning wrappers:
-  - `src/model_module/subspacenet_lightning.py`
-  - `src/model_module/dcd_music_lightning.py`
-- Added exports in `src/model_module/__init__.py`.
+**Phase 1: LightningModule Wrappers**
+- Discovered active layout already uses `*_module` naming
+- Added `src/model_module/subspacenet_lightning.py`
+- Added `src/model_module/dcd_music_lightning.py`
+- Added exports in `src/model_module/__init__.py`
 
-### 2026-02-24T17:55~18:00+0100 — Phase 2 Config Migration
+**Phase 2: Config Migration**
+- Added `configs/model/subspacenet.yaml`, `configs/model/dcd_music.yaml`
+- Updated `configs/data/default.yaml`, `configs/trainer/default.yaml`, `configs/config.yaml`
+- Marked `src/trainer_module/component_factories.py` deprecated
 
-- Added per-model direct target configs:
-  - `configs/model/subspacenet.yaml`
-  - `configs/model/dcd_music.yaml`
-- Updated:
-  - `configs/model/default.yaml`
-  - `configs/data/default.yaml`
-  - `configs/trainer/default.yaml`
-  - `configs/training/default.yaml`
-  - `configs/config.yaml`
-- Marked `src/trainer_module/component_factories.py` deprecated.
+**Phase 3: Runtime Wiring**
+- Reworked `src/train_entry.py` to direct `hydra.utils.instantiate`
+- Updated `src/trainer_module/simulation/runner.py` and `training_pipeline.py`
+- Standard training path now calls `trainer.fit(lightning_model, datamodule=datamodule)`
 
-### 2026-02-24T18:00~18:04+0100 — Phase 3 Runtime Wiring
+**Stabilization**
+- Fixed: `TensorBoardLogger` → `CSVLogger` (missing tensorboard dep)
+- Fixed: DCD-MUSIC wrapper sets `field_type = "Near"` before model construction
 
-- Reworked `src/train_entry.py` to direct `hydra.utils.instantiate` component creation.
-- Updated simulation/training orchestration:
-  - `src/trainer_module/simulation/runner.py`
-  - `src/trainer_module/simulation/training_pipeline.py`
-- Standard training path now calls `trainer.fit(lightning_model, datamodule=datamodule)`.
+**Verification** (all passed):
+- `PYTHONPATH=. pytest -q tests/integration/test_hydra_bridge.py`
+- no-train runtime scenario
+- 1-epoch SubspaceNet Lightning training
+- DCD-MUSIC instantiate/no-train scenario
 
-### 2026-02-24T18:04~18:07+0100 — Stabilization and Validation
+### 2026-02-24T21:00 — Plan File Consolidation
 
-- Resolved runtime logger dependency issue by switching trainer logger to `CSVLogger`.
-- Resolved DCD-MUSIC wrapper init issue by forcing near-field field type in wrapper construction.
-- Executed checks:
-  - `PYTHONPATH=. pytest -q tests/integration/test_hydra_bridge.py` (passed)
-  - no-train runtime scenario (passed)
-  - 1-epoch SubspaceNet Lightning training run (passed)
-  - DCD-MUSIC instantiate/no-train scenario (passed)
+- Consolidated plan files to cover full Phase 1-7 scope
+- Discovered Phase 6 (directory rename) was already done
+- Updated phase statuses: Phase 1-3 completed, Phase 6 completed, Phase 4/5/7 pending
+- Added post-execution requirement: update plan files after each phase
 
-### 2026-02-24T18:09:01+0100 — Documentation Update
-
-- Updated the architecture-design plan set (`task_plan.md`, `findings.md`, `progress.md`) to reflect actual Phase 1-3 completion state and verification evidence.
+**Phase status:**
+- Phase 1-3: completed
+- Phase 4: pending (decompose monolithic files)
+- Phase 5: pending (unify config system)
+- Phase 6: completed (directories already renamed)
+- Phase 7: pending (simplify entry point)
