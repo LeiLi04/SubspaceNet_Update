@@ -3,6 +3,9 @@ Configuration loader for SubspaceNet.
 
 This module provides functions for loading, validating, and managing configurations
 for the SubspaceNet project.
+
+NOTE: Hydra runtime paths should instantiate directly from composed configs.
+This loader remains for legacy CLI/config-file workflows only.
 """
 
 import yaml
@@ -57,6 +60,8 @@ def save_config(config: Config, output_path: str) -> None:
 def apply_overrides(config: Config, overrides: List[str]) -> Config:
     """
     Apply command-line overrides to the configuration.
+
+    Legacy helper used by non-Hydra paths.
     
     Args:
         config: Configuration object to modify

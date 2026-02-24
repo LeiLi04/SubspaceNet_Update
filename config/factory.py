@@ -1,13 +1,12 @@
 """
 Factory module for creating components from configurations.
 
-This module provides functions for creating DCD-MUSIC components from 
-configuration objects defined in the schema module.
+DEPRECATED: This module is a compatibility layer while Hydra `_target_`
+instantiation is rolled out across all runtime paths.
 """
 
 import sys
 import os
-import importlib
 import inspect
 from typing import Dict, Any, Optional, List
 import warnings
@@ -15,6 +14,11 @@ from pathlib import Path
 import logging
 
 from config.schema import Config
+from config.utils import (
+    create_system_model as _create_system_model_native,
+    create_system_model_params as _create_system_model_params_native,
+    import_from_dcd_music as _import_from_dcd_music_native,
+)
 
 # Add the DCD_MUSIC module to the path
 sys.path.append('./DCD_MUSIC')
@@ -59,13 +63,7 @@ def _import_from_dcd_music(module_path: str, class_name: str) -> Any:
     Returns:
         The imported class
     """
-    try:
-        # Import the module
-        module = importlib.import_module(f"DCD_MUSIC.{module_path}")
-        return getattr(module, class_name)
-    except (ImportError, AttributeError) as e:
-        logger.error(f"Failed to import {class_name} from DCD_MUSIC.{module_path}: {e}")
-        raise ImportError(f"Failed to import {class_name} from DCD_MUSIC.{module_path}")
+    return _import_from_dcd_music_native(module_path, class_name)
 
 def _create_system_model_params(config: Config) -> Any:
     """
@@ -80,43 +78,7 @@ def _create_system_model_params(config: Config) -> Any:
     Returns:
         Configured SystemModelParams instance
     """
-    # Try to import SystemModelParams
-    SystemModelParams = _import_from_dcd_music("src.system_model", "SystemModelParams")
-    
-    # Create and configure system model parameters
-    system_model_params = SystemModelParams()
-    
-    # Make sure wavelength is properly set if not in the config
-    config_dict = config.system_model.dict()
-    if 'wavelength' not in config_dict:
-        config_dict['wavelength'] = 1.0
-    
-    # Set parameters from configuration
-    for key, value in config_dict.items():
-        if key == "field_type" and isinstance(value, str):
-            lower = value.lower()
-            if lower == "far":
-                value = "Far"
-            elif lower == "near":
-                value = "Near"
-        if key == "signal_type" and isinstance(value, str):
-            lower = value.lower()
-            if lower == "narrowband":
-                value = "NarrowBand"
-            elif lower == "broadband":
-                value = "Broadband"
-        if key == 'eta':
-            logger.info(f"FACTORY DEBUG: eta being set in SystemModelParams: {value}")
-        if key == 'snr':
-            logger.info(f"FACTORY DEBUG: snr being set in SystemModelParams: {value}")
-        system_model_params.set_parameter(key, value)
-    
-    # IMPORTANT: If sweep values are defined in evaluation config, they should be
-    # reflected in system_model before reaching this point. This is handled in the
-    # main evaluation loop where apply_overrides is called with system_model.{param}={value}
-    # Example: apply_overrides(config_obj, [f"system_model.{scenario.lower()}={value}"])
-    
-    return system_model_params
+    return _create_system_model_params_native(config)
 
 def create_system_model(config: Config) -> Any:
     """
@@ -128,20 +90,7 @@ def create_system_model(config: Config) -> Any:
     Returns:
         A SystemModel instance
     """
-    # Get SystemModelParams
-    system_model_params = _create_system_model_params(config)
-    
-    # Import SystemModel
-    SystemModel = _import_from_dcd_music("src.system_model", "SystemModel")
-    
-    # Create system model using the nominal parameter when supported by the DCD_MUSIC version.
-    try:
-        system_model = SystemModel(system_model_params, nominal=config.system_model.nominal)
-    except TypeError:
-        # Backward compatibility: older DCD_MUSIC SystemModel does not accept `nominal`.
-        system_model = SystemModel(system_model_params)
-    
-    return system_model
+    return _create_system_model_native(config)
 
 
 def create_dataset(config: Config, system_model: Any) -> Any:
@@ -350,7 +299,7 @@ def create_trajectory_data_handler(config: Config, system_model: Any) -> Any:
     """
     try:
         # Import the TrajectoryDataHandler class
-        from src.data.trajectory import TrajectoryDataHandler
+        from src.data_module.trajectory import TrajectoryDataHandler
         
         # Create the data handler with system model
         handler = TrajectoryDataHandler(

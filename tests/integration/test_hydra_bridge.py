@@ -40,18 +40,20 @@ def test_runtime_group_has_target():
     root = Path(__file__).resolve().parents[2]
     runtime_yaml = (root / "configs" / "runtime" / "default.yaml").read_text(encoding="utf-8")
 
-    assert "_target_: src.train.runtime_runner.SimulationRuntimeRunner" in runtime_yaml
+    assert "_target_: src.trainer_module.runtime_runner.SimulationRuntimeRunner" in runtime_yaml
 
 
 def test_data_model_trainer_groups_have_targets():
     root = Path(__file__).resolve().parents[2]
     data_yaml = (root / "configs" / "data" / "default.yaml").read_text(encoding="utf-8")
-    model_yaml = (root / "configs" / "model" / "default.yaml").read_text(encoding="utf-8")
+    model_yaml = (root / "configs" / "model" / "subspacenet.yaml").read_text(encoding="utf-8")
+    dcd_model_yaml = (root / "configs" / "model" / "dcd_music.yaml").read_text(encoding="utf-8")
     trainer_yaml = (root / "configs" / "trainer" / "default.yaml").read_text(encoding="utf-8")
 
-    assert "_target_: src.train.component_factories.DataComponentFactory" in data_yaml
-    assert "_target_: src.train.component_factories.ModelComponentFactory" in model_yaml
-    assert "_target_: src.train.component_factories.TrainerComponentFactory" in trainer_yaml
+    assert "_target_: src.data_module.lit_datamodule.DOADataModule" in data_yaml
+    assert "_target_: src.model_module.subspacenet_lightning.SubspaceNetLightning" in model_yaml
+    assert "_target_: src.model_module.dcd_music_lightning.DCDMusicLightning" in dcd_model_yaml
+    assert "_target_: pytorch_lightning.Trainer" in trainer_yaml
 
 
 def test_training_default_contains_lightning_switch():

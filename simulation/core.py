@@ -1,5 +1,5 @@
 """Compatibility shim for the migrated training core."""
 
-from src.train.core import Simulation
+from src.trainer_module.core import Simulation
 
 __all__ = ["Simulation"]

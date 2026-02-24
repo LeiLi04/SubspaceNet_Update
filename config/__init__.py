@@ -23,6 +23,11 @@ from .loader import (
     save_config,
     apply_overrides
 )
+from .utils import (
+    create_system_model,
+    create_system_model_params,
+    import_from_dcd_music,
+)
 
 __all__ = [
     'Config',
@@ -38,5 +43,8 @@ __all__ = [
     'OnlineLearningConfig',
     'load_config',
     'save_config',
-    'apply_overrides'
-] 
+    'apply_overrides',
+    'create_system_model',
+    'create_system_model_params',
+    'import_from_dcd_music',
+]

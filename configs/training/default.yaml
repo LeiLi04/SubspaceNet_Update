@@ -3,3 +3,11 @@ enabled: true
 use_lightning: false
 epochs: 30
 batch_size: 256
+optimizer: Adam
+scheduler: ReduceLROnPlateau
+learning_rate: 0.001
+weight_decay: 1.0e-9
+step_size: 50
+gamma: 0.5
+training_objective: angle
+save_checkpoint: true

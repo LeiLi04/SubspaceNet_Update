@@ -1,6 +1,6 @@
 """Compatibility shim for migrated data pipeline modules."""
 
-from src.data.trajectory import (
+from src.data_module.trajectory import (
     OnlineLearningDataset,
     OnlineLearningTrajectoryGenerator,
     TrajectoryDataHandler,

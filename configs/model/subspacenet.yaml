@@ -1,0 +1,16 @@
+_target_: src.model_module.subspacenet_lightning.SubspaceNetLightning
+tau: 8
+diff_method: esprit
+train_loss_type: rmspe
+field_type: Far
+regularization: null
+variant: small
+norm_layer: false
+batch_norm: false
+learning_rate: ${training.learning_rate}
+weight_decay: ${training.weight_decay}
+optimizer: ${training.optimizer}
+scheduler: ${training.scheduler}
+step_size: ${training.step_size}
+gamma: ${training.gamma}
+momentum: 0.9

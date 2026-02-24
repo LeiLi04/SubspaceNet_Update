@@ -7,8 +7,8 @@ except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     torch = None
 
 if torch is not None:
-    from src.train.online_learning import device
-    from src.train.online_learning_parts.step_processor import _process_single_step_impl, _initialize_ekf_state_impl
+    from src.trainer_module.online_learning import device
+    from src.trainer_module.online_learning_parts.step_processor import _process_single_step_impl, _initialize_ekf_state_impl
 
 
 class _DummyModel:

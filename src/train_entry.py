@@ -1,4 +1,4 @@
-"""Hydra-based training entrypoint (native-first with compatibility fallback)."""
+"""Hydra-based training entrypoint with direct `_target_` instantiation."""
 
 from __future__ import annotations
 
@@ -15,10 +15,9 @@ if str(PROJECT_ROOT) not in sys.path:
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from config.factory import create_components_from_config, create_system_model
-from config.loader import apply_overrides, load_config
+from config.factory import create_system_model
 from config.schema import Config
-from src.train.core import Simulation
+from src.trainer_module.core import Simulation
 
 LOGGER = logging.getLogger("SubspaceNet.hydra")
 
@@ -111,7 +110,7 @@ def _build_legacy_overrides(cfg: DictConfig) -> List[str]:
 
 def _build_native_config(cfg: DictConfig) -> Config:
     """Build pydantic Config directly from composed Hydra config."""
-    cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+    cfg_dict = OmegaConf.to_container(cfg, resolve=False)
     if not isinstance(cfg_dict, dict):
         return Config()
 
@@ -119,7 +118,35 @@ def _build_native_config(cfg: DictConfig) -> Config:
     for section in _CANONICAL_SECTIONS:
         section_data = cfg_dict.get(section)
         if isinstance(section_data, dict):
-            payload[section] = _strip_private_keys(section_data)
+            if section == "model":
+                model_map = _strip_private_keys(section_data)
+                target = str(section_data.get("_target_", "")).lower()
+                model_type = model_map.get("type")
+                if model_type is None:
+                    model_type = "DCD-MUSIC" if "dcd_music_lightning" in target else "SubspaceNet"
+
+                model_params = {
+                    "diff_method": model_map.get("diff_method"),
+                    "train_loss_type": model_map.get("train_loss_type"),
+                    "tau": model_map.get("tau"),
+                    "field_type": model_map.get("field_type"),
+                    "regularization": model_map.get("regularization"),
+                    "variant": model_map.get("variant"),
+                    "norm_layer": model_map.get("norm_layer"),
+                    "batch_norm": model_map.get("batch_norm"),
+                }
+                if isinstance(model_map.get("params"), dict):
+                    model_params.update(model_map["params"])
+                if isinstance(model_params.get("diff_method"), list):
+                    model_params["diff_method"] = tuple(model_params["diff_method"])
+                if isinstance(model_params.get("train_loss_type"), list):
+                    model_params["train_loss_type"] = tuple(model_params["train_loss_type"])
+                payload[section] = {
+                    "type": model_type,
+                    "params": {k: v for k, v in model_params.items() if v is not None},
+                }
+            else:
+                payload[section] = _strip_private_keys(section_data)
 
     data_cfg = cfg_dict.get("data")
     if isinstance(data_cfg, dict):
@@ -139,7 +166,6 @@ def _build_native_config(cfg: DictConfig) -> Config:
         }
         for source_key, target_key in trainer_map.items():
             if source_key in trainer_cfg:
-                # Keep canonical training.* as source of truth when already present.
                 training_payload.setdefault(target_key, trainer_cfg[source_key])
 
     return Config(**payload)
@@ -151,49 +177,30 @@ def _build_native_config(cfg: DictConfig) -> Config:
     config_name="config",
 )
 def main(cfg: DictConfig) -> None:
-    """Run SubspaceNet using Hydra composition with native-first component instantiation."""
+    """Run SubspaceNet using direct Hydra `_target_` components."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     LOGGER.info("Hydra config composed")
     LOGGER.debug("Hydra config:\n%s", OmegaConf.to_yaml(cfg))
 
-    try:
-        config_obj = _build_native_config(cfg)
-        system_model = create_system_model(config_obj)
-        if system_model is None:
-            raise RuntimeError("Native system_model creation returned None")
+    config_obj = _build_native_config(cfg)
+    system_model = create_system_model(config_obj)
+    if system_model is None:
+        raise RuntimeError("System model creation returned None")
 
-        data_factory = hydra.utils.instantiate(cfg.data, cfg_obj=config_obj)
-        model_factory = hydra.utils.instantiate(cfg.model, cfg_obj=config_obj)
-        trainer_factory = hydra.utils.instantiate(cfg.trainer, cfg_obj=config_obj)
+    datamodule = hydra.utils.instantiate(cfg.data, config_obj, system_model=system_model)
+    lightning_model = hydra.utils.instantiate(cfg.model, system_model=system_model)
+    trainer = hydra.utils.instantiate(cfg.trainer)
 
-        trajectory_handler = data_factory.build(system_model=system_model) if data_factory else None
-        model = model_factory.build(system_model=system_model) if model_factory else None
-        trainer = trainer_factory.build(model=model) if trainer_factory else None
-        if model is None:
-            raise RuntimeError("Native model creation returned None")
+    model = getattr(lightning_model, "model", lightning_model)
+    components = {
+        "system_model": system_model,
+        "model": model,
+        "lightning_model": lightning_model,
+        "datamodule": datamodule,
+        "trainer": trainer,
+    }
 
-        components = {"system_model": system_model, "model": model}
-        if trajectory_handler is not None:
-            components["trajectory_handler"] = trajectory_handler
-        if trainer is not None:
-            components["trainer"] = trainer
-    except Exception as native_exc:
-        LOGGER.warning("Native Hydra instantiation failed, falling back to legacy bridge: %s", native_exc)
-        legacy_config_path = cfg.get("legacy_config", "configs/default_config.yaml")
-        legacy_config_abs = hydra.utils.to_absolute_path(str(legacy_config_path))
-        config_obj = load_config(legacy_config_abs)
-
-        overrides = _build_legacy_overrides(cfg)
-        if overrides:
-            LOGGER.info("Applying %d Hydra-derived overrides to legacy config", len(overrides))
-            config_obj = apply_overrides(config_obj, overrides)
-
-        components = create_components_from_config(config_obj)
-        if "error" in components:
-            raise RuntimeError(f"Failed to create components: {components['error']}")
-
-    output_dir = Path.cwd()
-    simulation = Simulation(config_obj, components, output_dir=output_dir)
+    simulation = Simulation(config_obj, components, output_dir=Path.cwd())
 
     runtime_cfg = cfg.get("runtime")
     if runtime_cfg is not None:

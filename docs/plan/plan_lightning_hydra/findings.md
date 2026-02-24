@@ -125,7 +125,7 @@
 ## Findings Update (2026-02-12, Run 7)
 
 - Started Phase 7 and completed item 7.1 (runtime takeover):
-  - Added `configs/runtime/default.yaml` with `_target_: src.train.runtime_runner.SimulationRuntimeRunner`
+  - Added `configs/runtime/default.yaml` with `_target_: src.trainer_module.runtime_runner.SimulationRuntimeRunner`
   - Updated `configs/config.yaml` defaults to include `runtime: default`
   - Refactored `src/train.py` dispatch logic to instantiate runtime runner from Hydra config
 - This establishes `_target_` ownership at the entrypoint control layer while preserving current simulation backend.

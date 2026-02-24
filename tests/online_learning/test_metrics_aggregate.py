@@ -6,7 +6,7 @@ except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     torch = None
 
 if torch is not None:
-    from src.train.online_learning_parts.metrics_aggregate import _average_online_learning_results_across_trajectories_impl
+    from src.trainer_module.online_learning_parts.metrics_aggregate import _average_online_learning_results_across_trajectories_impl
 
 
 def _make_result(window_losses, online_losses=None, training_losses=None):

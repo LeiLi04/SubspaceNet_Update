@@ -5,7 +5,7 @@ defaults:
   - training: default
   - simulation: default
   - data: default
-  - model: default
+  - model: subspacenet
   - trainer: default
   - callbacks: default
   - runtime: default

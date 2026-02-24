@@ -1,3 +1,3 @@
 """Compatibility shim for migrated online learning module."""
 
-from src.train.online_learning import *  # noqa: F401,F403
+from src.trainer_module.online_learning import *  # noqa: F401,F403

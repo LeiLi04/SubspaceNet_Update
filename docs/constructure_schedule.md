@@ -112,7 +112,7 @@ All code generation must strictly adhere to this file hierarchy:
 * **YAML Structure Example (** `configs/model/my_model.yaml`):
 
 ```
-   _target_: src.models.lit_module.LitModel
+   _target_: src.model_module.lit_module.LitModel
    learning_rate: 0.001
    backbone:
      _target_: torchvision.models.resnet18

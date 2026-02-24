@@ -8,10 +8,10 @@ except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     torch = None
 
 if torch is not None:
-    from src.train.online_learning_parts import losses as losses_impl
-    from src.train.online_learning import device
-    from src.eval.metrics.rmspe_loss import RMSPELoss
-    from src.eval.metrics.rmape_loss import RMAPELoss
+    from src.trainer_module.online_learning_parts import losses as losses_impl
+    from src.trainer_module.online_learning import device
+    from src.eval_module.metrics.rmspe_loss import RMSPELoss
+    from src.eval_module.metrics.rmape_loss import RMAPELoss
 
 
 class _DummyLossHost:

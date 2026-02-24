@@ -19,7 +19,7 @@ from config_handler import setup_configuration
 from experiments.runner import run_experiment
 from cli.commands import show_command, save_command
 from cli.options import config_option, output_option, override_option
-from src.train.core import Simulation
+from src.trainer_module.core import Simulation
 from src.utils.logging_utils import setup_logging_from_config
 from src.utils.plotting import plot_scenario_results
 

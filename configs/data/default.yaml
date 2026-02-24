@@ -1,5 +1,2 @@
-# Data-group defaults for the refactored layout.
-_target_: src.train.component_factories.DataComponentFactory
-create_data: true
-save_dataset: false
-samples_size: 256
+# Direct DataModule instantiation.
+_target_: src.data_module.lit_datamodule.DOADataModule
