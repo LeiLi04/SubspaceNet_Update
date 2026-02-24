@@ -1,0 +1,7 @@
+- +scenario=training
+- simulation.train_model=true
+- simulation.load_model=false
+- simulation.evaluate_model=false
+- dataset.samples_size=8
+- training.epochs=1
+- training.batch_size=2

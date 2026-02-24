@@ -1,0 +1,581 @@
+
+
+===== PAGE 1 =====
+Robust Underwater Direction-of-Arrival
+Tracking with Uncertain Measurement Noise
+Boxuan Zhang1, Guangen Gao2, Xiaokun Ding2, and Xianghao Hou1(B)
+1 School of Marine Science and Technology, Northwestern Polytechnical University,
+Xi’an 710072, Shaanxi, China
+houxianghao1990@nwpu.edu.cn
+2 AVIC Xi’an Flight Automatic Control Research Institute, Xi’an, China
+Abstract. A robust underwater direction-of-arrival (DOA) tracking technique
+is presented by the paper. Firstly, considering the port and starboard ambiguity
+problem, the measurement model is founded as a non-linear sound pressure model
+based on a uniform circular array. Then, considering the unknown underwater
+environment can sometimes cause uncertain measurement noise, a robust DOA
+tracking technique based on variational Bayesian (VB) and extended Kalman ﬁlter
+(EKF) method is proposed. By utilizing proposed VB-EKF to estimate uncertain
+measurement noise online, DOA tracking technique can achieve a reliable tracking
+accuracy. Finally, the proposed VB-EKF is tested by simulations to verify its
+robustness and tracking performance.
+Keywords: DOA tracking · Variational Bayesian · Extended Kalman ﬁlter
+1
+Introduction
+Bearing angle estimation and tracking are important research areas in the ﬁeld of
+aerospace engineering, remote sensing and tracking underwater target. For underwa-
+ter target tracking scenario, passive bearing angle estimation can not only supply angle
+informationof interestedtarget, but alsolocalizetarget withtwoor moredifferent bearing
+angle information [1]. Usually, the bearing angle estimation techniques can be divided
+by two categories, namely the DOA estimation and the DOA tracking. The former one
+unusually assumes the target remains stationary or make very slow maneuvers. How-
+ever, in many underwater target tracking scenes, the target always performs a typical
+moving mode (i.e., constant-velocity (CV) moving, constant-acceleration moving, etc.)
+that the DOA estimation technique can have poor estimation results since it ignores
+the target’s kinematic and dynamic information [1]. Under this circumstance, the DOA
+tracking technique which considers both of the target’s kinematics and dynamics and
+the measurement model can achieve more accurate estimation results if the target is
+maneuvering.
+Considering the superior characteristics of the DOA tracking. Many researchers have
+proposed a number of nonlinear tracking algorithms to realize the DOA tracking in the
+scenario of underwater target bearing angle estimation. Kong and Chun [1] proposed
+© The Author(s), under exclusive license to Springer Nature Singapore Pte Ltd. 2023
+L. Yan et al. (Eds.): ICGNC 2022, LNEE 845, pp. 6879–6888, 2023.
+https://doi.org/10.1007/978-981-19-6613-2_663
+
+
+===== PAGE 2 =====
+6880
+B. Zhang et al.
+a novel extended Kalman ﬁlter (EKF) based DOA tracking method dealing with the
+nonlinear measurement model, which linearize the nonlinear model by applying ﬁrst-
+order Taylor series expansion, i.e., Jacobian matrix, of measurement model. Depend on
+similar principles that linearize nonlinear models, high-precision tracking techniques
+using unscented Kalman ﬁlter [2] and cubature Kalman ﬁlter (CKF) [3, 4] are proposed.
+Unlike the above methods that approximately linearize nonlinear models, the tracking
+method based on particle ﬁlter (PF) [5] can theoretically realize accurate tracking in
+any tracking models with any distributions of stochastic noise by generating and trans-
+forming a large number of arbitrary particles. However, the PF-based tracking method
+has signiﬁcant computational complexity due to its large number of particles, especially
+when tracking system is nonlinear. Then, real applications are very few based on the PF
+tracking method.
+Also, taking account unknown underwater environment can sometimes lead to uncer-
+tainmeasurementnoise,theDOAtrackingtechniqueneedstoberobusttoobtainaccurate
+bearing angle estimations. The state-of-art robust tracking techniques can be divided to
+two categories, namely the inspired technique (i.e., Sage-Husa online noise estimator and
+innovation adaptive estimator) [6] and the Bayesian technique (i.e., variational Bayesian
+estimator) [7, 8]. The former one depends on a large period of good measurements and
+estimate the uncertain measurement covariance matrix by the historical good estima-
+tions. However, this kind of inspired online noise estimator can hardly guarantee its
+convergence and the period of good estimations is usually determined by experience.
+Considering the drawbacks of the inspired techniques, the VB technique is much more
+superior for it has the analytical description of the posterior probability function (PDF)
+of the uncertain measurement noise. Also, by adopting the VB estimation technique,
+both of the uncertain measurement noise and the current state can be estimated in the
+same time [7, 8]. As a result, the VB based online noise estimating techniques are more
+and more popular among the researchers to realize the robust target tracking missions.
+Inspired by the VB technique and focused on the robust underwater target tracking
+mission, this paper proposed a VB-EKF to achieve robust and accurate DOA tracking
+of an underwater target with uncertain measurement noise. Firstly, considering a wide
+range in a long-time tracking scenario, the uniform circular array (UCA) is used since
+it is free from the port and starboard ambiguity problem [9]. Then, the VB-EKF is
+derived based on the high nonlinear measurement model and the uncertain measurement
+noise. Finally, the proposed VB-EKF is veriﬁed by the MATLAB simulations and the
+robustness and accuracy are proved.
+2
+Problem Formulation
+2.1
+Underwater Target’s Bearing Angle Kinematic Model
+Since underwater target often perform in a constant velocity to keep invisibility and far
+from sonar arrays, the kinematic model of the target’s bearing angle can be modeled as
+the CV model.
+Let θk denotes the bearing angle of the target (θk is angle between the target and the
+positive x-axis with the positive counterclockwise direction.) and ˙θk denotes the change
+
+
+===== PAGE 3 =====
+Robust Underwater Direction-of-Arrival Tracking
+6881
+rate of θk. Then, the CV motion kinematic model of the bearing angle:
+xk = Fk|k−1xk−1 + Gk−1wk−1
+(1)
+where xk =
+
+θk, ˙θk
+T is the system state at time step k, and (·)T denotes the matrix trans-
+position, and wk−1 denotes the zero mean Gaussian process noise with the covariance
+matrix Qk−1 caused by the unknown underwater environment. Qk−1 is named process
+noise covariance matrix (PNCM). Fk|k−1 and Gk are the state transition matrix for CV
+motion and the noise driving matrix at time step k, which are given by:
+Fk|k−1 =
+1 T
+0 1
+
+(2)
+Gk−1=
+T 2/2
+T
+
+(3)
+where T is interval between the adjacent time steps.
+2.2
+Measurement Model Using UCAs
+Considering the UCAs can avoid the port and starboard ambiguity problem, the mea-
+surement model is founded by the UCAs raw measurement. The conﬁguration of UCAs
+and the underwater target is depicted as Fig. 1.
+Target
+x
+y
+UCA
+Hydrophone
+k
+θ
+Fig. 1. Conﬁguration of the UCA based measurement system
+Considering the target emits a narrowband acoustic signal at the frequency f with
+the amplitude a and the initial phase φ0, the target signal at k is expressed as:
+s(k) = α exp(j(2πfk + φ0))
+(4)
+The emitted signal given by Eq. (4) is received by the UCA with P elements at time
+step k. The P elements are uniformly placed around the circle with the radius and the
+center at origin of the cartesian coordinates. It is assumed that the range of the target
+satisﬁes the far-ﬁeld condition to regard the arrived signal as a plane wave, and the sound
+velocity is c. Then, time delay of signal relative to center of UCA at the p-th element
+
+
+===== PAGE 4 =====
+6882
+B. Zhang et al.
+(p = 1, 2, ..., P) is r/c cos(θk −2πp/P). Also, considering the signal given by Eq. (4),
+the shift of the signal caused by the time delay at the p-th element is expressed as:
+Ap(θk) = exp
+
+j2πf r
+c cos
+
+θk −2π p
+P
+
+(5)
+Furthermore, the received real signal of the p-th element zp(k) is expressed as:
+zp(k) = real
+
+Ap(θk)s(k)
+
++ vk
+(6)
+where real(·) denotes taking real part of a complex number, θk is bearing angle of the
+target at time k, vk is the measurement noise at step k, which is deﬁned as the zero mean
+Gaussian noise with the variance σ 2
+r,k from the unknown underwater environment and
+the measurement system.
+Deﬁning
+the
+received
+signal
+vector
+of
+UCA
+at
+step
+k
+as
+z(k)
+=
+[z1(k), z2(k), ..., zP(k)]T, the output of the UCA can be expressed as:
+z(k) = real(A(θk)s(k)) + vk
+(7)
+where
+hk(xk)
+denotes
+the
+nonlinear
+measurement
+function,
+and
+A(θk)
+=
+[A1(θk), A2(θk), ..., AP(θk)]T is the array manifold vector of the UCA, and vk is the
+column vector formed by the measurement noise of P elements. M snapshots of the
+received signal are taken in a measurement. The snapshots are taken from a small period
+within T. Then, the measurement model at tracking step k is expressed as:
+Zk =
+⎡
+⎢⎢⎢⎢⎢⎢⎢⎣
+z(k)
+z(k + τ)
+z(k + 2τ)
+...
+z(k + (M −1)τ)
+⎤
+⎥⎥⎥⎥⎥⎥⎥⎦
+= hk(Xk) + Vk =
+⎡
+⎢⎢⎢⎢⎢⎢⎢⎣
+real(A(θk)s(k))
+real(A(θk)s(k + τ))
+real(A(θk)s(k + 2τ))
+...
+real(A(θk)s(k + (M −1)τ))
+⎤
+⎥⎥⎥⎥⎥⎥⎥⎦
++ Vk
+(8)
+where τ is the interval between adjacent snapshots, and M τ ≪T. It is assumed that the
+stochastic measurement noise of each element is independent and subject to the same
+distributions. Thus, the measurement noise Vk at tracking step k is deﬁned as a zero-
+mean Gaussian noise with MNCM of Rk=IMPσ 2
+r,k, where IMP is the MP-order identity
+matrix and σ 2
+r,k is the variance of measurement noise of each element at tracking step k.
+From Eq. (8), it can be found that the measurement model is high nonlinear. Also,
+the unknown underwater environment sometimes will change the MNCM to make it
+uncertain. Thus, based on the VB technique, the VB-EKF DOA tracking method is
+derived in detail in this section.
+3
+VB-EKF for Robust DOA Tracking
+3.1
+Choice of Prior Distribution
+Inordertoinferxk alongwithRk,aconjugatepriorneedtoselectfortheﬂuctuantMNCM
+Rk. Since a conjugate distribution can guarantee the same functional forms of distribution
+
+
+===== PAGE 5 =====
+Robust Underwater Direction-of-Arrival Tracking
+6883
+and the posterior distribution. In the Bayesian theory, inverse Wishart distribution is
+usually used as the conjugate prior for the covariance matrix of a Gaussian distribution
+with known mean [10]. Since Rk is the covariance matrix of Gaussian distribution, the
+prior distribution p(Rk|z1:k−1) is selected as an inverse Wishart distribution given by
+p(Rk|z1:k−1) = IW
+
+Rk; ˆuk|k−1, ˆUk|k−1
+
+(9)
+where IW(· ; λ, Ψ ) denotes the PDF of the inverse Wishart distribution with degree of
+freedom (dof) λ and inverse scale matrix Ψ [8], ˆuk|k−1 and ˆUk|k−1 are the dof and the
+inverse scale matrix of p(Rk|z1:k−1), respectively.
+The posterior distribution p(Rk−1|z1:k−1) is also subject to an inverse Wishart
+distribution as follows:
+p(Rk−1|z1:k−1) = IW
+
+Rk−1; ˆuk−1|k−1, ˆUk−1|k−1
+
+(10)
+To guarantee that p(Rk|z1:k−1) is the inverse Wishart distribution given by Eq. (9),
+the previous approximate posteriors is spread through a forgetting factor ρ ∈(0, 1],
+which indicates the extend of the time-ﬂuctuations of the MNCM. Then, the prior dof
+ˆuk|k−1 and the prior inverse scale matrix ˆUk|k−1 are given as follows [8]:
+ˆuk|k−1 = ρ
+
+ˆuk−1|k−1 −n −1
+
++ n + 1
+(11)
+ˆUk|k−1 = ρ ˆUk−1|k−1
+(12)
+where n denotes the order of the MNCM Rk.
+3.2
+VB-EKF Algorithm
+Combining the of framework of the standard EKF and the assumption of the distribution
+of MNCM, the algorithm of VB-EKF at one time step is given as follows:
+1) Input parameters:
+Input the estimate ˆxk−1|k−1 and root mean square matrix Pk−1|k−1 at time k – 1, the
+dof ˆuk−1|k−1 and the inverse scale matrix ˆUk−1|k−1 at step k – 1, measurement zk at
+time step k, the forgetting factor ρ, and number of iterations N.
+2) Time update:
+One step prediction state and root mean square error are given:
+ˆxk|k−1 = Fk−1ˆxk−1|k−1
+(13)
+Pk|k−1 = Fk|k−1Pk−1|k−1FT
+k|k−1 + Gk−1Qk−1GT
+k−1
+(14)
+The dof and inverse scale matrix are given by:
+ˆuk|k−1 = ρ(ˆuk−1|k−1 −n −1) + n + 1
+(15)
+ˆUk|k−1 = ρ ˆUk−1|k−1
+(16)
+
+
+===== PAGE 6 =====
+6884
+B. Zhang et al.
+3) Iteration process of measurement update:
+The state and the estimate of MNCM is initialized as follows:
+ˆx(0)
+k
+= ˆxk|k−1
+(17)
+ˆR(0)
+k
+= ˆUk|k−1/ˆuk|k−1
+(18)
+Let i = 0 and start the iteration process.
+The estimate of the signal of the target is given by [1]:
+ˆs(i)
+k|k(k) =
+
+AH
+ˆθ(i)
+k|k
+
+A
+
+ˆθ(i)
+k|k
+−1
+AH
+ˆθ(i)
+k|k
+
+Hilbert(z(k))
+(19)
+where ˆθ(i)
+k|k is the predicted bearing angle, i.e., the ﬁrst term of ˆxk|k−1, A
+
+ˆθ(i)
+k|k
+
+is
+obtained by using Eq. (5). (·)H and Hilbert(·) denote the conjugate transposition and
+the Hilbert transform, respectively.
+The measurement function h(ˆx(i)
+k|k) is obtained by substituting ˆx(i)
+k|k into Eq. (8).
+The Jacobian matrix of the measurement function is given by:
+H(i)
+k =
+
+h′
+1, h′
+2 · · · h′
+P
+0, 0, · · · , 0
+T
+(20)
+where the expression of h′
+p is given as follows:
+h′
+p = −2πf r
+c sin
+
+ˆθ(i)
+k|k −2π p
+P
+
+real
+
+jAp
+
+ˆθ(i)
+k|k
+
+ˆsk|k−1(k)
+
+(21)
+The Kalman ﬁlter gain is updated as:
+K(i+1)
+k
+= Pk|k−1(H(i)
+k )T(H(i)
+k Pk|k−1(H(i)
+k )T + ˆR(i)
+k )−1
+(22)
+The state is updated as:
+ˆx(i+1)
+k|k
+= ˆxk|k−1 + K(i+1)
+k
+(zk −h(ˆx(i)
+k|k) −H(i)
+k (ˆxk|k−1 −ˆx(i)
+k|k))
+(23)
+The root mean square error matrix is updated as:
+P(i+1)
+k|k
+= Pk|k−1 −K(i+1)
+k
+H(i)
+k Pk|k−1
+(24)
+ˆs(i+1)
+k|k
+(k), h(ˆx(i+1)
+k|k
+), and H(i+1)
+k
+are calculated by Eq. (8), (19)-(21).
+The dof and the inverse scale are updated as follows:
+B(i+1)
+k
+= (zk −h(ˆx(i+1)
+k|k
+))(zk −h(ˆx(i+1)
+k|k
+))T + H(i+1)
+k
+P(i+1)
+k|k
+(H(i+1)
+k
+)T
+(25)
+ˆU (i+1)
+k|k
+= ˆUk|k−1 + B(i+1)
+k
+, ˆu(i+1)
+k|k
+= ˆuk|k−1 + 1
+(26)
+The estimate of MNCM is updated as:
+ˆR(i+1)
+k
+= ˆU (i+1)
+k|k
+/ˆu(i+1)
+k|k
+(27)
+Let i = i + 1 and perform step (2)-(10) until i = N −1. Then the estimate of
+MNCM, the dof and the inverse scale matrix are decided to ˆRk = ˆR(N)
+k
+, ˆuk|k = ˆu(N)
+k|k ,
+ˆUk|k = ˆU (N)
+k|k .
+
+
+===== PAGE 7 =====
+Robust Underwater Direction-of-Arrival Tracking
+6885
+4) Output parameters:
+Output the state estimate ˆxk|k, the root mean square error matrix Pk|k, the
+estimates of dof ˆuk|k and inverse scale matrix ˆUk|k.
+By substituting the output parameters of the previous time step into the next time
+step as the input parameter, the state of the target can be estimated recursively.
+4
+Simulations
+4.1
+Simulation Scenario
+Through simulations, an underwater target perform in the CV motion mode with the
+condition x0 = [270, −0.03], and Qk−1 = 2 × 10−4◦/s2. The total simulation time was
+set to 5000 s with a 2 s interval. For the measurement model, the frequency f, amplitude
+a and the initial phase φ0 of the target signal were 170 Hz, 1 and 0, respectively, and
+the sample frequency of the received signal fs was 1000 Hz. A 12 elements UCA was
+used to obtain the measurements. The underwater sound velocity c was assumed to be
+1500 m/s.
+To test the robustness of VB-EKF to uncertain measurement noise caused by the
+unknownunderwatercircumstance,astrongGaussianwhitenoisewasaddedfrom3600s
+to 4000 s of the measurements. Once the MNCM Rk during the period without the strong
+noise was set to IPσ 2
+r , Rk at all steps was expressed as:
+Rk =
+
+IPσ 2
+r
+0 ≤k < 1800, 2000 < k ≤2500
+10IPσ 2
+r
+1800 ≤k ≤2000
+(28)
+where σ 2
+r was set to 1.
+The proposed VB-EKF for DOA tracking given by Algorithm 1 was tested by the
+simulated measurement data. The results of the Conventional beamforming (CBF)-based
+DOA estimation, the standard EKF is also given for comparison. The scanning bearing
+angle of the CBF varying every 1° from 0 to 360°. The state estimate of EKF and VB-
+EKF are initialized to ˆx0 = [ ˆθ0
+CBF, 0], where ˆθ0
+CBF was the bearing angle estimated by
+using CBF at k = 0. Pk|k was initialized to P0 = diag([100, 0.01]). The process noise
+covariance matrix Qk−1 for EKF and VB-EKF are all set to the true value 2×10−4◦/s2.
+The MNCM of EKF was set to a constant IP. For the VB-EKF and, the dof ˆu0 and inverse
+scale matrix ˆU0 of the inverse Wishart distribution is set to 16 and 16IMP, respectively,
+and the forgetting factor ρ was set to 0.9995.
+To statistically evaluate performance of VB-EKF, 500 Monte Carlo simulations were
+performed. The root mean square error for the DOA tracking result at time step k was
+deﬁned as
+RMSEθ =
+
+
+
+ 1
+N
+N
+
+n=1
+
+ˆθk −θk
+2
+(29)
+where N is Monte Carlo trials’ number, ˆθk is bearing angle estimate of the target, θk is
+true bearing angle of target.
+
+
+===== PAGE 8 =====
+6886
+B. Zhang et al.
+4.2
+Simulation Results
+The DOA tracking results shown in Fig. 2, which showed that CBF was invalid during
+the existence of the strong noise from 3600 s to 4000 s due to its excessive relying on
+the present measurement. The precision of the EKF was higher than that of the CBF.
+Furthermore, the EKF provided valid tracking even from 3600 s to 4000 s. The VB-EKF
+provided the most high-precision tracking, even when the strong noise exists.
+(a)                                                   (b) 
+(c) 
+Fig. 2. Bearing angle tracking results of (a) CBF, (b) EKF, (c) VB-EKF
+The accuracy of the proposed VB-EKF, EKF and CBF are shown in Fig. 3. It shows
+that, similar to the above conclusion, the VB-EKF provided the most high-precision
+tracking even during the existence of the strong noise, while the CBF was invalid during
+this time. Moreover, the performance of the VB-EKF was scarcely affected by the strong
+noise. The superior performance of the proposed VB-EKF was veriﬁed again.
+
+
+===== PAGE 9 =====
+Robust Underwater Direction-of-Arrival Tracking
+6887
+(a)                                                   (b) 
+Fig. 3. RMSEs of CBF, EKF and VB-EKF.
+5
+Conclusion
+A robust underwater target DOA tracking algorithm inspired of VB technique is pro-
+posed. By modeling measurement model of the raw measurement data of a UCA and
+considering the uncertain measurement noise, the proposed VB-EKF can make reliable
+estimations about the target’s bearing angle. The simulation results proved the proposed
+VB-EKF has superior tracking performance compared to the CBF and EKF. Further
+work will focus on the computational effective variations of the robust DOA tracking
+based on VB and their experiment veriﬁcation.
+Acknowledgement. This work was supported by the National Natural Science Foundation of
+China under Grant No. 12104113, and the foundation of the State Key laboratory of AFDL under
+Grant No. 6142210200103.
+References
+1. Kong, D., Chun, J.: A fast DOA tracking algorithm based on the extended Kalman ﬁlter. In:
+Proceedings of the IEEE 2000 National Aerospace and Electronics Conference (NAECON),
+pp. 235–238 (2000)
+2. Koteswara Rao, S., Raja Rajeswari, K., Lingamurty, K.S.: Unscented Kalman ﬁlter with
+application to bearings-only target tracking. IETE J. Res. 55(2), 63–67 (2009)
+3. Leong, P.H., Arulampalam, S., Lamahewa, T.A., Abhayapala, T.D.: A Gaussian-sum based
+cubature Kalman ﬁlter for bearings-only tracking. IEEE T. Aero. Elec. Sys. 49(2), 1161–1176
+(2013)
+4. Feng, H., Cai, Z.: Target tracking based on improved square root cubature particle ﬁlter via
+underwater wireless sensor networks. IET Commun. 13(8), 1008–1015 (2019)
+5. Orton, M., Fitzgerald, W.: A Bayesian approach to tracking multiple targets using sensor
+arrays and particle ﬁlters. IEEE T. Signal Proces. 50(2), 216–223 (2002)
+6. Sage, A.P., Husa, G.W.: Adaptive ﬁltering with unknown prior statistics. In: Joint Automatic
+Control Conference, pp. 760–769 (1969)
+7. Sarkka, S., Nummenmaa, A.: Recursive noise adaptive Kalman ﬁltering by variational
+Bayesian approximations. IEEE Trans. Autom. Control 54(3), 596–600 (2009)
+8. Huang, Y., Zhang, Y., Wu, Z., Li, N., Chambers, J.: A novel adaptive Kalman ﬁlter with
+inaccurate process and measurement noise covariance matrices. IEEE Trans. Autom. Control
+63(2), 594–601 (2017)
+
+
+===== PAGE 10 =====
+6888
+B. Zhang et al.
+9. Meng, Z., Chen, H.: DOA estimation of near-ﬁeld broadband signals using uniform circular
+arrays. J. Phys. Conf. Ser. 1621(1), 012079
+10. Hagan, A.O., Forster, J.J.: Kendall’s Advanced Theory of Statistics, Volume 2B: Bayesian
+Inference. Arnold, London, UK (2004)

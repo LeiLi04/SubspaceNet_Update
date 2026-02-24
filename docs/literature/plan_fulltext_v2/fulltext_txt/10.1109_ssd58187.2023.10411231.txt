@@ -1,0 +1,786 @@
+
+
+===== PAGE 1 =====
+Direction of arrival tracking using adaptive robust
+subspace decomposition and Kalman ﬁlter
+Zineb Bekhtaoui1, Abdelkrim Meche1, Karim Abed-Meraim2, Mohamed Dahmani1
+1Laboratoire Signaux et Images, USTO-MB, Oran, Algeria
+2IUF (Institut Universitaire de France) member afﬁliated to PRISME Lab.,Univ. Orl´eans, France
+E-mails: zineb.bekhtaoui@univ-usto.dz, abdelkrim.meche@univ-usto.dz, karim.abed-meraim@univ-orleans.fr,
+dahmaniusto@gmail.com
+Abstract—In this paper, we consider directions of arrival
+estimation and tracking in a noisy and relatively adverse
+scenario. We thus use a robust subspace tracking method
+called HTFAPI that exploits a weighted least squares cri-
+terion to enhance robustness, followed by a smoothing
+Kalman ﬁlter to improve the estimation. Simulated experi-
+ments are then presented to show that the proposed solution
+enhances the performance when dealing with corrupted
+data in an impulsive noise environment.
+Index Terms—Robust subspace tracking, Directions of
+arrival, Kalman ﬁlter, Impulsive noise
+I. INTRODUCTION
+Directions of Arrival (DoA) estimation and tracking
+have long presented a great interest in signal processing.
+In the array signal processing literature, we can come
+across several research axes on this subject. The high-
+resolution methods that appeared in that context were
+the MUltiple SIgnal Classiﬁcation (MUSIC) method [1]
+and the Estimation of Signal Parameters via Rotational
+Invariance Techniques (ESPRIT) algorithm [2]. However,
+these methods are very expensive in terms of complexity
+due to the eigendecomposition of the data covariance.
+Thankfully, adaptive algorithms with linear complexity
+have emerged to lower the cost of this eigendecomposi-
+tion step, such as the Projection Approximation Subspace
+Tracking (PAST) [3], Orthogonal PAST (OPAST) [4],
+PAST with the deﬂation technique (PASTd) [3], Fast
+Approximated Power Iteration (FAPI) [5] and Fast Data
+Projection Method (FDPM) [6]. Furthermore, to improve
+the results of these algorithms, several works have pro-
+posed to add a Kalman ﬁlter to smooth the tracking of
+the DoA [7]–[9]. Despite their efﬁciency, these algorithms
+lack of robustness. Indeed, in the presence of impulsive
+noise, these algorithms diverge and the estimation error
+of the DoA becomes too large. In this context, one can
+ﬁnd several subspace tracking algorithms that deal with
+this problem [10]–[13]. It has been shown in [14] that
+the algorithm called Mahalanobis FAPI (MFAPI) and its
+lower cost version Hard Thresholding FAPI (HTFAPI)
+out-perform the other algorithms in the presence of data
+corrupted by impulsive noise or outliers.
+The latter algorithms propose to replace the least
+squares (LS) criterion of the subspace estimation with
+a more appropriate weighted criterion WLS “Weighted
+LS” in order to mitigate the impact of corrupted data
+through the choice of a proper attenuation coefﬁcient as
+in [10]. In addition, they use the projection approximation
+proposed in [5] which helps to reduce signiﬁcantly the
+computational cost.
+In this article, we propose to smooth the results ob-
+tained by the HTFAPI algorithm by using a Kalman ﬁlter.
+More precisely, the directions of arrival given by HTFAPI
+followed by ESPRIT algorithms are considered to be
+measurements for Kalman’s ﬁlter. Besides, the parame-
+ters of the latter are chosen dynamically according to the
+weighting coefﬁcient of the algorithm HTFAPI.
+The rest of this article is organized as follows. Section
+II details the problem statement. Then, the HTFAPI algo-
+rithm is introduced in section III. The proposed algorithm
+is presented in section IV, while the results of simulations
+are given in section V. Finally, section VI concludes this
+paper.
+II. PROBLEM STATEMENT
+We consider a uniformly spaced antenna array of
+n sensors receiving plane waves emitted by p nar-
+row band source signals. We will denote X
+=
+
+x(1); x(2); · · · ; x(N)
+
+a sequence received in ”N” time
+units where x(t) is the vector of observation of size n at
+time ”t” given by:
+x(t) =
+p
+X
+k=1
+sk(t)a(ωk) + n(t) = As(t) + n(t)
+(1)
+979-8-3503-3256-8/23/$31.00 ©2023 IEEE
+2023 20th International Multi-Conference on Systems, Signals & Devices (SSD)
+771
+2023 20th International Multi-Conference on Systems, Signals & Devices (SSD) | 979-8-3503-3256-8/23/$31.00 ©2023 IEEE | DOI: 10.1109/SSD58187.2023.10411231
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:31:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+where:
+• s(t) : is a random signal vector corresponding to
+the data emitted by each source with the covariance
+Cs = E[s(t)sH(t)] > 0
+• A = [a(ω1); a(ω2); · · · ; a(ωp)]
+– a(ωk) = [1; ejωk; · · · ; ejωk(n−1)]
+– ωk = 2π d
+λ sin(θk)
+– d is the distance between the sensors in the
+antenna array. In this paper it will be equal the
+half of the wavelength λ.
+– θk is the direction of arrival of the k-th plane
+wave.
+• n(t) is the noise vector.
+The aim here, is to estimate and track the direction of
+arrivals {θk} in a robust way and with low computational
+cost. To do so, we ﬁrst estimate adaptively a basis of
+the principal subspace of the observations covariance
+matrix Cx = E[xxH] denoted D(t) using the HTFAPI
+robust algorithm. Then we proceed to the DoA extraction
+using the Total Least Squares version of ESPRIT (TLS-
+ESPRIT) as in [10]. Finally, we smooth the results using
+the Kalman ﬁlter to further enhance the estimation and
+tracking quality.
+III. ROBUST SUBSPACE TRACKING ALGORITHM
+In [10], Nguyen et al have proposed a new weighted
+cost function for subspace tracking. In this latter, a
+weighting parameter was introduced. Indeed, the obser-
+vation is weighted so that corrupted observations are
+automatically mitigated.
+J(D(t)) =
+t
+X
+i=1
+βt−iω(i) ∥x(i) −D(t)y(i)∥2
+(2)
+Where 0 < β < 1 is a forgetting factor and y(i) =
+DH(t)x(i) ≈DH(i −1)x(i) according to the projection
+approximation introduced in [3].
+The weight ω(i) is equal to the square inverse of
+Mahalanobis distance. It is straight forward to say that
+when this distance is large, proof of the presence of a
+corrupted observation, the weight becomes relatively very
+small.
+ω(i) =
+1
+d2
+M(x(i), C−1
+x (i −1)) =
+1
+xH(i)C−1
+x (i −1)x(i)
+(3)
+To compute this distance with reduced cost, the inverse
+of the covariance matrix C−1
+x (t −1) is calculated recur-
+sively. Taking into account the instantaneous formula of
+the covariance matrix (4)
+Cx(t) = βCx(t −1) + x(t)xH(t)
+(4)
+Later on, in [14], a more efﬁcient cost function was pro-
+posed using FAPI’s projection approximation introduced
+in [5] D(t) ≈D(t−1)Θ(t) where Θ(t) is an orthonormal
+matrix of size p×p. This results in the cost function given
+by:
+J′(D(t)) =
+t
+X
+j=1
+βt−jω(j) ∥x(j) −D(t)Θ(t)y(j)∥2
+(5)
+Given that, two methods were then proposed to de-
+termine the weight value ω(t): the square inverse of
+Mahalanobis distance using the robust instantaneous for-
+mula of the covariance matrix (6) which leads to MFAPI
+algorithm:
+Cx(t) = βCx(t −1) + ω(t)x(t)xH(t)
+(6)
+and a lower-cost version using order statistics. The latter
+consists of using hard thresholding to determine whether
+the new weighting factor ω(t) takes 0 or 1 value at time
+instant t according to whether the observation is corrupted
+and disregarded, or is valid and included in the estimation
+of the subspace.
+Indeed, considering the quantity ǫ2(t) deﬁned by :
+ǫ2(t) = ||x(t)||2 −||y(t)||2
+(7)
+which represents approximately (up to a constant factor)
+the instantaneous noise power, and given the fact that
+impulsive noise realizations would have instantaneous
+power much higher and less frequent than the median
+power value, it was proposed in [14] to use the well
+known Inter Quartile Range (IQR) method for outliers
+detection [15], [16]. Using a sliding window of size L,
+we deﬁne:
+˜ǫ(t) = {ǫ2(t −L + 1) · · · ǫ2(t)}
+IQR(t) = Q3
+˜ǫ(t)
+
+−Q1
+˜ǫ(t)
+
+threshold(t) = Q3
+˜ǫ(t)
+
++ 1.5IQR(t)
+(8)
+Where Q1(·) and Q3(·) represent respectively the lower
+and the upper quartiles. Note that the adaptive compu-
+tation of these quartiles is of negligible cost and many
+algorithms exist for its fast, adaptive evaluation, e.g. [17].
+The weighting factor is then determined as follows:
+(
+ω(t) = 0
+if ǫ2(t) > threshold(t)
+ω(t) = 1
+if ǫ2(t) ≤threshold(t)
+(9)
+The above leads to the HTFAPI algorithm. Now, given
+the value of the weight factor, the resolution of the cost
+772
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:31:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+Algorithm 1 HTFAPI algorithm
+1: Initialization
+2:
+D(0) =
+
+Ip
+0(n−p)×p
+
+; Z(0) = Ip
+for each time step do :
+3:
+input vector x(t)
+4:
+y(t) = DH(t −1)x(t)
+5:
+h(t) = Z(t −1)y(t)
+6:
+ǫ2(t) = ||x(t)||2 −||y(t)||2
+compute weight:
+7:
+˜ǫ(t) = [ǫ2(t −L + 1) · · · ǫ2(t)
+
+8:
+IQR(t) = Q3
+˜ǫ(t)
+
+−Q1
+˜ǫ(t)
+
+9:
+threshold(t) = Q3
+˜ǫ(t)
+
++ 1.5IQR(t)
+10:
+if ǫ2(t) ≤threshold(t) then
+11:
+ω(t) = 1
+12:
+else
+13:
+ω(t) = 0
+14:
+end if
+15:
+g(t) =
+h(t)ω(t)
+β+yH(t)h(t)ω(t)
+16:
+τ(t) =
+ǫ2(t)
+1+ǫ2(t)||g(t)||2+√
+1+ǫ2(t)||g(t)||2
+17:
+η(t) = 1 −τ(t)||g(t)||2
+18:
+y′(t) = η(t)y(t) + τ(t)g(t)
+19:
+h′(t) = ZH(t −1)y′(t)
+20:
+ǫ(t) = τ(t)
+η(t)(Z(t −1)g(t) −(h′(t)Hg(t))g(t))
+21:
+Z(t) = 1
+β(Z(t −1) −g(t)h′(t)H + e(t)gH(t))
+22:
+e′(t) = η(t)x(t) −D(t −1)y′(t)
+23:
+D(t) = D(t −1) + e′(t)gH(t)
+function can be implemented as summarized in algorithm
+1.
+Once the principal subspace matrix D(t) is estimated
+in a robust way, we apply the TLS-ESPRIT algorithm [18]
+to estimate the directions of arrival at each time iteration.
+In what follows, we will use the Kalman ﬁlter to enhance
+the accuracy of those estimates.
+IV. DOA SMOOTHING WITH KALMAN FILTER
+In the following, we consider the case where the tar-
+gets have time-varying directions. The state vector will
+therefore be yk(i) =
+h
+θk(i);
+˙θk(i)
+i
+where θk(i) is kth
+direction of arrival and ˙θk(i) is its rate of variation. The
+dynamics of this motion, as well as the measurements, are
+modeled by equations (10) and (11):
+yk(t + 1) = Fyk(t) + ψk(t)
+(10)
+θk(t) = Hyk(t) + υk(t)
+(11)
+Where:
+• F =
+1
+T
+0
+1
+
+is the transition matrix with a time step
+T, and H =
+
+1
+0
+
+is the measurement matrix.
+• ψk(t) is the noise process supposed to be Gaussian
+with covariance
+Qk(t) =
+ T 4
+4
+T 3
+2
+T 3
+2
+T 2
+
+σ2
+ψk
+• υk(t) is the measurement noise with variance
+Rk(t) = σ2
+υk
+The Kalman ﬁlter proceeds in two steps: a prediction
+before the measurement and an update after it:
+A. Prediction step:
+From the data available at time t, we can make a
+prediction of the state vectors of the next time step, of
+their covariance matrices Pk, as well as of the following
+measurements:
+ˆyk(t + 1|t) = Fyk(t|t)
+(12)
+Pk(t + 1|t) = FPk(t|t)FT + Qk(t)
+(13)
+ˆθk(t + 1|t) = Hˆyk(t + 1|t)
+(14)
+• At this point, the measurements θk(t) are taken to
+be the directions of arrival estimated by the HTFAPI
+algorithm followed by TLS-ESPRIT.
+B. Update step:
+After obtaining the new measurements, the prediction
+error, called innovation, and its covariance are computed
+as follows:
+dk(t) = θk(t) −ˆθk(t + 1|t)
+(15)
+µk = HPk(t + 1|t)HH + Rk(t)
+(16)
+This innovation is then used to improve the DoA esti-
+mation and their corresponding covariance updates:
+ˆyk(t + 1|t + 1) = ˆyk(t + 1|t) + Gk(t + 1)dk(t) (17)
+Pk(t + 1|t + 1) = [I2 −Gk(t + 1)H] Pk(t + 1|t) (18)
+Where I2 is a 2 × 2 identity matrix and Gk(t + 1) is the
+Kalman ﬁlter gain given by:
+Gk(t + 1) = Pk(t + 1|t)HHµ−1
+k
+(19)
+To initialize the Kalman ﬁlter we use the two points
+technique so that:
+yk(2) =
+
+θk(2);
+θk(2) −θk(1)
+T
+
+(20)
+773
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:31:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+Therefor, the initial covariance depends on the measure-
+ment variance as follows
+Pk(2) =
+1
+1
+T
+1
+T
+1
+T 2
+
+Rk(2)
+(21)
+Now, the choice of the Kalman ﬁlter parameters de-
+pends on the chosen model and the measurement accu-
+racy.
+To detect the presence of impulsive noise and thus to
+better tune the ﬁlter’s parameters, we propose to use the
+weight ω(t) calculated in the HTFAPI algorithm. Indeed,
+since it takes two distinct values (0 or 1) according
+to whether there is a noise impulsion or not, we can
+determine the Kalman ﬁlter parameters according to the
+context as explained next.
+V. SIMULATIONS AND RESULTS
+In this section, we investigate the performance of our
+proposed algorithm according to the scenario below.
+For the impulsive noise model, we consider here a burst
+noise generated according to equation (22):
+n(t) = nG(t) +
+NI
+X
+j=1
+u(t −ij
+bj
+)nj
+I(t)
+(22)
+where nG(t) is a white Gaussian and centered noise
+vector of variance σ2
+G and nI is a white-centered Gaussian
+noise of variance σ2
+I >> σ2
+G weighted by u(·) a rectangu-
+lar function, which is used to describe the short duration
+appearance of the burst noise. NI refers to the number
+of impulsive events, ij is the center of the j-th impulsive
+event, and bj is its duration.
+We aim to estimate and track the directions of arrival
+of p = 3 sources impinging on an antenna array of
+n = 9 sensors according to (1). We run 100 Monte Carlo
+simulations during N = 1000 instant time each.
+The ﬁrst source changes direction uniformly from 20◦
+to 40◦during the observation sequence, the second begins
+at 10◦and ends the sequence at 20◦while the third begins
+at 0◦and ends at 5◦, as displayed in Fig.(1):
+The noise model followed is the one described in (22),
+where the signal is disturbed by an additive noise letting
+its signal-to-noise ratio (SNR) to be at SNR = 0dB dur-
+ing the entire observation sequence except for two short
+periods of time: P1 = [201, 250] and P2 = [601, 700],
+where an impulsive noise appears inducing the signal
+SNR to be SNR = −20dB. A second simulation is run
+to show the behavior of the ﬁlters in the presence of a
+more important impulsive noise. In this latter, the signal
+SNR during P1 and P2 is set to be SNR = −40dB.
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+5
+10
+15
+20
+25
+30
+35
+40
+DoA (degrees°)
+Directions of Arrival over time
+θk=1
+θk=2
+θk=3
+Fig. 1. Directions of arrival changes over the studied time sequence
+The forgetting factor β in all algorithms including the
+HTFAPI is set to be 0.98 and the sliding window of the
+IQR method is of length L = 1000.
+The Kalman ﬁlter parameters are adjusted as follows:
+the noise process is set to be σ2
+ψk = 0.000012 during the
+entire experiment while the measurement noise is chosen
+dynamically as:
+(
+σ2
+υk = 0.002
+if ω(t) = 1
+σ2
+υk = 120 ∗0.002
+if ω(t) = 0
+The performance of this algorithm is evaluated accord-
+ing to the RMSE of the angular velocities ωk = π sin θk.
+The results shown in Fig.2 are compared to those of the
+OPAST algorithm as a benchmark to showcase the need
+for robust algorithms. Also, they are compared to those of
+the ROBUst Subspace Tracking Algorithm (ROBUSTA)
+proposed in [10] and the RPAST [11] to illustrate the
+motivation behind the choice of the subspace tracking al-
+gorithm. Lastly, our algorithm is compared to the Kalman
+Filter with Variable Number of Measurements algorithm
+(KFVNM) [19] to showcase the performance difference
+as compared to a similar algorithm. It is clearly noticeable
+that our algorithm outperforms the other ones in the
+presence of impulsive noise. Moreover, this performance
+gain is more noteworthy when the impulsive noise is more
+important as shown in ﬁg.3, when the signal SNR during
+the impulsion is about SNR = −40dB.
+VI. CONCLUSION
+We have proposed in this paper a new approach to
+enhance the directions of arrival estimation and track-
+ing in an impulsive noise environment using a robust
+774
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:31:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+RMSE
+DOA tracking error for k = 1
+Robusta
+HTFAPI
+OPAST
+HTFAPI+kalman
+KFVNM
+RPAST
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+0.02
+0.04
+0.06
+0.08
+0.1
+0.12
+0.14
+0.16
+RMSE
+DOA tracking error for k = 2
+Robusta
+HTFAPI
+OPAST
+HTFAPI+kalman
+KFVNM
+RPAST
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+RMSE
+DOA tracking error for k = 3
+Robusta
+HTFAPI
+OPAST
+HTFAPI+kalman
+KFVNM
+RPAST
+Fig. 2. RMSE of the DoA tracking in signal with SNR=-20dB in the
+presence of impulsive noise
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+RMSE
+DOA tracking error for k = 1
+Robusta
+HTFAPI
+OPAST
+HTFAPI+kalman
+KFVNM
+RPAST
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+RMSE
+DOA tracking error for k = 2
+Robusta
+HTFAPI
+OPAST
+HTFAPI+kalman
+KFVNM
+RPAST
+0
+100
+200
+300
+400
+500
+600
+700
+800
+900
+1000
+Time (s)
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+RMSE
+DOA tracking error for k = 3
+Robusta
+HTFAPI
+OPAST
+HTFAPI+kalman
+KFVNM
+RPAST
+Fig. 3. RMSE of the DoA tracking in signal with SNR=-40dB in the
+presence of impulsive noise
+775
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:31:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+subspace tracking method followed by a conventional
+Kalman ﬁlter. Indeed, the simulated experiments have
+shown that this latter combination improves considerably
+the performances of the tracking in the presence of a
+strong impulsive noise.
+REFERENCES
+[1] Andy Vesa. Direction of arrival estimation using MUSIC and
+root-MUSIC algorithm.
+In 18th Telecommunications Forum,
+pages 582–585, 2010.
+[2] Cheng Qian, Lei Huang, and H.C. So. Computationally efﬁcient
+ESPRIT algorithm for direction-of-arrival estimation based on
+Nystr¨om method. Signal Processing, 94:74–80, January 2014.
+[3] Bin Yang. Projection approximation subspace tracking. IEEE
+Transactions on Signal Processing, 43(1):95–107, January 1995.
+[4] K. Abed-Meraim, A. Chkeif, and Y. Hua. Fast orthonormal PAST
+algorithm. IEEE Signal Processing Letters, 7(3):60–62, March
+2000.
+[5] R. Badeau, B. David, and G. Richard.
+Fast approximated
+power iteration subspace tracking. IEEE Transactions on Signal
+Processing, 53(8):2931–2941, aug 2005.
+[6] Xenofon G. Doukopoulos and George V. Moustakides.
+Fast
+and Stable Subspace Tracking.
+IEEE Transactions on Signal
+Processing, 56(4):1452–1465, April 2008.
+[7] Gangqiang Guan, Deyong Xian, Zhou Yi, and Weihua Xie.
+A Stable DOA Tracking Method Using FDPM and Kalman
+Filter.
+In Jiadong Sun, Changfeng Yang, and Shuren Guo,
+editors, China Satellite Navigation Conference (CSNC) 2018
+Proceedings, volume 499, pages 445–453. Springer Singapore,
+Singapore, 2018.
+[8] J. Sanchez-Araujo and S. Marcos. An efﬁcient PASTd-algorithm
+implementation for multiple direction of arrival tracking. IEEE
+Transactions on Signal Processing, 47(8):2321–2324, August
+1999.
+[9] Amir Valizadeh, Mahmood Karimi, and Omid Oliaeid.
+An
+Efﬁcient Algorithm for Mutiple Direction of Arrival Tracking
+Based on the Constrained Projection Approximation Approach
+and Kalman Filter. In 2007 IEEE International Conference on
+Acoustics, Speech and Signal Processing - ICASSP ’07, pages
+II–1089–II–1092, Honolulu, HI, USA, 2007. IEEE.
+[10] Linh-Trung Nguyen, Viet-Dung Nguyen, Messaoud Thameri,
+Minh-Chinh Truong, and Karim Abed Meraim. Low-complexity
+adaptive algorithms for robust subspace tracking. IEEE Journal
+of Selected Topics in Signal Processing, pages 1–1, 2018.
+[11] Shing-Chow Chan, Yu Wen, and Ka-Leung Ho. A robust PAST
+algorithm for subspace tracking in impulsive noise. IEEE Trans-
+actions on Signal Processing, 54(1):105–116, January 2006.
+[12] Messaoud Thameri, Karim Abed-Meraim, and Adel Be-
+louchrani.
+Robust subspace tracking in impulsive noise envi-
+ronment.
+In International Conference on Automatic control,
+Telecommunications and Signals (ICATS15), 2015.
+[13] Nguyen Viet Dung, Nguyen Linh Trung, Karim Abed-Meraim,
+et al. Robust subspace tracking algorithms in signal processing:
+A brief survey. REV Journal on Electronics and Communica-
+tions, 11(1-2), 2021.
+[14] Zineb Bekhtaoui, Karim Abed-Meraim, and Abdelkrim Meche.
+Robust adaptive algorithms for fast principal component analy-
+sis. Digital Signal Processing, 127:103561, 2022.
+[15] Giulio Barbato, EM Barini, Gianfranco Genta, and Raffaello
+Levi. Features and performance of some outlier detection meth-
+ods. Journal of Applied Statistics, 38(10):2133–2149, 2011.
+[16] Paweł D Doma´nski. Study on statistical outlier detection and
+labelling. International Journal of Automation and Computing,
+17(6):788–811, 2020.
+[17] A. Arasu and G. S. Manku.
+Approximate counts and quan-
+tiles over sliding windows. ACM Symposium on Principles of
+Database Systems (PODS), pages 286–296, 2004.
+[18] B. Ottersten; M. Viberg; T. Kailath.
+Performance analysis of
+the total least squares ESPRIT algorithm. IEEE Transactions on
+Signal Processing, 39(5):1122 – 1135, May 1991.
+[19] Bin Liao, ZG Zhang, and Shing-Chow Chan.
+A new robust
+kalman ﬁlter-based subspace tracking algorithm in an impulsive
+noise environment. IEEE Transactions on Circuits and Systems
+II: Express Briefs, 57(9):740–744, 2010.
+776
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:31:00 UTC from IEEE Xplore.  Restrictions apply. 

@@ -1,0 +1,933 @@
+
+
+===== PAGE 1 =====
+A Method of Multiple Targets DOA Tracking with 
+Vector Hydrophone Based on Unite Processing in 
+Time and Frequency Domain 
+ Wei Zhang 
+Divison 105 
+Yichang Research Institute of 
+Testing Technology 
+Yichang, China 
+ zhangwei667@163.com 
+Ling Shang 
+Metrology Department 
+ Yichang Research Institute of 
+Testing Technology 
+ Yichang, China 
+64505513@qq.com 
+Hongxing Tian 
+Divison 105 
+Yichang Research Institute of 
+Testing Technology 
+Yichang，China 
+1574503594@qq.com 
+Yangbo Zhang 
+Divison 105 
+Yichang Research Institute of 
+Testing Technology 
+Yichang，China 
+zhangyangbo818@163.com
+Abstract—Acoustic 
+pressure 
+and 
+particle 
+velocity 
+is 
+narrowband filtered to obtain multi-band signal. High-order 
+correlation equations composed of acoustic pressure and particle 
+velocity are solved by optimization algorithm and DOA (Direction 
+of arrive) distribution for different signal in multi-band is counted. 
+Then the DOA of multiple targets can be distinguished and 
+tracked. In order to improve the accuracy, the least square method 
+is used to fit the measurement results and a prediction model is 
+established, and then DOA trajectory is optimized by Kalman 
+filter. The experimental results indicate that DOA of three targets 
+can be distinguished and trajectory tracked, DOA of interference 
+source is also observed by the pseudo color picture of DOA 
+distribution, the accuracy of  DOA estimation is less than 5°. 
+Keywords—vector hydrophone, DOA estimation, least square 
+method, Kalman filter, optimization algorithm   
+I. INTRODUCTION
+The detection of target radiated noise and passive DOA 
+estimation are always an important question for discussion of 
+under water early warning[1]. With the development of 
+vibration and noise reduction, radiated noise of underwater 
+target reduced year by year, especially in the high frequency 
+band. In order to detect long-distance targets, it is generally 
+necessary to carry out in the low frequency band. For low 
+frequency signals, in order to obtain ideal spatial gain, the 
+traditional sound pressure array must have a large physical 
+aperture, which is inconvenient or even impossible in 
+engineering application. Vector hydrophone can be output 
+acoustic pressure and particle velocity at the same point 
+synchronously. Single vector hydrophone can detect DOA 
+without ambiguity in the whole space[2], which makes it has 
+unique advantages in underwater acoustic detection, especially 
+on small-scale platforms[3].    
+The traditional application methods of DOA estimation 
+using single vector hydrophone in engineering include average 
+sound intensity meter[4][5], cross spectrum method[6][7] and so 
+on. The method of average sound intensity meter is based on 
+maximum likelihood estimation of sound energy flow, which 
+can suppress the isotropic interference effectively . However, if 
+there are multiple targets, it measures the vector sum of the 
+sound energy flow of all signals, so it cannot distinguish the 
+different targets. Cross spectrum method is a frequency domain 
+processing method, which has the ability of distinguishing 
+multiple targets. However, it cannot do nothing about targets 
+whose characteristic spectra overlap or interfere with each other. 
+The literature[8][9] shows that for incoherent targets, when the 
+SNR is enough and the line spectrum characteristics are 
+uncertain, the number of distinguished targets can reach 7 by 
+making full use of the correlation characteristics of acoustic 
+pressure and particle velocity in theory. However, The 
+experimental results in literature[10] indicate that this method is 
+not effective when two targets are close.    
+In this paper, a method of multiple targets DOA tracking by 
+using single Vector hydrophone based on unite processing in 
+time and frequency domain is proposed. Firstly, the relationship 
+between acoustic pressure and particle velocity is solved in each 
+frequency band, and the high-order correlation equations are 
+solved to obtain the DOA of multiple targets. Then the least 
+square method is used to fit the DOA trajectory in a period of 
+time and establish a dynamic prediction model. Finally, Kalman 
+filter is performed and the DOA distribution of targets in each 
+frequency band is counted to obtain the pseudo color picture of 
+DOA distribution. By using this method, we can not only 
+distinguish the DOA trajectory of multiple targets, but also 
+observe the azimuth of interference. The accuracy of DOA 
+estimation is less than 5°. 
+II. HIGH-ORDER CORRELATION EQUATIONS
+The acoustic signal sent by each independent target and 
+reaching the receiving point is
+is , the horizontal azimuth angle
+is 
+i，subscript is used to distinguish different targets. In far
+field conditions,
+1
+kr 
+, k is wave number, r is horizontal
+distance. Acoustic pressure p and two dimensional horizontal 
+particle velocity 
+xv , 
+yv are as follows
+66
+2023 3rd International Conference on Information Communication and Software Engineering
+979-8-3503-1304-8/23/$31.00 ©2023 IEEE
+2023 3rd International Conference on Information Communication and Software Engineering (ICICSE) | 979-8-3503-1304-8/23/$31.00 ©2023 IEEE | DOI: 10.1109/ICICSE58435.2023.10211837
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+1
+1
+1
+( )
+( )
+( )cos
+(
+)
+( )
+( )sin
+(
+)
+( )
+N
+i
+p
+i
+N
+x
+i
+i
+x
+i
+N
+y
+i
+i
+y
+i
+p
+s t
+n t
+v
+s t
+c
+n t
+v
+s t
+c
+n t
+
+
+
+
+=
+=
+=
+
+=
++
+
+
+
+=
++
+
+
+
+=
++
+
+
+
+
+
+/
+/
+() 
+where, N is the number of targets,
+p
+n
+,
+xn , 
+yn
+are the
+corresponding background noise respectively, is density of 
+medium, c is sound speed.
+In the condition of isotropic noise, the correlation equations 
+between acoustic pressure and particle velocity can be 
+established. If SNR is enough, because of independence of noise 
+and signal, the correlation between signal and noise and between 
+noises can be ignored. Thus, the following equations can be 
+obtained 
+1
+( ),
+( )
+cos
+(
+)
+N
+x
+i
+i
+i
+p t v t
+I
+c
+
+
+=
+=
+/
+(2) 
+1
+( ),
+( )
+sin
+(
+)
+N
+y
+i
+i
+i
+p t v t
+I
+c
+
+
+=
+=
+/
+(3) 
+2
+1
+( ),
+( )
+sin
+cos
+(
+)
+N
+x
+y
+i
+i
+i
+i
+v t v t
+I
+c
+
+
+
+=
+=
+/
+  (4) 
+2
+2
+1
+( ),
+( )
+cos
+(
+)
+N
+x
+x
+i
+i
+i
+v t v t
+I
+c
+
+
+=
+=
+/
+(5) 
+2
+2
+1
+( ),
+( )
+sin
+(
+)
+N
+y
+y
+i
+i
+i
+v t v t
+I
+c
+
+
+=
+=
+/
+(6) 
+2
+2
+2
+2
+1
+2
+( ), ( )
+( ),
+( )
+N
+i
+i
+p t
+p t
+p t
+p t
+I
+=
+−
+=
+(7)
+2
+2
+1
+2
+( ), ( )
+( ),
+( )
+( ), ( )
+( )
+cos
+(
+)
+x
+x
+N
+i
+i
+i
+p t
+p t
+p t v t
+p t
+p t v t
+I
+c
+
+
+=
+−
+=
+/
+(8) 
+2
+2
+1
+2
+( ), ( )
+( ),
+( )
+( ), ( )
+( )
+sin
+(
+)
+y
+y
+N
+i
+i
+i
+p t
+p t
+p t v t
+p t
+p t v t
+I
+c
+
+
+=
+−
+=
+/
+ (9) 
+2
+2
+2
+1
+2
+( ),
+( )
+( ),
+( )
+( ),
+( )
+( )
+sin
+cos
+(
+)
+x
+y
+x
+y
+N
+i
+i
+i
+i
+p t v t
+p t v t
+p t v t v t
+I
+c
+
+
+
+=
+−
+=
+/
+(10) 
+2
+2
+2
+2
+2
+2
+1
+2
+( ),
+( )
+( ),
+( )
+sin
+(
+)
+y
+y
+N
+i
+i
+i
+p t v t
+p t v t
+I
+c
+
+
+=
+−
+=
+/
+ (11) 
+2
+2
+2
+3
+1
+2
+( ),
+( )
+( ),
+( )
+( )
+( ),
+( )
+sin
+cos
+(
+)
+x
+x
+y
+y
+x
+N
+i
+i
+i
+i
+p t v t
+v t v t
+p t v t v t
+I
+c
+
+
+
+=
+−
+=
+/
+(12) 
+2
+2
+2
+3
+1
+2
+( ),
+( )
+( ),
+( )
+( )
+( ),
+( )
+sin
+cos
+(
+)
+y
+y
+x
+x
+y
+N
+i
+i
+i
+i
+p t v t
+v t v t
+p t v t v t
+I
+c
+
+
+
+=
+−
+=
+/
+ (13) 
+2
+2
+3
+4
+1
+2
+( ),
+( )
+( ),
+( )
+( ),
+( )
+( )
+sin
+cos
+(
+)
+x
+x
+x
+y
+x
+x
+y
+N
+i
+i
+i
+i
+v t v t
+v t v t
+v t v t v t
+I
+c
+
+
+
+=
+−
+=
+/
+(14) 
+2
+2
+2
+2
+2
+2
+4
+1
+2
+( ),
+( )
+( ),
+( )
+sin
+cos
+(
+)
+x
+y
+x
+y
+N
+i
+i
+i
+i
+v t v t
+v t v t
+I
+c
+
+
+
+=
+−
+=
+/
+ (15) 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+67
+1
+i=
+( ),
+( )
+i
+i
+i
+I
+s t s t
+=
+is the sound source intensity of each target. 
+Although according to the arrangement and combination, other 
+forms of equations can also be written. However, it can be 
+proved that the second-order moment and the forth-order 
+moment can only have 14 independent equations. Because there 
+are tow unknown parameter for each target, I and , if the 
+number of targets is less than 7, the sound source intensity and 
+horizontal azimuth angle of all targets can be counted by solving 
+equations. Because those equations are nonlinear and the results 
+can not be expressed as precise mathematical expression, they 
+must be solved by using optimization algorithm. 
+III. KALMAN FILTER
+The system with discrete control process can be described by 
+linear differential equation
+( )=  ( -1)+  ( )+
+( )
+k
+k
+k
+k
+X
+A X
+B U
+W
+       
+(16)
+The mearsurment result is
+( )=
+( )+ ( )
+k
+k
+k
+Z
+H X
+V
+           
+(17)
+Where, 
+( )
+k
+X
+and
+( )
+k
+U
+are system state vector and control 
+vector at momentk respectively. A and B are the parameters 
+of system. Z( )
+k is the measurement result, H is the parameter of 
+measurement system. W( )
+k and V( )
+k are the Gauss white noise 
+of process and measurement respectively, Q and R are the 
+corresponding variance.
+Assume that the current system state is k , then it can be 
+predicted according to the last moment.
+( | -1)=  ( -1| -1)+
+( )
+k k
+k
+k
+k
+X
+A X
+B U
+      
+(18)
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+Where, 
+( | -1)
+k k
+X
+is predicted current result according to the 
+last moment,
+( -1| -1)
+k
+k
+X
+is the optimal result at  the last 
+moment. 
+( -1| -1)
+k
+k
+P
+and 
+( | -1)
+k k
+P
+ are  mean square error of 
+( -1| -1)
+k
+k
+X
+and
+( | -1)
+k k
+X
+respectively. They can be expressed 
+as 
+( | -1) =  ( -1| -1) 
+'+
+k k
+k
+k
+P
+A P
+A
+Q
+(19) 
+Combined with the measurement result, the optimal 
+estimation value at the the current moment can be obtained after 
+counting predicted state of system. 
+( | )= ( | -1)+
+( ) ( ( )-  ( | -1))
+k k
+k k
+k
+k
+k k
+X
+X
+Kg
+Z
+H X
+(20) 
+Where, Kgis the gain from Kalman filter and it is expressed
+as 
+( ) = ( | -1) '/(
+ ( | -1) '+ )
+k
+k k
+k k
+Kg
+P
+H H P
+H R
+(21)
+In order to the  filter can run until the end, it is necessary to 
+update ( | )
+k k
+P
+ 
+( | )=( -
+( ) ) ( | -1)
+k k
+k
+k k
+P
+I Kg
+H P
+      (22) 
+Where, I Is identity matrix. 
+Formula(18)~ (22) are the description of the Kalman filter 
+process. 
+IV. SOLUTION FLOW OF MULTIPLE TARGETS DOA TRACKING
+Remove the trend terms
+Narrow-band filter
+Solve high-order correlation 
+equations in multiple frequency band
+Coordinate conversion
+Fit DOA trajectory
+Kalman filter
+Take the DOA value as integers
+count the number of DOA  
+distribution on each angle, normalized 
+process
+Extract the highlight in the color map
+DOA trajectory of multiple targets 
+Vector acoustic signal
+Fig. 1. Solution flow of multiple targets DOA tracking 
+As shown in Figure 1, firstly, the trend terms of signal are 
+removed to eliminate DC and low- frequency interference, and 
+then narrow-band filter is carried out. The DOA of each target 
+relative to the hydrophone coordinate is obtained by solving 
+high-order correlation equations in multiple frequency band. 
+The DOA relative to the geodetic coordinate is counted by 
+coordinate conversion. The least square method is used to fit 
+DOA trajectory of targets, and then the outliers are eliminated 
+by Kalman filter. Take the DOA value as integers, count the 
+number of DOA  distribution on each angle, normalized process, 
+and draw pseudo color picture according to the distribution. 
+Extract the highlight in the pseudo color picture and fit the DOA 
+trajectory, so as to realize the DOA trajectory of multiple targets 
+tracking. 
+ 
+ 
+Fig. 2. The location relationship between targets and vector hydrophone 
+The pseudo color picture of  DOA trajectory estimation of 
+three targets is shown in Fig 3. 
+Fig. 3. The pseudo color picture of DOA trajectory 
+After highlight extraction, the DOA of three targets is 
+obtained, as shown in Fig 4~Fig 6. 
+68
+V. EXPERIMENTAL DATA PROCESSING
+The targets are three sightseeing boats. The location 
+relationship and the distance between targets and vector 
+hydrophone are shown in Fig 2.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+Fig. 4. DOA estimation of the first target 
+Fig. 5. DOA estimation of the second target 
+Fig. 6. DOA estimation of the third target 
+The DOA estimation errors before and after Kalman filter 
+are shown in Fig 7~Fig 8 respectively. It can be seen that before 
+kalman filtering, the maxim error is 18°, and after kalman 
+filtering, the error is less than 5°.It should be noted that the error 
+after kalman filtering at begin point is larger, the reason is that 
+those data are not involved in filtering as reference points. In 
+addition, the error tends to increase with increase of distance, 
+which is due to the gradual reduction of SNR. 
+Fig. 7. The error of DOA before filter 
+Fig. 8. The error of DOA after filter 
+VI. CONCLUSION
+A new method of multiple targets DOA tracking with vector 
+hydrophone is proposed in this paper. The experiment results 
+indicate that the DOA information of multiple targets can be 
+solved and tracked stably. The azimuth of interference can also 
+be obtained though DOA pseudo color picture. In addition, the 
+outliers can be eliminated and the accuracy can be improved by 
+the method of fitting DOA data and Kalman filter. In the 
+experiment, the accuracy can reach 5°. 
+REFERENCES 
+[1]
+Ma Lin,Zhao Anbang, Wang Keren, “Vector hydrophone combined 
+channel post adaptive processing and its application”. Journal of Harbin 
+Engineering University,2020,41(7), pp.991-997. 
+[2]
+Ma Bole, Zhu Shiqiang, Sun Guiqing, “Single vector hydrophone target 
+detection based on eigenvalue”. Journal of national university of defense 
+technology, 2019,41(1, pp.95-100. 
+[3]
+Wang Wenlong, Wang Chao，HAN Mei. “Research on Application of 
+Vector 
+Hydrophone 
+onboard 
+an 
+Underwater 
+Glider”. 
+ACTA 
+ARMAMENTARII , 2019, 40(11), pp.2580-2586. 
+[4]
+Yao Zhixiang, Hui Junying, Ying Jingwei, “Four approach to DOA 
+estimation based on signal vector hydrophone”. The Ocean Engineering, 
+2006,24(1), pp.122 -127. 
+69
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+[5]
+Liu Bosheng, Tian Baojing, “Simulation study on errors for evaluation of 
+target azimuth by single vector transducer”. Journal of Harbin 
+Engineering University, 2003, 24(5), pp.491-495.
+[6]
+Zhang Liang, Tian Tian, Meng Chunxia, “Identifying multiple targets by
+a single vector hydrophone based on the cross-spectrum goniometry” . 
+Ship Science and Technology, 2009,31(10), pp.18- 20.
+[7]
+Sun Xiangqian, Fan Zhan, Li Qing, “A method of target DOA estimation 
+based on correlation integral and cross spectrum WVD”. Technical 
+Acoustics 2015, 34(1), pp.23-28 
+[8]
+Cheng Bingbing, “Research on DOA estimation based on two-dimension 
+with an pressure-gradient vector hydrophone”. Xi’an, Northwestern 
+Polytechnic University, 2007. 
+[9]
+Yang Shi’e, “Method of multi-sources distinguishing by single Vector 
+transducer”. Journal of Harbin Engineering University, 2003, 24(6) 
+pp.591-595.
+[10] Zhang Wei, Meixinhua，Li Caiju,  “DOA estimation of multiple sources 
+underwater with single vector hydrophone”，MINE WARFARE & SHIP
+SELF-DEFENCE 2017,25(3), pp.1-6.
+70
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:10 UTC from IEEE Xplore.  Restrictions apply. 

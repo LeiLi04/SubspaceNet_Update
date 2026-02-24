@@ -1,0 +1,1962 @@
+
+
+===== PAGE 1 =====
+SubspaceNet: Deep Learning-Aided Subspace
+Methods for DoA Estimation
+Dor H. Shmuel, Julian P. Merkofer, Guy Revach, Ruud J. G. van Sloun, and Nir Shlezinger
+Abstract—Direction of arrival (DoA) estimation is a fundamen-
+tal task in array processing. A popular family of DoA estimation
+algorithms are subspace methods, which operate by dividing the
+measurements into distinct signal and noise subspaces. Subspace
+methods, such as Multiple Signal Classification (MUSIC) and
+Root-MUSIC, rely on several restrictive assumptions, including
+narrowband non-coherent sources and fully calibrated arrays,
+and their performance is considerably degraded when these do
+not hold. In this work we propose SubspaceNet; a data-driven
+DoA estimator which learns how to divide the observations into
+distinguishable subspaces. This is achieved by utilizing a dedi-
+cated deep neural network to learn the empirical autocorrelation
+of the input, by training it as part of the Root-MUSIC method,
+leveraging the inherent differentiability of this specific DoA
+estimator, while removing the need to provide a ground-truth
+decomposable autocorrelation matrix. Once trained, the resulting
+SubspaceNet serves as a universal surrogate covariance estimator
+that can be applied in combination with any subspace-based
+DoA estimation method, allowing its successful application in
+challenging setups. SubspaceNet is shown to enable various DoA
+estimation algorithms to cope with coherent sources, wideband
+signals, low SNR, array mismatches, and limited snapshots,
+while preserving the interpretability and the suitability of classic
+subspace methods.
+I. INTRODUCTION
+Direction of arrival (DoA) estimation is a common array
+processing task, which deals with localizing emitting sources
+by determining the incidence angles of impinging waves [2].
+A leading and well-trusted family of DoA estimators is
+based on subspace methods, including the celebrated Multiple
+Signal Classification (MUSIC) algorithm [3], Root-MUSIC
+(Root-MUSIC) [4], and Estimation of Signal Parameters via
+Rotational Invariance Techniques (ESPRIT) [5]. When given
+sufficient signal snapshots, these techniques estimate multiple
+DoAs with low complexity by separating the impinging wave
+into distinguishable signal and noise subspaces, achieving
+angular resolution that is not limited by the array geometry [2].
+The ability to separate an impinging wave into signal and
+noise subspaces, which is the core of subspace methods, relies
+on the orthogonality between the noise components and the
+array response. For this to hold, several key assumptions
+underlying subspace methods must be satisfied: (i) the signals
+need to be narrowband; (ii) the sources should be non-
+coherent; (iii) the array has to be fully calibrated; (iv)
+Parts of this work were presented in the 2023 IEEE International Conference
+on Acoustics Speech, and Signal Processing (ICASSP) as the paper [1].
+D. H. Shmuel and N. Shlezinger are with the School of ECE, Ben-Gurion
+University of the Negev, Beer Sheva, Israel (e-mail: shmueldo@post.bgu.ac.il;
+nirshl@bgu.ac.il). J. P. Merkofer and R. J. G. van Sloun are with the
+EE Dpt., Eindhoven University of Technology, The Netherlands (e-mail:
+{j.p.merkofer; r.j.g.v.sloun}@tue.nl). G. Revach is with the D-ITET, ETH
+Z¨urich, Switzerland, (email: grevach@ethz.ch).
+sufficient snapshots are needed such that one can faithfully
+to estimate the input covariance; and (v) the statistical model
+underlying the estimation procedure has to be fully known.
+These requirements are often violated in practical settings,
+that frequently involve multiband signals, coherent sources
+(due to, e.g., multipath), miscalibrations in the array, limited
+snapshots, and mismatched models. Different pre-processing
+methods such as the spatial smoothing (SPS) and forward-
+backward (FB), have been proposed to tackle some of these
+limitations individually, e.g., [6], [7]. These schemes average
+the power spectrum of the received signals over a number
+of adjacent sensor positions, thereby increasing the effective
+aperture, while resulting in a trade-off between resolution
+and variance reduction. Specifically, larger averaging windows
+result in better variance reduction but poorer resolution, while
+smaller windows result in better resolution but poorer variance
+reduction. Hence, they tend to degrade the overall estimation
+performance and resolution, while constraining the number of
+recoverable sources.
+Over the last decade, deep learning has emerged as a leading
+tool for data-driven inference. Deep neural networks (DNNs),
+which learn their mapping from data without relying on
+system modelling, have demonstrated unprecedented success
+in areas involving complex data such as computer vision [8].
+Accordingly, DNN-based approaches have recently been con-
+sidered for DoA estimation [9]–[31], as also surveyed in
+[32]. Specifically, in [9]–[18] different DNN architectures such
+as multi-layer perceptrons (MLPs) [9], [10], convolutional
+neural networks (CNNs) [11]–[16], attention models [17], and
+ResNet variants [18], were trained to learn the mapping from
+the observations or their empirical covariance directly into
+DoAs. While DNNs can be trained to estimate DoAs without
+imposing specific requirements on the signal model, they typ-
+ically require highly parameterized architectures trained with
+massive data sets, limiting their applicability on hardware-
+limited devices where DoA estimation is often carried out.
+Furthermore, black-box DNNs lack the interpretability and
+flexibility of model-based algorithms, and often give rise to
+generalization issues.
+An alternative approach uses DNNs alongside model-based
+DoA estimation, as a form of model-based deep learning [33],
+[34]. For instance, the work [19] reduced the complexity
+of maximum likelihood DoA recovery by using a DNN to
+limit the angular search space, thus still relying on accurate
+statistical modelling of the signals.
+The works [25]–[27]
+trained DNN architectures to produce clean coavriance ma-
+trices that can be used for downstream subspace-based DoA
+estimation, while assuming access to a data set comprised of
+1
+arXiv:2306.02271v2  [eess.SP]  11 Jul 2024
+
+
+===== PAGE 2 =====
+ideal covariances such that the DNN can be trained separately.
+The work [20] used narrowband signal modelling to train
+CNN-based DoA estimators in an unsupervised manner. In
+the context of subspace methods, [21] trained an autoencoder
+to reconstruct a clean input from a corrupted and then pass
+it to MLP classifiers to reconstruct a MUSIC spectrum, while
+[22]–[24] used DNNs to directly produce a (discretized) spatial
+spectrum. However, these DNN-aided estimators [21]–[24]
+were not trained to provide DoAs, and share the limitations
+of model-based subspace methods.
+Several recent works [28]–[31] proposed architectures that
+jointly learns to compute the empirical covariance along with
+the processing of the resulting MUSIC spectrum. The resulting
+estimators were capable of coping with, e.g., coherent and
+wideband sources. However, this augmentation comes at the
+cost of compromising on the interpretability of subspace
+methods, as the DoAs were recovered from the empirical
+covariance using an additional DNN, learning a deep model
+where one cannot extract meaningful interpretation from its
+MUSIC spectrum. This motivates designing DNN-aided DoA
+estimators that cope with the limitations of model-based
+subspace methods, e.g., coherent sources and few snapshots,
+while preserving their interpretability and suitability.
+Here, we propose SubspaceNet, which leverages data to
+implement subspace-based DoA estimation. SubspaceNet is
+designed to cope with coherent sources, broadband signals,
+few snapshots, and calibration mismatches. This is achieved
+by identifying that these limitations of model-based subspace
+methods are encapsulated in their reliance on the empirical
+covariance of the received signals. SubspaceNet thus preserves
+the operation of subpsace methods while using a dedicated
+trainable autoencoder which learns from data how to map
+the empirical auto-correlation of the observed signal into a
+surrogate covariance that is universally useful for subspace-
+based DoA recovery, i.e., that is decomposable into signal and
+noise subspaces.
+In order to train an autoencoder that produces subspace-
+compliant covariance estimates, we exploit the inherent dif-
+ferentiability of Root-MUSIC to convert the algorithm into a
+trainable discriminative model [35]. By doing so, the trained
+DNN computes meaningful subspace representations lead-
+ing to accurate DoA estimates, without having to provide
+ground-truth decomposable covariances. SubspaceNet thus
+learns to compute meaningful subspace representations that,
+once trained, can be combined with different subspace DoA
+estimators, including MUSIC, Root-MUSIC, and ESPRIT. We
+empirically show that SubspaceNet outperforms model-based
+subspace methods for both coherent and non-coherent sources,
+and that it successfully operates with broadband signals,
+calibration mismatches, low signal-to-noise ratio (SNR), and
+few snapshots. We also demonstrate the SubspaceNet creates
+a clear and significant distinction between the noise and the
+signal subspaces, which facilitates its diagnosis and identifying
+of the number of sources.
+The rest of the paper is organized as follows: Section II
+formulates the setup and recalls subspace methods. Section III
+presents SubspaceNet, which is numerically evaluated in Sec-
+tion IV. Finally, Section V concludes the paper.
+Fig. 1: DoA estimation system illustration.
+Throughout this paper, we use boldface-uppercase for matri-
+ces, e.g., X, boldface-lowercase for vectors, e.g., x. We denote
+the jth entry of vector x and the (i, j)th entry of matrix X by
+[x]j and [X]i,j, respectively. We use (·)H, (·)T , ∥·∥, and E [·]
+for the hermitian transpose, transpose, ℓ2 norm, and stochastic
+expectation, respectively.
+II. SYSTEM MODEL AND PRELIMINARIES
+In this section, we present the system model, beginning
+with received signal model in Subsection II-A. We then briefly
+review subspace-based DoA estimation in Subsection II-B, and
+formulate the considered problem in Subsection II-C.
+A. DoA Estimation Signal Model
+We consider a receiver equipped with a uniform linear
+array (ULA) composed of N half-wavelength spaced antenna
+elements. At each discrete time instance t (out of a horizon of
+T snapshots, i.e., t ∈{1, . . . , T}), the receiver gathers multidi-
+mensional observations, denoted x(t) = [x1(t), . . . , xN(t)] ∈
+CN. These signals originate from M sources, represented as
+s(t) = [s1(t), . . . , sM(t)] ∈CM, and the DoAs of these
+sources are denoted in vector form as θ = [θ1, . . . , θM]. The
+system is illustrated in Fig. 1. DoA estimation is the recovery
+of θ from the observations obtained over T snapshots.
+When the transmitted signals are narrowband and in the far-
+field of the array, the received signal over T snapshots, denoted
+X = [x(1), . . . , x(T)] ∈CN×T is typically modelled as
+X = A(θ)S + V .
+(1)
+In (1), S = [s(1), . . . , s(T)] ∈CM×T is the sources signals
+matrix; V ∈CN×T is the noise matrix comprised of i.i.d.
+entries with variance σ2
+V ; and A(θ) = [a(θ1), . . . , a(θM)] ∈
+CN×M is the steering matrix, where
+a(θ) ≜[1, e−jπ sin(θ), ..., e−jπ(N−1) sin(θ)].
+(2)
+When the sources are zero-mean and stationary, the covari-
+ance of the observations is obtained from (1) as
+RX = E
+
+XXH
+= A(θ)RSAH(θ) + σ2
+V IN,
+(3)
+where RS denotes the covariance of S.
+B. Subspace-Based DoA Estimation
+Subspace methods are a family of DoA estimation algo-
+rithms that rely on the ability to decompose the observations
+covariance matrix in (3) into orthogonal signal and noise
+subspaces. They are based on the following assumptions:
+2
+
+
+===== PAGE 3 =====
+AS1 The sources are narrowband, such that (1) holds.
+AS2 The sources are non-coherent, namely, the covariance
+matrix RS in (3) is of full rank.
+AS3 The array is calibrated, such that the steering vectors in
+(2) are known and accurately match the array.
+AS4 The number of snapshots T is sufficiently large, and
+the SNR is sufficiently high, such that one can reliably
+estimate RX in (3) empirically as
+ˆRX = 1
+T XXH.
+(4)
+Under assumptions AS1-AS3, subspace methods decom-
+pose the covariance matrix RX in (3), which can be suffi-
+ciently estimated under AS4, into orthogonal subspaces. To
+see this, we write the eigenvalue decomposition (EVD) of RX
+as
+RX = UΛU H,
+(5)
+where Λ is the diagonal eigenvalues matrix while the unitary
+matrix U = [u1, . . . , uN] is their corresponding eigenvectors.
+The resulting eigenvectors U span an observation space that
+can be divided into two orthogonal subspaces: the signal
+subspace US and the noise subspace UN [3], i.e.,
+U = [US|UN],
+where
+US⊥UN.
+(6)
+In (6), US contains M eigenvectors, each corresponding to a
+specific directional impinging source [36], and is spanned by
+the columns of the steering matrix A(θ); the (N −M) × N
+matrix UN, comprised of the eigenvectors corresponding to
+the N −M least dominant eigenvalues of RX (which equal
+σ2
+V ), represents the noise subspace.
+The representation (6) implies that A(θ)⊥UN, leading to
+aH(θi)UNU H
+Na(θi) =
+U H
+Na(θi)
+2 = 0,
+(7)
+for all i ∈1, . . . , M. Equation (7) forms the basis of subspace
+methods, which use it to identify the DoAs, as reviewed next.
+1) MUSIC: Arguably the most common subspace-based
+DoA estimator is MUSIC [3]. Here, (7) is used to construct
+a spectrum representation by taking the inverse projection of
+the steering vectors on the noise subspace. In particular, the
+noise subspace matrix and the number of sources are estimated
+from the EVD of the empirical covariance (4) as ˆ
+M and ˆUN,
+respectively. The resulting MUSIC spectrum is given by
+PMUSIC(θ) =
+1
+ ˆU
+H
+Na(θ)
+2 .
+(8)
+The DoAs are then recovered by identifying the peaks of the
+constructed spectrum PMUSIC(θ), i.e., the MUSIC spectrum
+provides an interpretable visual representation of the DoAs.
+2) Root-MUSIC: An alternative approach to recover the
+DoAs from the estimated
+ˆUN seeks the roots of (7). In
+particular, Root-MUSIC formulates the Hermitian matrix F =
+ˆUN ˆU H
+N using its diagonal sum coefficients fn, defined as
+fn =
+N−1−n
+X
+i=0
+[F ]i,n+i,
+n ≥0,
+(9)
+where for n < 0, fn = f ∗
+|n|. Substituting (9) into (7), the left
+hand side of (7) can be expressed as a polynomial equation in
+a complex-valued argument z of order 2N −2, given by
+D(z) =
+N−1
+X
+i=0
+N−1
+X
+j=0
+[a(θ)]∗
+i [F ]ij[a(θ)]j
+=
+N−1
+X
+i=0
+N−1
+X
+j=0
+[F ]ijzi−j =
+N−1
+X
+n=−(N−1)
+fnzn,
+(10)
+where z = e−jπ sin(θ). Root-MUSIC identifies the DoAs from
+the roots of the polynomial (10). The roots map is viewed as
+the Root-MUSIC spectrum. Since (10) has 2N −2 > M roots
+(divided into symmetric pairs), while the roots corresponding
+to DoAs should have unit magnitude, the
+ˆ
+M pairs of roots
+which are the closest to the unit circle are matched as the
+ˆ
+M sources DoAs [4]. Similarly to MUSIC, the Root-MUSIC
+spectrum provides a meaningful visualization of the DoAs.
+3) ESPRIT: The popular ESPRIT subspace method sepa-
+rates the array into two overlapping sub-arrays, where it ex-
+ploits the rotational invariance of the covariance matrix eigen-
+structure to simplify DoA estimation [5]. The steering matrices
+of the subarrays are related by A2(θ) = A1(θ)E, where E is
+a diagonal matrix with entries [E]m,m = e−jπ sin(θm). Since
+A(θ) spans the signal subspace, the relation between the signal
+subspaces of the sub-arrays, which we denote by US1 and US2
+for A1(θ) and A2(θ), respectively, can be expressed as
+US2 = US1H,
+(11)
+for some matrix H. Since the eigenvalues of H are equal
+to the diagonal elements of E, by solving (11), i.e., ex-
+tracting H, one can recover the DoAs from these eigen-
+values. Consequently, ESPRIT estimates the DoA vector as
+ˆθ = sin−1(∠eig{H}/π), where eig{H} is the vector rep-
+resentation of the eigenvalues of H, and ∠(·) is the angle
+operator.
+C. Problem Formulation
+Subspace methods reliably estimate DoAs with an angular
+resolution that is not limited by the physical array, and they
+typically provide an interpretable visualization of the DoAs
+along with uncertainty measures. However, their reliance on
+Assumptions AS1-AS4 can be a limiting factor in various
+practical scenarios, which often involve broadband signals,
+coherent sources, miscalibrations, limited snapshots, and low
+SNR. Our goal is to design a method which enables subspace
+methods to operate also when AS1-AS4 do not hold.
+In particular, we consider the recovery of θ from the
+observations matrix X. While the number of sources M is not
+assumed to be a-priori known, we limit our attention to settings
+where M is smaller than the number of antenna elements N.
+Similarly, the number of snapshots T is not known during
+system design, though it is lower bounded by some Tmin
+(which can be as small as a single snapshot).
+To alleviate reliance on AS1-AS4, we consider a data-aided
+setting, where one has access to a data set comprised of J
+pairs of observations and their corresponding DoAs, denoted
+D =
+n
+X(j), θ(j)oJ
+j=1 .
+(12)
+3
+
+
+===== PAGE 4 =====
+This data can be obtained from real-world sources or from
+synthetic data that closely resembles the signals that are
+expected to be detected. Different realizations can contain
+different numbers of sources M and different number of
+snapshots T, i.e., the dimensionality of θ(j) and the number
+of columns of X(j) can vary with the sample index j.
+III. SUBSPACENET
+In this section we present the proposed SubspaceNet. We
+begin by discussing the high-level rationale of the algorithm
+and its architecture in Subsections III-A-III-B, respectively.
+Then, we present how SubspaceNet is trained and applied
+during inference in Subsections III-C-III-D, respectively, and
+provide a discussion in Subsection III-E.
+A. High-Level Rationale
+The reason that Assumptions AS1-AS4 are critical for
+subspace methods follows from their role in the derivation
+of the orthogonality equality in (7). When these assumptions
+do not hold, one cannot reliably obtain an estimate of the
+input covariance that admits a decomposition into orthogonal
+subspaces corresponding to the signals and the noise. Based
+on the understanding that the sensitivity of subspace meth-
+ods is encapsulated in the empirical covariance computation,
+we propose SubspaceNet. SubspaceNet augments subspace
+methods with deep learning as a form of model-based deep
+learning [33], [34], tackling the aforementioned challenges by
+providing a surrogate covariance matrix that can be divided
+into orthogonal signal and noise subspaces. To that aim, we
+employ a dedicated DNN that learns from data to produce the
+desired covariance. The architecture of the DNN is detailed in
+Subsection III-B. This surrogate covariance can then be used
+by different subspace methods, preserving their operation and
+interpretability, as discussed in Subsection III-D.
+Since there is no ’ground truth’ surrogate covariance, the
+DNN cannot be trained by comparing its output to a reference
+label, as commonly done in supervised learning. Instead, we
+evaluate the covariance produced by the DNN based on its
+usefulness for subspace-based DoA estimation. Consequently,
+the training loss is computed by comparing the DoAs available
+in (12) to the recovered DoAs at the output of the subspace
+DoA estimator employing the DNN, thus converting the DoA
+estimation algorithm into a discriminative model [35] that is
+trainable end-to-end. Since DNN training is based on first-
+order methods, the DoA estimator that processes the learned
+covariance during training has to be differentiable, i.e., one
+should be able to compute the gradient of the estimated DoAs
+with respect to the estimated covariance. Unlike MUSIC,
+whose mapping is based on non-differentiable peak-finding,
+Root-MUSIC is inherently differentiable, and is thus employed
+for training SubspaceNet, as discussed in Subsection III-C.
+The overall high-level design is presented in Fig. 2.
+B. Architecture
+The trainable architecture employed by SubspaceNet is
+designed to be able to map the input signal X into an estimate
+of the covariance, denoted ˆR, regardless of the number of
+snapshots T. This is done in three stages: extracting features
+from X that are informative for the surrogate covariance
+estimation task; processing these features using a DNN-based
+autoencoder; and post-processing the DNN outputs to obtain
+an estimated covariance. We next elaborate on these stages.
+1) Feature Extraction: Our design of the features used for
+computing the surrogate covariance draws inspiration from
+focusing techniques [37]. These approaches aim to convert
+broadband DoA recovery setups into surrogate narrowband
+ones by estimating the covariance as a linear combination
+of the input multivariate power spectral density. Since the
+power spectral density of a stationary signal is obtained as
+the Fourier transform of its auto-correlation function [38], we
+use the empirical auto-correlation of x(t) as our input features.
+In particular, we fix a maximal number of lags τmax > 0,
+which is not larger than the minimal number of snapshots
+Tmin. Then, for each τ ∈{0. . . . , τmax}, we compute the
+empirical auto-correlation of X as
+ˆRX[τ] =
+1
+T −τ
+T −τ
+X
+t=1
+x(t)xH(t + τ).
+(13)
+The extracted features, processed by the DNN detailed next,
+are thus an N ×N ×(τmax +1) tensor, i.e., its dimensionality
+does not depend on T. Consequently, this both provides the
+DNN with features that are considered to be informative for
+obtaining a useful surrogate covariance matrix, while allowing
+the DNN to be invariant of the number of snapshots T.
+2) DNN Autoencoder: We utilize a DNN architecture in-
+spired by denoising autoencoders to process { ˆRX[τ]}τmax
+τ=0 , as
+illustrated in Fig. 3. Autoencoders are deep learning architec-
+tures that are used for selecting relevant features from noisy
+data and mapping them into high-dimensional representations
+[39, Ch. 14]. The encoder part of the DNN consists of three
+CNN layers gradually increasing filter size. Its goal is to map
+the input into a lower dimensional latent representation that
+preserves only the meaningful information for the task, thus
+filtering out unnecessary information and noise. The decoder,
+which is comprised of a decreasing filter size deconvolutional
+neural network (DCNN) layers, aims to recover successive
+information details from the latent features as it progresses
+through its layers, producing a 2N × N matrix which is post-
+processed into the surrogate covariance.
+We use CNN layers with 2 × 2 kernels. This small kernel
+size allows to capture local phase correlations between neigh-
+boring sensors over the auto-correlation input, and potentially
+improve robustness to noise. The latter follows since the SNR
+across the spectrum is not constant, and thus the filters can
+detect local phase structures from the high SNR spectral
+regions to compensate for the lack of information from the
+low SNR regions. Unlike the conventional usage of CNN
+autoencoders in, e.g., computer vision, we do not employ
+pooling layers to avoid discarding useful spatial information.
+Instead of using common rectified linear unit activations
+ReLU(z) = max(0, z), we utilize anti-rectifier activations.
+This ensures that both positive and negative values are propa-
+gated, making it more suitable for sensory data containing both
+positive and negative values [40]. The anti-rectifier activation
+is expressed as the concatenation of both the positive and the
+negative part of the input. Specifically, for an Nz × 1 input
+4
+
+
+===== PAGE 5 =====
+Feature
+Extraction
+DNN
+AutoEncoder
+Post
+Processing
+Root-
+MUSIC
+Backpropagation
+(a) SubspaceNet training scheme
+MUSIC
+ESPRIT
+MVDR
+Root-
+MUSIC
+Feature
+Extraction
+DNN
+AutoEncoder
+Post
+Processing
+MUSIC
+ESPRIT
+MVDR
+Root-
+MUSIC
+(b) SubspaceNet inference scheme
+Fig. 2: High level illustration of SubspaceNet
+AReLU
+CNN
+16 x 2N-1 x N-1
+32 x 2N-2 x N-2
+64 x 2N-3 x N-3
+32 x 2N-2 x N-2
+16 x 2N-1 x N-1
+128 x 2N-3 x N-3
+1 x 2N x N
+DCNN
+ x 2N x N
+2N x N
+Input/Output
+Fig. 3: SubspaceNet autoencoder architecture
+vector z = [z1, . . . zNz]T , the activation outputs a 2Nz × 1
+vector given by:
+AReLU(z) = AReLU
+[z1, . . . zNz]T 
+=
+h
+ReLU(z1), . . . ReLU(zNz),
+ReLU(−z1), . . . ReLU(−zNz)
+iT
+.
+(14)
+3) Post-Processing: The output of the autoencoder is a
+2N × N real matrix. To convert it into a surrogate covariance
+matrix, which is an N×N complex Hermitian positive definite
+matrix, we first reshape the output into a complex matrix
+K ∈CN×N, by treating the first N rows as the real part and
+the remaining N rows as the imaginary part. To formulate the
+surrogate covariance, K is converted into a Hermitian positive
+definite covariance estimate via
+ˆR = KKH + ϵIN,
+(15)
+where ϵ > 0 is a fixed hyperparameter of the architecture.
+The trainable parameters of the architecture are the weights
+of the autoencoder, denoted ψ. We thus write the overall
+mapping as ˆR(X; ψ), encompassing the feature extraction,
+DNN processing, and output reshaping stages.
+C. Training
+The training procedure uses the dataset D (12) to tune the
+parameters ψ such that the surrogate covariance ˆR(X; ψ) is
+useful for subspace-based DoA recovery, i.e., it can be de-
+composed into orthogonal subspaces encapsulating the signals
+and the noise. This is achieved by encouraging ˆR(X; ψ) to
+be a covariance matrix using which the DoAs recovered by
+Root-MUSIC, denoted ˆθ
+ ˆR(X; ψ)
+
+, is an accurate estimate
+of θ. To describe how this is carried out, we first discuss the
+loss measure, after which we explain the training procedure.
+1) Loss Measure: The loss function evaluates the quality
+of DoA estimation by comparing the DoAs recovered by
+Root-MUSIC combined with SubspaceNet. While in principle
+one can utilize standard loss measures for regression tasks,
+e.g., mean-squared error, when evaluating DoA recovery, one
+has to account for the following properties:
+P1 DoAs are periodic quantities, i.e., estimating ˆθ+2π is the
+same as ˆθ. Thus the difference between an angle and its
+estimate does not necessarily correspond to actual error.
+P2 DoA estimation is invariant to the order of the predicted
+DoAs, e.g., estimating ˆθ = [θ1, θ2]T is equivalent to
+outputting ˆθ = [θ2, θ1]T .
+P3 The number of signals ˆ
+M is also estimated, and may thus
+differ from the true M, i.e., the cardinality of the output
+may not be equal to that of the ground-truth DoAs.
+To account for P1, we employ the root mean squared pe-
+riodic error (RMSPE) loss [41], which evaluates the element-
+wise error over the periodic range. We extend this measure
+to be permutation invariant by P2, by modifying the RMSPE
+loss to compare all possible combinations of predicted DoAs
+with the ground truth labels. To cope with P3, we treat cases
+where ˆ
+M < M by setting the last M −ˆ
+M DoAs recovered
+om ˆθ to be zero when evaluating the loss.
+The resulting loss function is used to evaluate SubspaceNet
+when applied with Root-MUSIC to input X originating from
+5
+
+
+===== PAGE 6 =====
+DoAs θ while accounting for P1-P3. It is given by
+l(X, θ; ψ) = min
+P ∈P
+ 1
+M
+modπ
+
+θ −P ˆθ
+ ˆR(X; ψ)
+
+2 1
+2
+,
+where modπ denotes the modulo operation with respect to the
+angle range of interest, i.e., [−π/2, π/2], and P is the set of
+all M × M permutation matrices, i.e., binary matrices where
+each row and column contains a single non-zero entry. The
+loss evaluated over a dataset D is computed as
+LD(ψ) =
+1
+|D|
+X
+(X(j),θ(j))∈D
+l(X(j), θ(j); ψ),
+(16)
+2) Training Procedure: The selection of Root-MUSIC as
+our model-based estimator for training SubspaceNet, is at-
+tributed to the differentiability of its mapping. Specifically,
+the DoA estimates are obtained from the roots of the poly-
+nomial equation (10), which can be expressed as an implicit
+polynomial function. Implicit differentiation makes it possible
+to compute the derivative of the polynomial roots, that are
+used for the estimated DoAs in Root-MUSIC, with respect to
+its coefficients {fn} [42]. These coefficients {fn} are obtained
+from the EVD of the estimated covariance matrix, and are thus
+differentiable with respect to it, see, e.g., [43].
+The above property allows end-to-end optimization of the
+DNN parameters of SubspaceNet using first-order methods,
+e.g., stochastic gradient descent (SGD) and its variants. In par-
+ticularl, automatic differentiation engines, e.g., Autograd [44],
+can compute the gradient of the loss (16) with respect to
+the trainable parameters ψ by backpropagating through the
+Root-MUSIC block in Fig. 2a. The training procedure of
+SubspaceNet using SGD is detailed as Algorithm 1.
+Algorithm 1: SubspaceNet Training using SGD
+Init: Lags τmax, hyperapameter ϵ, learning rate µ,
+number of batches B, epochs number emax.
+Input: Training set D
+1 Initialize CNN weights ψ;
+2 for epoch = 0, 1, . . . , emax do
+3
+Randomly divide D into B batches {Db}B
+b=1;
+4
+for b = 1, 2, . . . B do
+5
+for (X(j)
+b , θ(j)
+b ) ∈Db do
+6
+Compute ˆR(X(j)
+b ; ψ) with SubspaceNet;
+7
+Use Root-MUSIC to get ˆθ
+ ˆR(X(j)
+b ; ψ)
+
+;
+8
+Compute LDb(ψ) using (16);
+9
+Update weights via ψ ←ψ −µ∇ψLDb(ψ);
+10 return ψ
+D. Inference
+We employ Root-MUSIC during training due to its dif-
+ferentiability. However, once trained, SubspaceNet can be
+seamlessly incorporated into any classical subspace methods
+such as MUSIC and ESPRIT, producing a covariance matrix
+which facilitates DoA estimation, as presented in Fig. 2b. The
+inference algorithm is summarized in Algorithm 2. This plug-
+and-play feature is a significant advantage, as it can notably
+enhance the performance of classical methods and enable them
+to operate reliably in harsh settings where AS1-AS4 do not
+hold, i.e., where the original model-based (MB) algorithms
+typically fail. This is thanks to the fact that the learned
+surrogate covariance matrix enables the algorithms to operate
+as if AS1-AS4 are satisfied, thus they can precisely distinguish
+between the noise and signal subspaces, as we demonstrate in
+Section IV.
+While the presentation of SubspaceNet so far considers
+subspace-based DoA estimation, the fact that it learns a covari-
+ance that facilitates DoA recovery can also be utilized by other
+forms of covariance-based methods. For instance, in our nu-
+merical study in Section IV we show that the covariance com-
+puted by SubspaceNet can be utilized by minimum variance
+distortionless response (MVDR) [45], which processes the
+covariance representation without requiring its decomposition
+into signal and noise subpace. We demonstrate that combining
+MVDR with SubspaceNet enables coping with settings where
+the beamformer typically struggles, e.g., coherent sources.
+Algorithm 2: SubspaceNet Inference
+Init: Trained SubspaceNet parameters ψ,
+model-based subspace DoA estimator
+Input: Observations X;
+1 Apply SubspaceNet to X to obtain ˆR(X; ψ);
+2 Apply subspace method to estimate ˆθ from ˆR(X; ψ);
+3 return ˆθ
+E. Discussion
+The proposed SubspaceNet leverages data by using deep
+learning tools to enable subspace methods to operate reli-
+ably in the presence of coherent sources, broadband signals,
+limited snapshots, miscalibrated arrays, and low SNR. This
+is achieved by identifying that the difficulty in dealing with
+these challenges is associated with the computation of the
+covariance matrix. Thus, we propose a dedicated DNN ar-
+chitecture which learns to provide a surrogate covariance, by
+training its output to be useful for Root-MUSIC-based DoA
+recovery. The resulting SubspaceNet thus combines abstract
+DNNs that enable downstream subspace-based DoA recovery
+to be carried out accurately, while preserving the interpretable
+operation of these model-based methods, e.g., the ability to
+extract a meaningful spectrum representation, as consistently
+demonstrated in Section IV.
+As opposed to [30], which focused on MUSIC and had
+to modify its operation for training, the inherit differentiabil-
+ity of Root-MUSIC allows to train the architecture end-to-
+end without affecting how the computed covariance is pro-
+cessed. Once trained, SubspaceNet allows subspace methods
+to achieve accurate DoA estimation in harsh conditions, while
+also producing a meaningful spectrum, as demonstrated in Sec-
+tion IV. This principled DNN augmentation notably enhances
+subspace-based DoA recovery. Still, it induces tradeoffs in
+terms of complexity and adaptivity in some settings. For
+once, while SubspaceNet is notably less complex compared
+to alternative data-driven methods [13], [31], the incorpora-
+tion of a DNN module can be computationally expansive to
+6
+
+
+===== PAGE 7 =====
+implement on some limited sensory devices. Moreover, while
+one can envision extensions to unsupervised operation (e.g.,
+by leveraging structures in the signal model [20] or in the
+augmented algorithm [46]) and to adaptivity across arrays
+(e.g., by on device learning [47] or using hypernetworks [48]),
+in its current form, SubspaceNet is trained in a supervised
+manner with sufficient data for a given array.
+The derivation of SubspaceNet considers DoA recovery with
+ULAs, as detailed in Subsection II-A. However, its formulation
+can be extended to other forms of arrays where subspace
+methods are applied for DoA recovery, including planar ar-
+rays [49], circular arrays [50], and sparse arrays [51]. For the
+latter, the ability of SubspaceNet to learn to overcome array
+mismatches, as presented in Section IV, makes it extremely
+attractive. Furthermore, while we use Root-MUSIC to train
+SubspaceNet, one can also consider using ESPRIT during
+training, owing to its end-to-end differentiability. Specifically,
+since ESPRIT relies on signal subspace estimation (instead
+of noise subspace), using it during training can be beneficial
+when estimating a large number of sources. Moreover, we
+note that in addition to the traditional hyperparameters of
+deep learning models, SubspaceNet introduces an additional
+hyperparameter, namely ϵ in (15). In our numerical study in
+Section IV we keep its value fixed for all settings. Nonetheless,
+one can potentially perceive ϵ as being related to the noise vari-
+ance in the representation of covariance matrix for narrowband
+signals in (3). This motivates exploring an SNR-dependent
+setting of ϵ. We leave these extensions of SubspaceNet for
+future study.
+IV. NUMERICAL EVALUATION
+In this section, we empirically evaluate SubspaceNet when
+applied with different subspace and covariance-based estima-
+tion algorithms1. Our experiments cover scenarios where as-
+sumptions AS1-AS4 are not necessarily satisfied, and demon-
+strate the ability of SubspaceNet to enable classic DoA estima-
+tors to operate in these settings while preserving performance
+and interpretability. We first detail the experimental setup
+in Subsection IV-A, after which we report the performances
+achieved under these setups in Subsection IV-B. We conclude
+by investigating the interpretability of SubspaceNet when com-
+bined with different model-based methods in Subsection IV-C.
+A. Experimental Setup
+1) Signal Model: Throughout this study, we consider a
+ULA consisting of N = 8 sensors with M impinging sig-
+nals, where we simulate different values of M. Except for
+the study reported in Subsection IV-B3, where we consider
+broadband settings, the signals are generated according to (1),
+i.e., representing a narrowband case. The DoAs are uniformly
+generated from the interval [−π
+2 , π
+2 ]. The SNR is defined as
+SNR = 10 log10 σ2
+S/σ2
+V , where σ2
+S is the sources variance.
+2) SubspaceNet
+Architecture:
+As
+detailed
+in
+Subsec-
+tion III-B, SubspaceNet is comprised of a DNN autoencoder
+with non-trainable preceding and subsequent processing. The
+auto-correlation features in (13) are extracted for the value
+1The source code used in our empirical study along with the hyperparam-
+eters is available at https://github.com/ShlezingerLab/SubspaceNet
+of the lag τ, which is a hyper-parameter (set via manual
+tuning in our experiments), that is bounded by the number
+of observations, τ ≤T −1. The autoencoder architecture
+utilized is composed of three convolution layers, having 16,
+32, and 64 output channels, respectively. These are followed
+by three deconvolution layers with 32, 16, and 1 output
+channels, respectively. The kernel size of each layer is set
+to 2 × 2. The output of the autoencoder is reshaped into
+a surrogate covariance via (15) with ϵ = 1. The overall
+number of trainable parameters is 41, 761. The architecture
+is trained using the Adam optimizer [52] with learning rate
+µ = 0.001. For brevity, we use the abbreviated term SubNet
+for SubspaceNet in the legends of the figures.
+3) DoA Estimators: To assess the ability of SubspaceNet
+to improve classic subspace methods, we evaluate the classic
+subspace methods detailed in Subsection II-B, i.e., MUSIC,
+Root-MUSIC, and ESPRIT, comparing their performance
+when combined with SubspaceNet to that achieved when
+applied with the standard empirical covariance. Specifically,
+when employing MUSIC, we detect the DoAs from the
+spectrum by searching for the peaks over a grid with resolution
+0.01◦.
+In settings where AS1-AS4 do not hold, we contrast
+SubspaceNet with representative model-based extensions of
+classic subspace methods designed to cope with each scenario.
+In particular, for coherent sources, we employ SPS pre-
+processing, which is a widely adopted model-based approach
+for coping with such scenarios [6], [7]. When considering
+narrowband non-coherent sources, we also compare the DoA
+estimators with the corresponding Ziv-Zakai bound (ZZB)
+derived in [53]. To evaluate DoA estimation under broadband
+settings, we compare SubspaceNet with model-based exten-
+sions for broadband signals based on the technique proposed
+in [37]. This involves dividing the relevant frequency spectrum
+into bins, and then applying classical narrowband subspace
+methods to each bin separately, while aggregating the results
+to yield a broadband estimate.
+We also compare SubspaceNet to alternative DNN-based
+DoA estimators. We consider two data-driven benchmarks:
+1) a CNN-based DoA estimator based on the architecture
+proposed in [13] coined CNN, representing a black-box DNN
+design; 2) DA-MUSIC of [30], which interconnects a recurrent
+neural network and a fully-connected architecture following
+the flow of MUSIC. All data-driven DoA estimators are trained
+on the same data, comprised of J = 45000 samples corre-
+sponding to SNR of 10 dB (unless stated otherwise). When
+evaluating the data-driven estimators with varying number of
+sources, the data is comprised of all considered values of M,
+and training is followed by adaption to the considered value of
+M using 8000 samples with M sources. For the CNN model,
+a grid of classes with a resolution of 0.5◦is defined, as in the
+original paper, resulting in over 21 · 106 trainable parameters
+(higher resolution results in a substantially large and com-
+putationally intensive number of trainable parameters), while
+DA-MUSIC has 10, 194 trainable parameters. Following the
+approach used in [13], a dataset containing
+ M
+361
+
+combinations
+of angles is generated for each tested SNR, resulting in an
+extensive set of over 300, 000 samples for training the CNN
+7
+
+
+===== PAGE 8 =====
+RMSPE [◦]
+M = 2
+M = 3
+M = 4
+Root-MUSIC
+12.4790
+20.3972
+23.2047
+SPS-Root-MUSIC
+1.0112
+1.6369
+12.1467
+SubspaceNet+Root-MUSIC
+0.2005
+0.7219
+3.8846
+MUSIC
+9.4709
+19.0794
+22.8037
+SPS-MUSIC
+2.5840
+2.3342
+18.3323
+SubspaceNet+MUSIC
+2.1084
+4.2398
+5.2482
+ESPRIT
+25.8426
+22.4599
+23.2047
+SPS-ESPRIT
+0.9224
+3.7184
+12.5477
+SubspaceNet+ESPRIT
+0.4761
+2.4350
+4.4690
+DA-MUSIC
+1.1860
+2.6585
+3.9705
+CNN
+0.7693
+1.2438
+7.4198
+TABLE I: DoA accuracy, coherent sources.
+model.
+B. DoA Recovery Performance
+Here, we evaluate the accuracy of SubspaceNet, measured
+via the RMSPE. We consider settings with coherent sources
+(not holding AS2); with dominant noise and limited snapshots
+(not holding AS4); with broadband signals (not holding AS1);
+and with miscalibrated arrays (not holding AS3). We empir-
+ically evaluate the RMSPE by averaging over 5000 Monte
+Carlo trials. To focus on the ability to identify the DoAs
+correctly, here we set ˆ
+M to the true number of DoAs M, while
+in Subsection IV-C we show that ˆ
+M can indeed be extracted
+as an accurate estimate of M. For ease of presentation, figures
+comparing DoA estimators versus SNR report performance in
+terms of mean squared periodic error in dB.
+1) Coherent Sources:
+We first evaluate the ability of
+SubspaceNet to effectively handle coherent sources. We focus
+on the challenging fully coherent case, where all sources
+exhibit identical phases and amplitudes, resulting in RS
+having minimal unit rank. We simulate different numbers
+of narrowband coherent sources estimated from T = 100
+snapshots, with an SNR of 10 dB and a calibrated ULA.
+The RMSPE results achieved by the considered DoA esti-
+mators are reported in Table I. We observe in Table I that
+SubspaceNet augmentation enables effective and consistent
+handling of coherent sources, improving the performance of all
+considered model-based algorithms. Notably, the augmentation
+of Root-MUSIC with SubspaceNet on M = 2 sources leads
+to almost 60× better estimation performance than classical
+Root-MUSIC. Even when a dedicated SPS technique is used to
+increase the empirical covariance rank, the SPS Root-MUSIC
+algorithm results are inferior to SubspaceNet. We also observe
+that while SubspaceNet was trained with Root-MUSIC, its
+surrogate covariance also notably facilitates the operation of
+MUSIC and ESPRIT, which both exhibit improvement in es-
+timation performance compared to classical and pre-processed
+estimation methods. Moreover, SubspaceNet outperforms the
+data-driven benchmarks, while using much less parameters
+than CNN model and maintaining a similar scale of parameter
+quantity as DA-MUSIC, without limiting the interpretability of
+model-based DoA estimators, as shown in Subsection IV-C.
+2) Low SNR and Few Snapshots: We proceed to evaluate
+the ability of SubspaceNet to facilitate coping with low SNRs
+5
+4
+3
+2
+1
+SNR
+40
+35
+30
+25
+20
+15
+MSPE [dB]
+ZZB
+SubNet+R-MUSIC
+R-MUSIC
+SubNet+ESPRIT
+ESPRIT
+SubNet+MUSIC
+MUSIC
+DA-MUSIC
+CNN
+Fig. 4: DoA estimation MSPE, T = 200, non-coherent sources
+and a limited number of snapshots. Such conditions are recog-
+nized to profoundly deteriorate model-based DoA estimation.
+To pinpoint the gains of SubspaceNet, we first consider only
+low SNRs with M = 2 non-coherent sources, after which
+we limit the number of snapshots, and then replace the
+sources with coherent ones, while systematically contrasting
+SubspaceNet-aided DoA estimators with the classic model-
+based operation for each scenario. In experiments conducted
+with multiple SNRs, the training data used by data-driven
+estimators is that of the lowest SNR considered in the range.
+We thus commence with considering highly noisy obser-
+vations with SNRs in the range of [−5, 0] dB. The signals
+are non-coherent and the number of snapshots is T = 200.
+Since SPS is not designed to enhance subpsace methods
+in such scenarios with non-coherent sources and sufficient
+snapshots, we do not include SPS-based subspace methods
+here. Accordingly, we focus on comparing their operation
+with the conventional empirical covariance to that provided
+by SubspaceNet. The results, reported in Fig. 4, demonstrate
+that SubspaceNet augmentations notably improve the ability
+of subspace-based DoA estimators in coping with high noise
+levels. These results emphasize that SubspaceNet can not only
+mitigate the harmful effects of coherency, but also effectively
+enhance the SNR, leading to improved accuracy in DoA
+estimation, while reaching performance within a limited gap
+from the lower bound on the achievable accuracy dictated by
+the ZZB.
+We proceed to considering the challenging setting where
+merely T = 2 snapshots are employed. Here, we set the
+SNR to be in the range of [5, 10] dB. The resulting DoA
+estimation accuracy, depicted in Fig. 5, clearly shows that
+the incorporation of SubspaceNet into classical model-based
+methods enables them to effectively handle few observations,
+even in a scenarios where these methods are typically un-
+feasible, i.e., where the number of snapshots is not larger
+than the number of sources. Moreover, the performance of
+SubspaceNet continues to improve as the SNR increases, while
+the estimation accuracy of classical model-based methods is
+dominated by their inability to cope with few snapshots, and
+8
+
+
+===== PAGE 9 =====
+5
+6
+7
+8
+9
+10
+SNR
+30
+25
+20
+15
+10
+5
+MSPE [dB]
+ZZB
+SubNet+R-MUSIC
+SPS+R-MUSIC
+R-MUSIC
+SubNet+ESPRIT
+SPS+ESPRIT
+ESPRIT
+SubNet+MUSIC
+SPS+MUSIC
+MUSIC
+DA-MUSIC
+CNN
+Fig. 5: DoA estimation MSPE, T = 2, non-coherent sources
+Algorithm
+RMSPE [◦]
+MUSIC
+25.8134
+SPS+MUSIC
+8.0758
+SubspaceNet+MUSIC
+2.2532
+ESPRIT
+29.0632
+SPS+ESPRIT
+11.0179
+SubspaceNet+ESPRIT
+1.9675
+Root-MUSIC
+26.3560
+SPS+Root-MUSIC
+8.2735
+SubspaceNet+Root-MUSIC
+1.8907
+DA-MUSIC
+4.7326
+CNN
+9.6053
+TABLE II: M = 2 coherent signals, T = 2, SNR=5 dB
+thus does not notably improve with SNR.
+We next introduce coherent sources, assessing the ability
+of SubspaceNet in handling settings not meeting both AS2
+and AS4. We compare the augmentation of subspace methods
+with SubspaceNet to their model-based counterparts in Fig. 6
+under low SNRs with T
+= 200 snapshots (Fig. 6a) and
+under moderate SNRs with merely T = 20 and T = 2
+snapshots (Figs. 6b-6c, respectively). For brevity and to avoid
+cluttering, we include two subspace methods in these figures
+– Root-MUSIC and ESPRIT – applying each with the conven-
+tional empirical covariance, with SPS, and with SubspaceNet.
+The results show that the surrogate covariance of SubspaceNet
+enables reliable subspace-based DoA estimation even in an
+extreme scenario where AS2 and AS4 are both violated. This
+is also evident in Table II, which reports the RMSPE values
+achieved for SNR of 5 dB, comparing SubspaceNet also to
+the data-driven benchmarks, whose performance is inferior to
+that of SubspaceNet.
+To further showcase the ability of SubspaceNet to enable
+subspace methods to cope with limited snapshots, we evaluate
+the RMSPE of the considered methods for different number
+of snapshots. As in Figs. 6b-6c, we consider M = 2 coherent
+sources at SNR of 5 dB, and report the performance of
+Root-MUSIC and ESPRIT with and without SubspaceNet
+compared to the data-driven benchmarks in Fig. 7. We observe
+in Fig. 7 that subspace methods combined with SubspaceNet
+consistently achieve improved accuracy, and that SubspaceNet
+allows subspace methods to operate reliably with limited
+snapshots. Conventional covariance processing methods reach
+an error floor, and possibly even degrade in some cases when
+combining more snapshots representing coherent sources.
+3) Broadband settings: The scenarios considered so far
+were all based on the narrowband formulation in (1). Here,
+we evaluate SubspaceNet under broadband settings. In such
+cases, one can formulate the signal model in the frequency
+domain, which at frequency ω is given by [37]
+X(ω) = A(ω, θ)S(ω) + V(ω).
+(17)
+In (1), X(ω) and S(ω) are the discrete-time multivariate
+Fourier transforms of x(t) and s(t), respectively, V(ω) is
+noise, and the steering vectors comprising A(ω, θ) are
+a(ω, θ) =
+h
+1, e−jω d
+c sin θ, . . . , e−jω(M−1) d
+c sin θ
+i
+,
+(18)
+with d denoting the element spacing of the ULA, and c being
+the propagation velocity.
+We simulate the time-domain broadband signals using
+orthogonal frequency-division multiplexing (OFDM) with L
+sub-carriers, where each carrier. denoted sm,l for the lth
+subcarrier of the mth signal, is modulated independently with
+a zero-mean complex-Gaussian unit variance distribution. The
+overall OFDM signal can be expressed as:
+s(OFDM)
+m
+(t) = 1
+L
+L−1
+X
+l=0
+sm,le2πjl
+Bf
+Lfs t
+(19)
+where fs is the sampling frequency, and Bf is the signal
+bandwidth. The acquired observations are generated following
+(17), where the inter-element spacing is given by half the
+minimal wavelength d = c/2Bf. We generate M = 2 OFDM
+signals with L = 500 subcarriers, setting Bf = 0.5 kHz.
+Various sampling rates ranging from 50 to 1000 Hz are tested,
+while the signals are observed for a duration of 1 second, thus
+the number of snapshots is T = 1/fs. The performance of
+SubspaceNet is evaluated for all sampling rates, despite being
+trained solely on observations sampled at 0.2 kHz.
+We evaluate the performance of MUSIC, Root-MUSIC, and
+ESPRIT when combined with SubspaceNet and when using
+the conventional empirical covariance, as well as compared to
+the broadband extension of MUSIC proposed in [37] which
+divides the bandwidth into 50 separate bins. The results,
+depicted in Fig. 8, consider both non-coherent as well as
+coherent sources. The non-coherent results depicted in Fig. 8a
+demonstrate that the incorporation of SubspaceNet models
+leads to significantly improved performance in comparison to
+narrowband methods and the broadband extension of MUSIC.
+SubspaceNet consistently enables reliable DoA estimation,
+even when a minimal number of snapshots are available, with
+fs = 50 Hz. These findings also hold when the sources are
+coherent, as demonstrated in Fig. 8b. In contrast, as expected,
+the subspace model-based broadband extension is unable to
+estimate DoAs under both coherent and broadband conditions.
+To numerically capture the exact gains of SubspaceNet,
+9
+
+
+===== PAGE 10 =====
+5
+4
+3
+2
+1
+SNR
+35
+30
+25
+20
+15
+10
+5
+MSPE [dB]
+SubNet+R-MUSIC
+SPS+R-MUSIC
+R-MUSIC
+SubNet+ESPRIT
+SPS+ESPRIT
+ESPRIT
+DA-MUSIC
+CNN
+(a) T = 200, low SNR
+5
+6
+7
+8
+9
+10
+SNR
+40
+35
+30
+25
+20
+15
+10
+5
+MSPE [dB]
+SubNet+R-MUSIC
+SPS+R-MUSIC
+R-MUSIC
+SubNet+ESPRIT
+SPS+ESPRIT
+ESPRIT
+DA-MUSIC
+CNN
+(b) T = 20, moderate SNR
+5
+6
+7
+8
+9
+10
+SNR
+25
+20
+15
+10
+5
+MSPE [dB]
+SubNet+R-MUSIC
+SPS+R-MUSIC
+R-MUSIC
+SubNet+ESPRIT
+SPS+ESPRIT
+ESPRIT
+DA-MUSIC
+CNN
+(c) T = 2, moderate SNR
+Fig. 6: DoA estimation, SNR & minor snapshots, coherent sources
+Fig. 7: DoA estimation accuracy versus T, M = 2 coherent
+sources, moderate SNR
+Algorithm
+RMSPE [◦]
+MUSIC
+26.7513
+Broadband MUSIC
+7.06456
+DA MUSIC
+4.74523
+CNN
+26.7439
+SubspaceNet+MUSIC
+2.2861
+SubspaceNet+ESPRIT
+3.7127
+SubspaceNet+Root-MUSIC
+2.3376
+TABLE III: RMSPE results, M = 2 broadband OFDM signals
+we report the RMSPE values achieved by SubspaceNet in
+the broadband setting with M = 2 coherent sources and
+a sampling rate of fs
+= 200Hz in Table III. We also
+include the accuracy achieved by the data-driven DA-MUSIC
+and CNN benchmarks. Table III showcases that SubspaceNet
+allows model-based subspace methods to achieve substantially
+improved accuracy in broadband settings, surpassing the data-
+driven benchmarks, as well as model-based methods designed
+for broadband settings, whose inference procedure is more
+complex as they require separate DoA estimation for each bin.
+4) Array Miscalibration: Here, we investigate the effective-
+ness of SubspaceNet in learning from data to handle array
+miscalibrations. The calibration of the array manifold is a
+critical aspect of DoA estimation, as inaccurate calibration
+can lead to substantial errors. We simulate two forms of
+miscalibrations, which both cause the actual array response
+to deviate from the ideal pattern, significantly affecting the
+performance of subspace methods. In both scenarios, the
+received signal is comprised of M = 2 non-coherent signals.
+In the first scenario, array distance miscalibration is simu-
+lated, where the spacing between each pair of sensors deviates
+from the standard ULA configuration of half-wavelength, re-
+sulting in non-uniform element spacing. The spacing between
+each adjacent pair of sensors in the mth position is established
+as the nominal half-wavelength distance d plus a uniformly
+distributed random variable denoted as δm
+∼U(−η, η),
+where η is the percentage of deviation from the nominal
+spacing. Consequently, the steering vector in (2) becomes
+miscalibrated, with it mth element now given by
+[a(θ)]m ≜e−2πj (d+δm)(m−1)
+c
+sin(θ),
+m ∈{1, . . . , M}. (20)
+The resulting RMSPE values achieved by subspace-based
+DoA estimators with and without SubspaceNet are reported in
+Fig. 9a, for different values of η ∈[0.025d, 0.15d], i.e., a maxi-
+mum deviation of 30% from the calibrated spacing. The results
+depicted in Fig. 9a underscore the ability of SubspaceNet to
+deal with discrepancies in the array geometry, particularly
+when the steering vector is affected by non-uniform (and
+non-nominal) elements spacing. In contrast, classical subspace
+methods heavily rely on the nominal ULA form of the array
+manifold, yielding non-optimal estimation as η increases.
+In the second scenario, we introduce miscalibration directly
+in the steering vector, rather than in the element spacing. This
+is achieved by adding a zero-mean complex-Gaussian noise
+with variance σ2
+sv to each element in the steering vector, result-
+ing in mismatches in the creation of the subspace core equation
+(7). The simulation results depicted in Fig. 9b further indicate
+that SubspaceNet indeed exhibits superior performance over
+traditional subspace methods when handling steering vector
+corruption due to the addition of zero-mean Gaussian noise,
+resulting in more accurate DoA estimation. On the other hand,
+classical subspace methods appear to be highly sensitive to this
+type of corruption, leading to poor estimation results as the
+noise variance increases. Additionally, the results indicate that
+the performance gap between traditional subspace methods
+10
+
+
+===== PAGE 11 =====
+102
+103
+Observations
+5
+10
+15
+20
+25
+30
+35
+RMSPE [ ]
+SubNet+R-MUSIC
+SubNet+MUSIC
+SubNet+ESPRIT
+BB-MUSIC
+MUSIC
+ESPRIT
+R-MUSIC
+DA-MUSIC
+CNN
+(a) Non-coherent OFDM signals
+102
+103
+Observations
+5
+10
+15
+20
+25
+30
+35
+RMSPE [ ]
+SubNet+R-MUSIC
+SubNet+MUSIC
+SubNet+ESPRIT
+BB-MUSIC
+MUSIC
+ESPRIT
+R-MUSIC
+DA-MUSIC
+CNN
+(b) Coherent OFDM signals
+Fig. 8: Broadband DoA estimation comparison, for various observations
+and SubspaceNet increases as the level of steering vector
+corruption increases, for both σ2
+sv = 0.75 and η = 0.075d.
+This suggests that SubspaceNet could potentially provide more
+significant benefits in scenarios with higher levels of noise
+corruption and geometry mismatches, making it a promising
+solution for applications in challenging environments.
+C. Interpretability
+The results presented so far systematically demonstrate
+that the augmentation of subspace methods with SubspaceNet
+enables these classic algorithms to operate reliably in scenarios
+where their traditionally limiting assumptions AS1-AS4 do not
+hold. Specifically, SubspaceNet outputs a surrogate covariance
+matrix which enables subspace methods to operate in an unal-
+tered manner in various challenging scenarios: It can efficient
+cope with wideband signals; accurately resolve coherent sig-
+nals; operate reliably with few snapshots and high noise levels;
+and boost robustness to different forms of miscallibrations.
+These gains stem from the fact that SubspaceNet leverages
+the abstractness of DNNs to learn a desirable mapping from
+data, which here is the extraction of a suitable covariance
+matrix. An additional key gain of SubspaceNet, which is not
+shared by conventional DNN-based solutions, is its ability to
+preserve the desirable interpretable operation of model-based
+DoA estimators, and in fact provide meaningful visual repre-
+sentations associated with classic methods in settings where
+these are typically not achievable. To show this property of
+SubspaceNet, we first visualize its ability to yield distinguish-
+able signal and noise subspaces. Then we show the spectrum
+representations obtained by MUSIC and Root-MUSIC when
+combined with SubspaceNet, after which we demonstrate
+that SubspaceNet can yield meaningful beampatterns when
+combined with covariance-based beamformers that are not
+necessarily based on subspace methods, such as MVDR.
+1) Subspace Separation: We commence with a compari-
+son of the normalized covariance eigenvalues produced by
+SubspaceNet compared with the conventional and the SPS-
+aided empirical estimation of the covariance for coherent
+sources. The results, depicted in Fig. 10, demonstrate that
+SubspaceNet yields a clear separation between the M = 3
+dominant eigenvalues of the signal subspace and those associ-
+ated with noise. In contrast, conventional empirical estimation
+is only capable of identifying one eigenvalue associated with
+the signal subspace, whereas the SPS empirical estimation
+method can identify only two eigenvalues, with the remaining
+eigenvalues attributed to the noise subspace. The capability
+of SubspaceNet to distinguish between the two subspaces
+significantly enhances resolving coherent sources compared
+to model-based subspace methods.
+2) Spectrum Presentation: When assumptions AS1 to AS4
+hold, subspace methods demonstrate informative spectral rep-
+resentations that are strongly correlated with the true DoAs.
+Specifically, the MUSIC spectrum displays distinct peaks at
+the DoA angles, while the Root-MUSIC polar spectra exhibit
+roots and eigenvalues corresponding to the DoA locations on
+the unit circle. We next investigate the spectral behavior of
+each subspace method and its SubspaceNet augmentation, over
+the following scenarios in which AS1-AS4 are violated:
+1) DoA estimation of narrowband coherent sources, i.e.,
+AS2 does not hold. The DoAs are located at θ =
+[−12.34◦, 34.56◦, 65.78◦], and are observed via T = 100
+snapshots at SNR of 10 dB. The resulting MUSIC and
+Root-MUSIC spectra are illustrated in Fig. 11.
+2) Scenario where AS2 and AS4 do not hold, using the
+same settings as in the study reported in Table II, with
+sources at θ = [23.45◦, 56.78◦]. The resulting MUSIC
+and Root-MUSIC spectra are illustrated in Fig. 12.
+3) DoA estimation of broadband coherent sources, located
+at θ = [−45.67◦, −23.45◦], from T = 50 snapshots. The
+model-based spectrum here is no longer informative in
+representing the true DoA, as illustrated in Fig. 13.
+We observe in Figs. 11-13, that SubspaceNet produces
+an interpretable and informative spectrum. The roots clos-
+est to the unit circle in the SubspaceNet+Root-MUSIC
+spectrum (Figs. 11c-13c) and the distinct peaks in the
+11
+
+
+===== PAGE 12 =====
+0.02
+0.03
+0.04
+0.05
+0.06
+0.07
+[ ]
+2
+4
+6
+8
+10
+12
+14
+RMSPE [ ]
+SubNet+R-MUSIC
+SubNet+MUSIC
+SubNet+ESPRIT
+MUSIC
+R-MUSIC
+ESPRIT
+CNN
+(a) Mismatch due to deviation from half-wavelength spacing
+.
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+2
+sv
+2
+4
+6
+8
+10
+RMSPE [ ]
+SubNet+R-MUSIC
+SubNet+MUSIC
+SubNet+ESPRIT
+MUSIC
+R-MUSIC
+ESPRIT
+CNN
+(b) Mismatch due to noisy steering vectors
+Fig. 9: Miscalibrated array DoA estimation comparison
+2
+4
+6
+8
+Index
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Eigenvalues [ ]
+Empirical
+SPS
+SubNet
+Fig. 10: Normalized eigenvalues of empirical, SPS and
+SubspaceNet covariance matrices. M = 3 coherent sources.
+SubspaceNet+MUSIC spectrum (Figs. 11a-13a) can be easily
+linked to the actual DoAs. On the other hand, classical
+MUSIC and Root-MUSIC algorithms are unable to produce
+meaningful spectrum representations. While MUSIC spectrum
+for narrowband coherent sources (Fig. 11a) may reveal minor
+peaks near the source angles, it horribly fails to provide any
+meaningful information for the scenarios depicted Figs. 12a-
+13a. Furthermore, SubspaceNet enables a more distinguishable
+spectrum. As shown in Figs. 11c-13c, the non-DoA roots are
+pushed further away from the unit circle, facilitating their
+distinction from true DoA roots. The resulting Root-MUSIC
+spectrum becomes more interpretable , especially in challeng-
+ing scenarios. This is clearly observed in the scenario with a
+small number of snapshots in Fig. 12c, where a non-DoA root
+which located close to the true DoA, at θ = 28.4◦, is pushed
+from the unit circle (|root| > 8), preventing misclassification.
+3) Beamforming Pattern: We conclude by demonstrating
+that the surrogate covariance produced by SubspaceNet is
+useful not only for subpsace methods, but also for other forms
+of covariance-based array processing algorithms. To exemplify
+this, we consider MVDR [45], which is a popular beamform-
+ing method that enhances the signal power in the desired
+direction while suppressing noise and interference. This results
+in a beampattern that provides valuable information about the
+directions of the sources of interest. Although MVDR does not
+rely on subspace decomposition for its beamforming operation,
+it employs the covariance matrix to shape its pattern, and hence
+it is subject to the same empirical estimation limitations as
+classical subspace methods, and its effectiveness is still limited
+by the accuracy of the covariance matrix estimate.
+To show that SubspaceNet facilitates the operation of
+MVDR, we visualize the beampattern achieved by MVDR
+with and without SubspaceNet augmentation in Fig. 14, under
+the same settings used in Subsection IV-C2. The beampatterns
+depicted in Fig. 14 clearly demonstrate the superiority of
+SubspaceNet in producing surrogate covariance matrices that
+are useful not only for DoA estimation subspace methods, but
+also to obtain high resolution effective beampatterns. Specif-
+ically, Figs. 14a-14b demonstrate that SubspaceNet produces
+narrow lobes in the direction of the sources, enhancing the
+discrimination between sources, and mitigating interference
+by reducing the power in non-DoA directions. When using the
+conventional empirical covariance, MVDR exhibits limitations
+in achieving these objectives in scenarios with multiple coher-
+ent sources and low SNR. Additionally, like subspace methods,
+MVDR is inherently limited in its ability to handle broadband
+sources. This shortcoming leads to a beampattern that deviates
+significantly from the true DoAs, as shown in Fig. 14a.
+Nonetheless, by integrating the SubspaceNet augmentation, the
+received signal power in the desired directions is amplified,
+which enhances the effectiveness of beamforming for signals
+with both broadband and coherent characteristics.
+12
+
+
+===== PAGE 13 =====
+100
+75
+50
+25
+0
+25
+50
+75
+100
+Angels [deg]
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Amplitude
+SubNet+MUSIC
+MUSIC
+(a) MUSIC & SubspaceNet+MUSIC
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0
+1
+(b) Root-MUSIC
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0
+1
+2
+3
+(c) SubspaceNet+Root-MUSIC
+Fig. 11: Spectrum representation: M = 3 narrowband coherent sources
+100
+75
+50
+25
+0
+25
+50
+75
+100
+Angels [deg]
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Amplitude
+SubNet+MUSIC
+MUSIC
+(a) MUSIC & SubspaceNet+MUSIC
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0
+1
+2
+(b) Root-MUSIC
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0 1 2
+8
+(c) SubspaceNet+Root-MUSIC
+Fig. 12: Spectrum representation: M = 2 narrowband coherent sources with few snapshots & moderate SNR
+100
+75
+50
+25
+0
+25
+50
+75
+100
+Angels [deg]
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Amplitude
+SubNet+MUSIC
+MUSIC
+BB-MUSIC
+(a) MUSIC & SubspaceNet+MUSIC
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0
+1
+(b) Broadband & coherent, T = 50
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0
+1
+2
+(c) Broadband & coherent, T = 50
+Fig. 13: Spectrum representation: M = 3 Wide-band coherent sources
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+SubNet+MVDR
+MVDR
+(a) narrowband & coherent, M = 3.
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+SubNet+MVDR
+MVDR
+(b) narrowband & coherent, low SNR.
+-90°
+-60°
+-30°
+0°
+30°
+60°
+90°
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+SubNet+MVDR
+MVDR
+(c) Broadband & coherent
+Fig. 14: SubspaceNet & MVDR beampattern comparison
+13
+
+
+===== PAGE 14 =====
+V. CONCLUSIONS
+We proposed SubspaceNet, which enables subspace-based
+DoA estimation in challenging settings where a reliable di-
+vision of the array input into signal and noise subspaces is
+typically infeasible. SubspaceNet is designed by augment-
+ing subspace methods with deep learning tools, and it is
+particularly trained to produce a surrogate covariance that
+is universally useful for subspace-based DoA estimation by
+identifying Root-MUSIC as a suitable differentiable method
+and converting it into a trainable architecture. SubspaceNet
+leverages data to learn to divide the observations into signal
+and noise subspaces. Our results demonstrate its ability to
+successfully cope with coherent sources, broadband signals,
+few snapshots, low SNR, and array miscalibrations, while
+preserving the interpretability of model-based subspace meth-
+ods, and facilitating the operation of other covariance-based
+algorithms such as MVDR.
+REFERENCES
+[1] D. H. Shmuel, J. P. Merkofer, G. Revach, R. J. G. van Sloun, and
+N. Shlezinger, “Deep root MUSIC algorithm for data-driven DoA
+estimation,” in IEEE International Conference on Acoustics, Speech and
+Signal Processing (ICASSP), 2023.
+[2] J. Benesty, I. Cohen, and J. Chen, Fundamentals of signal enhancement
+and array signal processing.
+John Wiley & Sons, 2017.
+[3] R. Schmidt, “Multiple emitter location and signal parameter estimation,”
+IEEE Trans. Antennas Propag., vol. 34, no. 3, pp. 276–280, 1986.
+[4] A. J. Barabell, “Improving the resolution performance of eigenstructure-
+based direction-finding algorithms,” in IEEE International Conference
+on Acoustics, Speech and Signal Processing (ICASSP), 1983.
+[5] R. Roy and T. Kailath, “ESPRIT-estimation of signal parameters via
+rotational invariance techniques,” IEEE Trans. Acoust., Speech, Signal
+Process., vol. 37, no. 7, pp. 984–995, 1989.
+[6] H. Wang, K. R. Liu, and H. Anderson, “Spatial smoothing for arrays with
+arbitrary geometry,” in IEEE International Conference on Acoustics,
+Speech and Signal Processing (ICASSP), 1994.
+[7] C. Qi, Y. Wang, Y. Zhang, and Y. Han, “Spatial difference smoothing
+for DoA estimation of coherent signals,” IEEE Signal Process. Lett.,
+vol. 12, no. 11, pp. 800–802, 2005.
+[8] Y. LeCun, Y. Bengio, and G. Hinton, “Deep learning,” Nature, vol. 521,
+no. 7553, p. 436, 2015.
+[9] M. Chen, Y. Gong, and X. Mao, “Deep neural network for estimation
+of direction of arrival with antenna array,” IEEE Access, vol. 8, pp.
+140 688–140 698, 2020.
+[10] J. Cong, X. Wang, M. Huang, and L. Wan, “Robust DOA estimation
+method for MIMO radar via deep neural networks,” IEEE Sensors J.,
+vol. 21, no. 6, pp. 7498–7507, 2021.
+[11] W. Zhu and M. Zhang, “A deep learning architecture for broadband
+doa estimation,” in IEEE International Conference on Communication
+Technology (ICCT), 2019, pp. 244–247.
+[12] S. Chakrabarty and E. A. P. Habets, “Broadband DoA estimation using
+convolutional neural networks trained with noise signals,” in IEEE
+Workshop on Applications of Signal Processing to Audio and Acoustics
+(WASPAA), 2017, pp. 136–140.
+[13] G. K. Papageorgiou, M. Sellathurai, and Y. C. Eldar, “Deep networks
+for direction-of-arrival estimation in low SNR,” IEEE Trans. Signal
+Process., vol. 69, pp. 3714–3729, 2021.
+[14] L. Wu, Z.-M. Liu, and Z.-T. Huang, “Deep convolution network for
+direction of arrival estimation with sparse prior,” IEEE Signal Process.
+Lett., vol. 26, no. 11, pp. 1688–1692, 2019.
+[15] H. Lee, Y. Kim, S. Seol, and J. Chung, “Deep learning-based near-
+field source localization without a priori knowledge of the number of
+sources,” vol. 10, pp. 55 360–55 368, 2022.
+[16] Y. Qin, “Deep networks for direction of arrival estimation with sparse
+prior in low SNR,” IEEE Access, vol. 11, pp. 44 637–44 648, 2023.
+[17] X. Lan, H. Zhai, and Y. Wang, “A novel DOA estimation of closely
+spaced sources using attention mechanism with conformal arrays,” IEEE
+Access, vol. 11, pp. 44 010–44 018, 2023.
+[18] M. L. Lima de Oliveira and M. J. G. Bekooij, “ResNet applied for a
+single-snapshot DOA estimation,” in IEEE Radar Conference (Radar-
+Conf), 2022.
+[19] D. Hu, Y. Zhang, L. He, and J. Wu, “Low-complexity deep-learning-
+based DOA estimation for hybrid massive MIMO systems with uniform
+circular arrays,” IEEE Wireless Commun. Lett., vol. 9, no. 1, pp. 83–86,
+2020.
+[20] F. Weißer, M. Baur, and W. Utschick, “Unsupervised parameter esti-
+mation using model-based decoder,” arXiv preprint arXiv:2211.01849,
+2022.
+[21] D. Chen, S. Shi, X. Gu, and B. Shim, “Robust DoA estimation using
+denoising autoencoder and deep neural networks,” IEEE Access, vol. 10,
+pp. 52 551–52 564, 2022.
+[22] A. M. Elbir, “DeepMUSIC: Multiple signal classification via deep
+learning,” IEEE Sensors Letters, vol. 4, no. 4, pp. 1–4, 2020.
+[23] C. Liu, W. Feng, H. Li, and H. Zhu, “Single snapshot DOA estimation
+based on spatial smoothing MUSIC and CNN,” in IEEE International
+Conference on Signal Processing, Communications and Computing
+(ICSPCC), 2021.
+[24] D. T. Hoang and K. Lee, “Deep learning-aided coherent direction-
+of-arrival estimation with the FTMR algorithm,” IEEE Trans. Signal
+Process., vol. 70, pp. 1118–1130, 2022.
+[25] Z. Jiang, J. Xin, W. Zuo, N. Zheng, and A. Sano, “A Toeplitz prior-based
+deep learning framework for DOA estimation with unknown mutual
+coupling,” in European Signal Processing Conference (EUSIPCO).
+IEEE, 2023, pp. 1544–1548.
+[26] X. Wu, X. Yang, X. Jia, and F. Tian, “A gridless DOA estimation method
+based on convolutional neural network with Toeplitz prior,” IEEE Signal
+Process. Lett., vol. 29, pp. 1247–1251, 2022.
+[27] A. Barthelme and W. Utschick, “DoA estimation using neural network-
+based covariance matrix reconstruction,” IEEE Signal Process. Lett.,
+vol. 28, pp. 783–787, 2021.
+[28] J. Ji, W. Mao, F. Xi, and S. Chen, “TransMUSIC: A transformer-
+aided subspace method for DOA estimation with low-resolution ADCs,”
+in IEEE International Conference on Acoustics, Speech and Signal
+Processing (ICASSP), 2024, pp. 8576–8580.
+[29] X. Xu and Q. Huang, “MD-DOA: A model-based deep learning DOA
+estimation architecture,” IEEE Sensors J., vol. 24, no. 12, pp. 20 240–
+20 253, 2024.
+[30] J. P. Merkofer, G. Revach, N. Shlezinger, and R. J. van Sloun, “Deep
+augmented MUSIC algorithm for data-driven DoA estimation,” in IEEE
+International Conference on Acoustics, Speech and Signal Processing
+(ICASSP), 2022, pp. 3598–3602.
+[31] J. P. Merkofer, G. Revach, N. Shlezinger, and R. J. Routtenberg, Tirza
+an van Sloun, “Data-driven DoA estimation via deep augmented MUSIC
+algorithm,” IEEE Trans. Veh. Technol., vol. 73, no. 2, pp. 2771–2785,
+2024.
+[32] H. Al Kassir, Z. D. Zaharis, P. I. Lazaridis, N. V. Kantartzis, T. V.
+Yioultsis, and T. D. Xenos, “A review of the state of the art and future
+challenges of deep learning-based beamforming,” IEEE Access, 2022.
+[33] N. Shlezinger, J. Whang, Y. C. Eldar, and A. G. Dimakis, “Model-based
+deep learning,” Proc. IEEE, vol. 111, no. 5, pp. 465–499, 2023.
+[34] N. Shlezinger, Y. C. Eldar, and S. P. Boyd, “Model-based deep learning:
+On the intersection of deep learning and optimization,” IEEE Access,
+vol. 10, pp. 115 384–115 398, 2022.
+[35] N. Shlezinger and T. Routtenberg, “Discriminative and generative learn-
+ing for linear estimation of random signals [lecture notes],” IEEE Signal
+Process. Mag., vol. 40, no. 6, pp. 75–82, 2023, early access.
+[36] L. C. Godara, Smart antennas.
+CRC press, 2004.
+[37] Y.-S. Yoon, L. M. Kaplan, and J. H. McClellan, “TOPS: new DOA
+estimator for wideband signals,” IEEE Trans. Signal Process., vol. 54,
+no. 6, pp. 1977–1989, 2006.
+[38] P. Stoica, R. L. Moses et al., Spectral analysis of signals.
+Pearson
+Prentice Hall Upper Saddle River, NJ, 2005, vol. 452.
+[39] I. Goodfellow, Y. Bengio, and A. Courville, Deep Learning. MIT Press,
+2016, http://www.deeplearningbook.org.
+[40] B. Luijten, R. Cohen, F. J. de Bruijn, H. A. W. Schmeitz, M. Mischi,
+Y. C. Eldar, and R. J. G. van Sloun, “Adaptive ultrasound beamforming
+using deep learning,” IEEE Trans. Med. Imag., vol. 39, no. 12, pp. 3967–
+3978, 2020.
+[41] T. Routtenberg and J. Tabrikian, “Bayesian parameter estimation using
+periodic cost functions,” IEEE Trans. Signal Process., vol. 60, no. 3, pp.
+1229–1240, 2012.
+[42] J. Bolte, T. Le, E. Pauwels, and T. Silveti-Falls, “Nonsmooth implicit
+differentiation for machine-learning and optimization,” Advances in
+neural information processing systems, vol. 34, pp. 13 537–13 549, 2021.
+14
+
+
+===== PAGE 15 =====
+[43] O. Solomon, R. Cohen, Y. Zhang, Y. Yang, Q. He, J. Luo, R. J. van
+Sloun, and Y. C. Eldar, “Deep unfolded robust PCA with application to
+clutter suppression in ultrasound,” IEEE Trans. Med. Imag., 2019.
+[44] A. Paszke, S. Gross, S. Chintala, G. Chanan, E. Yang, Z. DeVito, Z. Lin,
+A. Desmaison, L. Antiga, and A. Lerer, “Automatic differentiation in
+PyTorch,” 2017.
+[45] J. Capon, “High-resolution frequency-wavenumber spectrum analysis,”
+Proc. IEEE, vol. 57, no. 8, pp. 1408–1418, 1969.
+[46] G. Revach, N. Shlezinger, T. Locher, X. Ni, R. J. van Sloun, and Y. C.
+Eldar, “Unsupervised learned Kalman filtering,” in European Signal
+Processing Conference (EUSIPCO).
+IEEE, 2022, pp. 1571–1575.
+[47] T. Raviv, S. Park, O. Simeone, Y. C. Eldar, and N. Shlezinger, “Adaptive
+and flexible model-based AI for deep receivers in dynamic channels,”
+IEEE Wireless Commun., 2024.
+[48] X. Ni, G. Revach, and N. Shlezinger, “Adaptive KalmanNet: Data-driven
+Kalman filter with fast adaptation,” in IEEE International Conference
+on Acoustics, Speech and Signal Processing (ICASSP), 2024, pp. 5970–
+5974.
+[49] F.-J. Chen, S. Kwong, and C.-W. Kok, “ESPRIT-like two-dimensional
+DOA estimation for coherent signals,” IEEE Trans. Aerosp. Electron.
+Syst., vol. 46, no. 3, pp. 1477–1484, 2010.
+[50] J.-J. Fuchs, “On the application of the global matched filter to DOA
+estimation with uniform circular arrays,” IEEE Trans. Signal Process.,
+vol. 49, no. 4, pp. 702–709, 2001.
+[51] M. Guo, Y. D. Zhang, and T. Chen, “DOA estimation using compressed
+sparse array,” IEEE Trans. Signal Process., vol. 66, no. 15, pp. 4133–
+4146, 2018.
+[52] D. P. Kingma and J. Ba, “Adam: A method for stochastic optimization,”
+arXiv preprint arXiv:1412.6980, 2014.
+[53] Z. Zhang, Z. Shi, and Y. Gu, “Ziv-Zakai bound for DOAs estimation,”
+IEEE Trans. Signal Process., vol. 71, pp. 136–149, 2022.
+15

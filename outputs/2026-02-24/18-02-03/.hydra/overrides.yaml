@@ -1,0 +1,4 @@
+- +scenario=training
+- simulation.train_model=false
+- simulation.load_model=false
+- simulation.evaluate_model=false

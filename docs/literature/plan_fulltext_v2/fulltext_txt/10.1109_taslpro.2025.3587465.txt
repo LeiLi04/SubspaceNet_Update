@@ -1,0 +1,1470 @@
+
+
+===== PAGE 1 =====
+2918
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+Synthetic Aperture Local Conformal Autoencoder for
+Semi-Supervised Speaker’s DOA Tracking
+Idan Cohen
+, Sharon Gannot
+, Fellow, IEEE, and Oﬁr Lindenbaum
+Abstract—In this article, we address the problem of tracking
+the direction of arrival (DOA) of a moving speaker in noisy and
+reverberant environments. We aim to achieve this in real-time,
+using as few measurements as possible. Toward this goal, we
+present a semi-supervised learning scheme that tracks the speaker
+using acoustic features only. Speciﬁcally, we extend a recently pro-
+posed method called local conformal autoencoder (LOCA), a deep
+neural network (DNN)-based dimensionality reduction technique
+that considers the local information from adjacent measurements.
+We design a unique training procedure for LOCA, which uses
+a synthetic aperture training paradigm to take advantage of the
+speaker’s movement during training. We also add an anchoring loss
+term to the unsupervised LOCA model, which improves training
+stability and establishes a connection between the encoder mapping
+and the real-world position of the speaker. Finally, we conduct a
+comprehensive simulation study to demonstrate the effectiveness
+of our proposed method in dynamic environments with various
+levels of noise and reverberation.
+Index Terms—Semi-supervised learning, speaker tracking,
+synthetic aperture, LOCA, RTF.
+I. INTRODUCTION
+S
+PEAKER DOA estimation and, in particular, speaker track-
+ing are essential tasks in numerous domains, ranging from
+automated conferencing solutions [1], [2] to advanced surveil-
+lance systems [3], [4]. With precise speaker tracking, these
+technologies can enhance sound capture quality, facilitate more
+efﬁcient communication, and improve security measures.
+Classical solutions for this problem, namely the generalized
+cross-correlation phase transform (GCC-PHAT) [5] and its mul-
+tichannel extension, the steered-response power phase transform
+(SRP-PHAT) [6], rely on analyzing the cross-correlation be-
+tween the signals and extracting their peak, which corresponds
+with the time difference of arrival (TDOA). Other methods,
+such as the multiple signal classiﬁcation (MUSIC) algorithm [7]
+and its extensions, offer high-resolution capabilities and rely on
+analyzing the covariance matrix of the received signals. These
+techniques, initially designated to address single-path static sce-
+narios, demonstrate limitations when dealing with the dynamic
+Received20September2024;revised8April2025and21June2025;accepted
+26 June 2025. Date of publication 14 July 2025; date of current version 18
+July 2025. The work was supported by a grant from the Audition Project, Data
+Science Program, Council of Higher Education, Israel. The associate editor
+coordinating the review of this article and approving it for publication was
+Dr. Romain Serizel. (Corresponding author: Sharon Gannot.)
+The authors are with Bar-Ilan University, Ramat-Gan 5290002, Israel
+(e-mail: idan.cohen@biu.ac.il; sharon.gannot@biu.ac.il; oﬁr.lindenbaum@biu.
+ac.il).
+Digital Object Identiﬁer 10.1109/TASLPRO.2025.3587465
+Fig. 1.
+An illustration of the experimental setup. Dynamic speakers are con-
+ﬁned to an arc of radius R around a pair of microphones, both in the training
+and test phases. 0 ≤θ(t) ≤180. Blue circles denote labeled samples.
+multi-path case. In [8] and [9], a grid search was conducted
+over the output power of a beamformer steered to all potential
+locations in order to estimate the position. Several recursive
+least squares-based tracking methods were presented in [10],
+and probabilistic approaches were presented in [11], [12], [13].
+In a prevalent probabilistic approach for speaker tracking, the
+source path is modeled as a stochastic process, enabling the
+utilization of Bayesian inference frameworks. In this approach,
+the TDOAs of the sources are estimated, resulting in nonlinear
+state-spacemodel equations. Multiplealgorithms wereproposed
+in this context, including the Kalman ﬁlter [14], [15] and its
+nonlinear extensions, speciﬁcally the extended Kalman ﬁlter
+(EKF) [16], [17], the unscented Kalman ﬁlter (UKF) [16], the
+multiple model Kalman ﬁlter (MMKF) [18], and the wrapped
+Kalman ﬁlter (WKF) [19]. Particle ﬁlters were also suggested as
+a viable solution [20], [21], [22], [23], [24], together with hidden
+Markov models (HMMs) [25], [26], probability hypothesis den-
+sity (PHD) ﬁlters [27], [28], [29], [30] and factor graphs [31].
+Similarly, non-Bayesian approaches, based on the recursive
+expectation-maximization (REM) procedure, were suggested
+at [32], [33], [34], [35], [36], [37].
+Recently,
+greater
+focus
+has
+been
+directed
+towards
+training-based
+localization
+methods.
+These
+approaches
+are
+usually
+divided
+into
+two
+groups—supervised
+and
+semi/weakly-supervised. In the supervised schemes, the training
+dataset consists of samples whose positions are accurately
+known. While achieving excellent performance, the supervised
+approaches require extensive amounts of labeled data, which are
+oftenlaborioustocollect.Suchapproachesinclude[38]and[39],
+which suggest applying convolutional neural networks (CNNs)
+2998-4173 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artiﬁcial intelligence and similar technologies.
+Personal use is permitted, but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2919
+and fully connected networks (FCNs) to the acoustic features,
+respectively. In [40], the authors suggest improving the former
+approach by integrating a long short-term memory (LSTM)
+network to utilize the temporal relations between consecutive
+time frames. Other works, such as [41] and [42], suggest using a
+convolutional recurrent neural network (CRNN). In this case, the
+recurrent layers model the evolution of the spatial parameters,
+given the sequential features and their spatial trajectory. In [43],
+the authors suggest applying a supervised U-Net structure with
+a dense block to denoise the GCC-PHAT components before
+constructing the SRP-PHAT, achieving improved tracking.
+In [44], a narrow-band variant of the SRP-PHAT was used
+to train a deep time-frequency-based classiﬁcation model.
+The proposed approach allows for the localization of multiple
+concurrent speakers while circumventing the challenge of a
+possible mismatch between microphone array conﬁgurations in
+the training and test stages.
+In the second group, which includes semi/weakly supervised
+approaches, a deeper understanding of the nature of the data is
+required to exploit the labeled information efﬁciently. In [45]
+and [46], a graph-Laplacian-based manifold learning approach
+is used to learn the latent manifold that controls the acoustic
+data. In [47], a variational auto encoder (VAE) is used to learn
+the probability distribution that characterizes the acoustic data.
+In [48], a weakly-supervised setting is considered for localiza-
+tion, where additional information regarding the spatial rela-
+tionship of samples is given in the form of triplets. The triplets
+consist of an anchor, a positive, and a negative sample—based
+on their proximity to the anchor. This work was later extended
+to the dynamic case in [49]. A comprehensive survey of sound
+source localization with deep learning methods can be found
+in [50].
+In our paper, we adopt the recently proposed LOCA frame-
+work [51] for the task of semi-supervised speaker tracking.
+LOCA is a manifold learning-based approach that was proved
+viableforthetaskof2-dimensionalacousticscenemapping[52].
+At the core of the approach lies an auto-encoder, which aims to
+extract a low-dimensional latent embedding that is isometric
+to the true latent manifold that underlies the data. In Sec-
+tion II, we formalize the problem and present the instantaneous
+acoustic features used for tracking. In Section III, we introduce
+new extensions for LOCA, which aim to take advantage of
+the speakers’ movement during training. Our solution involves
+adopting the synthetic aperture training paradigm. Additionally,
+we adopt a few methodological modiﬁcations to LOCA’s train-
+ing framework, aiming to achieve a more stable convergence.
+Speciﬁcally, we modify the minimization process and introduce
+the anchoring loss term to align the learned embedding to the
+real-world coordinates efﬁciently. In Section IV, we benchmark
+our proposed scheme against previously discussed semi/weakly
+supervised approaches and evaluate them through a series of
+simulations. We also discuss the limitations of our approach,
+focusing on its performance under various noisy and reverberant
+conditions. Additionally, we analyze several other factors to
+determine their inﬂuence on the tracking performance. The
+discussion is followed by an ablation study to assess the impact
+of the proposed methodological changes.
+II. PROBLEM FORMULATION
+In this section, we formalize the problem and introduce the
+instantaneous relative transfer functions (iRTFs)—the acoustic
+features used to implement the acoustic tracking.
+A. Problem Statement
+Consider an acoustic enclosure where a speaker is moving
+and recorded by a pair of microphones. Following previous
+works [46], [49], we focus ontheone-dimensional setting, where
+the speaker can only travel on an arc of radius R around a
+microphone pair. In this setting, the DOA, denoted θ(t), rep-
+resents the time-varying angular displacement of the speaker
+along the arc path around the microphone pair. We also assume
+that we are given a small set of anchor points, i.e., samples
+whose positions are known and labeled. Importantly, in our
+one-dimensional framework, “position” and “location” always
+refer to the DOA rather than Cartesian coordinates. Hence,
+spatial information throughout this work is understood in terms
+of angular displacement rather than absolute spatial positioning.
+The discussed setting is illustrated in Fig. 1.
+B. Acoustic Features - iRTF
+We consider time-domain acoustic measurements of the form
+zi(t) = {ai ∗s}(t) + ui(t),
+(1)
+with s(t) being the source signal, ai(t), the unknown room
+impulse responses (RIRs) relating the source and each of the
+microphones, i = {1, 2}, and ui(t) the noise signals indepen-
+dent of the source.
+It follows that in the time-frequency domain, we can approx-
+imate the measured signals as:
+zi (ℓ, k) ≈ai (ℓ, k) si (ℓ, k) + ui (ℓ, k) ,
+(2)
+where si(ℓ, k), ai(ℓ, k), and ui(ℓ, k) are the time-frequency
+domain representations of si(t), ai(t) and ui(t), respectively,
+at time frame index ℓand frequency index k.
+Note that, in our case, the speakers are moving, and we,
+therefore, have to work with instantaneous acoustic features,
+namely the instantaneous relative transfer functions (iRTFs). We
+select z1(n) as the reference signal and deﬁne the iRTF as:
+h(ℓ, k) = a2(ℓ, k)
+a1(ℓ, k).
+(3)
+We will use a set of Nc context time frames to estimate the iRTF
+at any given time frame index ℓ. Without loss of generality,
+in our formulation, the parameter Nc is assigned even values.
+Assuming negligible noise, the iRTF, ˆh(ℓ, k), can be estimated
+from:
+ˆh(ℓ, k) ≈
+ˆφz2z1(ℓ, k)
+ˆφz1z1(ℓ, k)
+≈
+ℓ+ Nc
+2
+ℓ′=ℓ−Nc
+2 z2(ℓ′, k)z∗
+1(ℓ′, k)
+ℓ+ Nc
+2
+ℓ′=ℓ−Nc
+2 z1(ℓ′, k)z∗
+1(ℓ′, k)
+,
+(4)
+where ˆφz1z1(ℓ, k) and ˆφz2z1(ℓ, k) are the power spectral den-
+sity (PSD) and the cross-PSD at time frame ℓ, respectively.
+Ultimately, we focus on a subset of the frequency bins range,
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+2920
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+namely k1, . . . , kP , that includes most spectral power. This
+would allow for a reliable estimation of the acoustic features,
+further improving the localization accuracy. We ﬁnally deﬁne
+our feature vector at time frame ℓas the concatenation of the
+real-value and imaginary-value components of the iRTFs in the
+designated frequency range:
+ˆh(ℓ) =
+
+Re
+
+ˆh(ℓ, k1), . . . , ˆh(ℓ, kP )
+
+,
+Im
+
+ˆh(ℓ, k1), . . . , ˆh(ℓ, kP )
+⊤
+.
+(5)
+III. PROPOSED TRACKING ALGORITHM
+A. The Acoustic Manifold
+Previous works have studied the nature of the relative transfer
+function (RTF) acoustic features [53], [54], [55]. RTFs are high-
+dimensional representations in CD that correspond to the vast
+amount of reﬂections from different surfaces characterizing the
+enclosure. Essentially, the RTFs depict complex acoustic reﬂec-
+tion patterns that serve as ‘ﬁngerprints,’ uniquely distinguishing
+the source position in the enclosure. Following the manifold
+hypothesis [56], we assume that the RTF features are not spread
+uniformly in the entire space of CD. Instead, they are conﬁned to
+a compact nonlinear manifold M of dimension d, much smaller
+than the ambient space dimension, i.e., d ≪D. This assumption
+is justiﬁed by the fact that perturbations of the RTF are only
+inﬂuenced by a small set of parameters related to the physical
+characteristics of the environment. These parameters include the
+enclosure dimensions, its shape, the surfaces’ materials, and the
+positions of the microphones and the source. Moreover, we focus
+on a static conﬁguration, where the enclosure properties and the
+microphone array position remain ﬁxed. In such an acoustic
+environment, the only varying degree of freedom is the location
+of the source.
+Although nonlinear, in small neighborhoods, the manifold is
+locally linear, meaning that it is ﬂat in the vicinity of each point
+and coincides with the tangent plane to the manifold at that
+point [55]. Hence, the Euclidean distance can faithfully measure
+afﬁnities between points that reside close to each other on the
+manifold. For remote points, however, the Euclidean distance
+is meaningless. In practice, we consider the estimated iRTFs as
+our acoustic features, which are merely an approximation of the
+RTFs. Consequently, the instantaneous features might lie beside
+the theoretical acoustic manifold, slightly violating the local
+linearity property of the manifold. However, it can be considered
+linear in the local neighborhoods for all practical purposes. This
+reasoning motivates us to apply a manifold learning technique
+that utilizes the local linearity property of the manifold, namely
+the LOCA framework.
+B. Modiﬁed Local Conformal Autoencoder
+Inthiswork,weadopttheLOCAarchitectureproposedin[51]
+and suggest methodological modiﬁcations for its training pro-
+cess. Brieﬂy, we are interested in an inaccessible latent manifold.
+We assume that there is an unknown measurement function
+that relates latent states to their measurements in the high di-
+mensional observation space, and the measurement function is
+assumed to be smooth and nonlinear.
+Our approach is based on an autoencoder architecture that
+aims to learn an embedding that is isometric to the latent low-
+dimensional manifold using its high-dimensional samples. To
+achieve this, a localized burst sampling strategy [57] is required.
+A burst is a collection comprising samples taken from a local
+neighborhood. Consequently, bursts can provide information on
+the local variability in the vicinity of each data point. In such
+a local neighborhood, the measurement function that maps the
+latent manifold to the observed high-dimensional space can be
+approximatedaslinear.ThislocallinearityisdescribedbytheJa-
+cobian of the measurement function, which captures how small
+changes in the latent space propagate to the observed space.
+As a result, within a sufﬁciently small neighborhood, Euclidean
+distances can be assumed to reliably reﬂect the true geometric
+structure of the manifold. That would enable “inverting” the
+nonlinear observation function using local approximations of
+the associated Jacobian.
+We consider the case where the latent domain of our system
+of interest is a path-connected domain in the Euclidean space
+X ⊂Rd.Observationsofthesystemconsistofsamplescaptured
+by a measurement device, processed using (4), and are then
+given as a nonlinear smooth and bijective function f : X →Y,
+where Y ⊂RD is the ambient or measurement space, and
+D ≫d. The high dimensional acoustic features, namely the
+RTFs, constitute the measurement space in our setting, while the
+speaker position is represented by states on a low dimensional
+manifold lying in the latent space. Assume we have N states in
+the latent domain, {xi}N
+i=1. If we wish to infer an embedding
+ρ : RD →Rd, such that the image of ρ ◦f is isometric to X,
+then for each state, xi, we can look at a set of M adjacent latent
+states, Xi = {x(j)
+i }M
+j=1 ∈RD, such that Xi ∼N(xi, σ2Id)
+are independent random variables. Note that ρ is isometric
+to f −1, meaning that they are the same up to some rotation,
+mirroring, and translation.
+For a ﬁxed 1 ≤i ≤N, we deﬁne the burst (sample cloud)
+Y i = {y(j)
+i }M
+j=1 as the set of independent and identically dis-
+tributed samples of the random variable f(Xi) ∈RD, where
+M denotes the number of samples in each burst. Following the
+mathematical derivation in [51], this deﬁnition requires that such
+embedded burst measurements be whitened. Namely,
+1
+σ2 C(ρ(Y i)) = I
+∀1 ≤i ≤N,
+(6)
+where C is the covariance matrix.
+We use an encoder neural network (E) to learn the embed-
+ding function ρ. Following (6), we deﬁne the loss term to be
+minimized at each iteration:
+Lwhite(ρ) = 1
+N
+N
+
+i=1
+
+1
+σ2 ˆ
+C(ρ(Y i)) −Id
+
+2
+F
+,
+(7)
+with ρ the learned embedding function up to the current iteration
+and ˆ
+C(ρ(Y i)) is the empirical covariance over a set of M real-
+izations{ρ(y(j)
+i )}M
+j=1.Sincef −1 isinvertible,wefurtherimpose
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2921
+an invertibility property on ρ. This effectively regularizes the
+solution of ρ by preventing noninvertible functions. Practically,
+invertibility is imposed using a decoder neural network (D)
+parameterized by γ. This approach induces a loss term based
+on the mean squared error (MSE) between samples and their
+reconstructed counterparts:
+Lrecon(ρ, γ) =
+1
+N · M
+N,M
+
+i,j=1
+y(j)
+i
+−γ
+
+ρ(y(j)
+i )
+
+2
+2 .
+(8)
+We further add a new anchoring loss term to stabilize the
+solution and remove arbitrary scaling and rotations from the
+embedding learned by LOCA. Since we learn an embedding
+ρ that is only isometric to the inverse measurement function
+f −1, we need to relate the embedded samples—i.e., the pre-
+dicted speaker positions, to their real-world coordinates. In [52]
+and [51], the incorporation of real-world coordinates into the
+embedding was done only past the training stage, where an
+orthogonal transformation for the embedding was found by
+comparing the embedded anchor samples to their true positions.
+However, we found that using a small set of anchor points
+during training would be sufﬁcient to accurately calibrate the
+embedding and improve the overall stability of the training
+process, as we demonstrate in Section IV-G. Assume that we
+have a set of NL labeled samples, {yk}NL
+k=1, whose latent states,
+{xk}NL
+k=1, are known. We deﬁne the anchoring loss term as the
+mean squared error between the embedded samples and their
+latent states:
+Lanchor(ρ) = 1
+K
+NL
+
+k=1
+∥ρ(yk) −xk∥2 .
+(9)
+Finally, our objective is to minimize the combined loss term
+L = λwhite · Lwhite + λrecon · Lrecon + λanchor · Lanchor,
+(10)
+where λwhite, λrecon and λanchor are the weighting factors for
+the whitening, the reconstruction, and the anchoring loss terms,
+respectively.
+Wenotethat in[51], theauthors usedamulti-stepapproachfor
+iterative minimization of the reconstruction and whitening loss
+terms. In contrast, we suggest using a single-step approach to
+minimize the combined loss term (10), resulting in a much more
+stable learning process. This will also be further discussed and
+validated in Section IV-G. The training scheme for the LOCA
+framework is illustrated in Fig. 2.
+C. Synthetic Aperture Paradigm for Bursts Acquisition
+Adopting the LOCA framework for our 1-dimensional prob-
+lem, {xi}i, the latent states in our system are simply the speaker
+DOAs, {θ(ℓ)}ℓ. The high-dimensional features we sample,
+{yi}i are the iRTF features {ˆh(l)}ℓ.
+One of the key differences in this work from [52], which
+involved performing a static 2-dimensional acoustic-scene map-
+ping, is the reverse of roles between the sources and receivers.
+In [52], the sound sources were ﬁxed, and the acoustic manifold
+was consequently controlled by the position of the microphone
+array. In that case, learning the manifold essentially resulted in
+Fig. 2.
+An illustration of the modiﬁed LOCA framework training scheme. The
+latent space is a low-dimensional manifold in a high-dimensional measurement
+space. Bursts of adjacent samples from the measurement space are fed into
+the encoder, aiming to whiten their embedding (see (7)). The embeddings of
+the anchors (blue circles) are compared to their true positions via the anchoring
+loss(9).Theembeddingsarethenfedintothedecodertoreconstructtheinput(8).
+the mapping of the acoustic scene. In this work, the microphone
+array is ﬁxed, the acoustic manifold is controlled by the position
+of the speakers, and the embedding we learn is used to track
+the DOA of the speaker. Importantly, training LOCA to infer an
+embedding that is isometric to the latent space requires clusters
+of neighboring samples (referred to as sample bursts). However,
+acquiring such data can be challenging. In [52], we devised a
+unique, albeit complex, 2-dimensional microphone array that
+allowed for the collection of bursts of adjacent samples. When
+we limit ourselves to the 1-dimensional setting, we can devise
+a simple solution that takes advantage of the dynamics of the
+speakers. When recording a moving speaker along the arc,
+we can think of measurements of consecutive instantaneous
+acoustic features as if they arrive from a local neighborhood
+in which the measurement function does not vary dramatically.
+This allows us to deﬁne local bursts. Our inspiration was the
+synthetic aperture paradigm in the radio detection and ranging
+(RADAR) domain [58], where movement is utilized to increase
+the resolution of the measured signal. In synthetic aperture
+RADAR (SAR), the motion of the RADAR antenna effectively
+increases its aperture, thereby improving its spatial resolution
+compared to conventional static radar systems. In our case, the
+goal is not to increase the resolution of the signal acquisition, but
+rather to enhance the spatial sampling of the acoustic manifold
+itself. Speciﬁcally, the movement of the speaker—rather than the
+movement of the microphones—facilitates a denser sampling of
+the acoustic manifold than would be achievable with stationary
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+2922
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+speakers. Therefore, “synthetic aperture” in this context refers
+not to the virtual enlargement of the microphone array aperture,
+but to the synthetic accumulation of spatial samples as the
+speaker moves across a trajectory. This concept is analogous
+to SAR in spirit but with reversed roles: while SAR involves
+a moving sensor observing a stationary scene, our setup has
+stationary microphones observing a dynamic source.
+In the following paragraphs, we will further formalize this
+concept, depicting our paradigm for collecting bursts of mea-
+surements.
+Given the recording of a dynamic speaker conﬁned to a
+1-dimensional arc, our goal is to collect adjacent samples from
+the recording to train our network. The recording consists of
+two channels—{z1(t), z2(t)}. We need to collect trustworthy
+samples to ensure the reliability of the extracted acoustic fea-
+tures. To estimate the iRTF features accurately, it is essential
+to use recording segments that have sufﬁcient active speech. To
+ensure this, the ﬁrst step is to apply a voice activity detector
+(VAD) algorithm that only maintains the active time frames.
+Here, we apply short time Fourier transform (STFT) using a
+window size of NFFT = 2048 and overlap of 75% between the
+adjacent windows to divide the recording into a group of time
+frames, {ti}i. Once the VAD algorithm is applied to the time
+frames, we are left only with the active time frames,
+T = {ℓi
+		VAD (z1(ℓi)) = 1}.
+(11)
+Deﬁne N train
+c
+as the number of context frames required to esti-
+mate the iRTFs during the training phase. Also, deﬁne N test
+c
+as
+the number of context frames needed for estimation during the
+test phase. Note that, in general, their value might differ, and it is
+up to the user to decide the number of context frames used during
+the test stage as it is closely related to the inference latency. Es-
+sentially, using more frames achieves better iRTF estimation but
+smears the DOA of the speaker. This phenomenon is especially
+pronounced at higher speaker velocities. An additional consid-
+eration when changing the inference latency is the mismatch
+between the training and test data. We aim to learn a model that
+can generalize its predictions to iRTF samples estimated with a
+different number of context frames. In Section IV-D we delve
+deeper into this matter.
+To ensure that the estimation of training samples is done using
+sufﬁcient active speech, we aim to keep only the time frames that
+are found in active time segments, i.e., their range of context
+frames is fully active:
+ˆT =
+
+ℓi ∈T
+					∀ℓi −N train
+c
+2
+≤ℓj ≤ℓi + N train
+c
+2
+, ℓj ∈T
+
+.
+(12)
+After collecting all active time segments, our goal is to create
+adjacent bursts of iRTF samples. As discussed earlier, we can
+considerconsecutiveiRTFestimatesasmeasurementsthatarrive
+from adjacent positions on the arc by utilizing the speaker’s
+movement. We set the size of each burst to M = 5 and collect
+all groups of 5 time frames in ˆT with a spacing of 2 time-frames
+to construct our training set. The spacing taken between frames
+is a variable that determines the in-burst distance between iRTF
+Algorithm 1: Training-Bursts Acquisition.
+Input: Two-channel training recordings, {z1(t), z2(t)},
+of dynamic speakers moving along a 1-dimensional arc.
+Output: Tensor of dimensions [N, M, D], containing N
+bursts of M local iRTF samples, each of dimension D.
+for each train recording {z1(t), z2(t)} do
+1) Apply a VAD to ﬁnd which time-frames ℓi contain
+active speech (see (11)).
+2) Find the group ˆT which contains only the time frames
+ℓi ∈T whose entire set of context frames is active
+(see (12)).
+3) Collect time-frame bursts - all groups of M = 5
+time-frames in ˆT with spacing of 2 time-frames
+(see (13)).
+4) According to (4) and (5), estimate the D-dimensional
+iRTFs, ˆh(ℓ), for each time-frame ℓin each time-frame
+burst ˜Tj. Store the iRTF-bursts in the output tensor.
+end for
+measurements. Large spacing results in bursts of measurements
+that are not local, whereas spacing that is too small might
+not capture enough variability within the burst. Choosing a
+spacing of two frames is a good compromise between these two
+considerations. The time-frame bursts are of the form
+˜Ti = {ℓi −4, ℓi −2, ℓi, ℓi + 2, ℓi + 4}.
+(13)
+Finally, we use each of the collected time-frame bursts in
+{ ˜Ti}i and estimate its iRTFs using (4) over each time frame.
+The DOAs at these time frames and their corresponding es-
+timated iRTFs are, in fact, the latent states within each burst
+and their high-dimensional observations, respectively. Namely,
+we can write that {x(j)
+i }M
+j=1 = {θ(ℓ(j)
+i )}M
+j=1 and {y(j)
+i }M
+j=1 =
+{ˆh(ℓ(j)
+i )}M
+j=1, where each burst contains M = 5 samples.
+Since our primary focus is speech data, we consider only
+the frequency-bin range [41 −320], which corresponds to the
+frequencies 312–2500 Hz for our choice of NFFT = 2048. This
+range includes most of the speech power distribution. Given
+that we are required to concatenate both the real and imaginary
+parts of the iRTF (5), we are left with features of dimension
+D = 560. Algorithm 1 outlines the process of training-bursts
+collection and is followed by Algorithm 2, which summarizes
+both the training process and the tracking methodology.
+We note that the essential requirement for the sample bursts
+deﬁned in Section III-B is that the latent states associated with
+each burst are independent and identically distributed (i.i.d.)
+Gaussian variables. In simpler terms, this means that the locally
+spatial distributions of samples within different bursts behave
+similarly and follow an isotropic Gaussian distribution. Note,
+however, that in the case where σ ≪1, other isotropic distribu-
+tions could also be used to model the local perturbations around
+states. To fulﬁll these requirements, we require that during the
+training stage, the speakers move at a constant velocity. We
+can then set the size of each burst to M = 5 and gather ﬁve
+evenly spaced samples in time. It also follows that they are
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2923
+Fig. 3.
+An illustration of the synthetic aperture paradigm used for collecting
+bursts of measurements. Samples recorded at a group of consecutive time-
+frames, ˜Ti, are grouped together to form the sample bursts {y(j)
+i
+}M
+j=1 =
+{ˆh(ℓ(j)
+i
+)}M
+j=1 for M = 5. For a speaker moving at a constant velocity, the
+latent states attributed to these samples, {x(j)
+i
+}M
+j=1 = {θ(ℓ(j)
+i
+)}M
+j=1, follow an
+isotropic 1-dimensional uniform distribution in the latent space, thus satisfying
+the requirements for using the LOCA framework.
+Algorithm
+2:
+Synthetic
+Aperture
+LOCA
+for
+Semi-
+Supervised Speaker Tracking.
+TRAINING STAGE
+Input: NL labeled samples {zlabeled
+1
+(t), zlabeled
+2
+(t)},
+synthetic aperture bursts tensor of dimensions
+[N, M, D].
+Output: An encoder network (E) parameterized by ρ
+for Nepochs do
+Feed batches of bursts into the model, single-step
+minimizing the loss function in (10).
+end for
+TEST STAGE - TRACKING
+Input A new recording containing a pair of signal
+measurements, {ztest
+1 (t), ztest
+2 (t)}, produced by an
+unknown source moving in an unknown location on the
+arc.
+Output Estimated per frame DOA ˆθ(ℓ), ∀ℓ.
+1) According to (4) and (5) estimate the corresponding
+iRTF, ˆh(ℓ) at time frame ℓusing N test
+c
+context frames.
+2) Predict the DOA at time frame ℓusing ˆθ(ℓ) = ρ(ˆh(ℓ)).
+uniformly spaced in the latent space, thus satisfying the required
+conditions.
+A conceptual depiction of this paradigm is illustrated in Fig. 3.
+We also add a block diagram in Fig. 4.
+D. Model Training and Parameters
+We implemented both the encoder and decoder using simple
+feed-forward architectures. The encoder consists of an initial
+layer of dimension D = 560 with no nonlinearity, followed by
+ﬁve consecutive layers of size 200 with ‘Leaky-Relu’ activa-
+tions, ending with a latent representation layer of size d = 1.
+Similarly, the decoder consists of the latent representation layer
+with no nonlinearity, followed by four layers of size 200 with
+‘tanh’ activations, an additional linear layer of size 200, and an
+output reconstruction layer of size D. We use batches of size
+2048 samples and a learning rate of 10−3. The value of σ2 is
+set to 6 · 10−4. In the original manuscript of LOCA, the authors
+apply alternating minimization steps between the whitening and
+reconstruction loss terms. We found, however, that a more stable
+solution is obtained by minimizing a combined loss function
+in (10). The loss terms are weighted using λwhite = 1, λrecon = 25
+and λanchor = 100. Finally, we use 90% of the learning-phase
+data during training, and the rest 10% are used for validation
+and determining the best model weights.
+E. Future Extensions
+Our work utilizes the LOCA framework for tracking a single
+speech source. Multi-source extensions may use speech sparsity,
+namely that speech sources are ‘isolated’ in the time-frequency
+(TF) domain [59], a property often referred to as W-disjoint
+orthogonality (WDO) [60]. This assumption was widely used
+for multi-source localization or TDOA estimation, e.g., [61],
+[62], [63]. In [39], the WDO assumption was used with the
+iRTF as an input feature to track multiple sources. In [37], a
+manifold-basedmultiplespeakertrackingmethodwasproposed.
+The manifold was inferred ofﬂine for a single and static source
+using a geometric method (diffusion maps), and the multi-
+speaker tracking was implemented through the application of
+the REM procedure with the iRTFs as input features. Extending
+our proposed LOCA-based DOA tracking to multiple speakers
+remains a challenge for future work.
+IV. EXPERIMENTAL STUDY
+In this section, we conduct several experiments to compare
+the performance of our method with that of other schemes.
+We highlight the merits and limitations of our approach. Our
+experiments involve acoustic settings with reverberation levels
+of up to RT60 = 600 ms, and we consider various signal to
+noise ratio (SNR) conditions of either 30, 20, 15, or 10 dB.
+The distance between the microphones is set to 8 cm, and the
+radius of the arc is set to 2 m. The evaluation and comparison of
+all tracking methods focus on the broadside of the microphone
+conﬁguration, considering DOAs in the range [30◦−150◦].
+In subsection IV-A, we specify the performance measures
+used to evaluate all approaches. In subsection IV-B, we compare
+the different approaches in a setup where the test data and the
+training data are drawn from the same constellation (position
+and orientation of the microphone array and the arc within the
+acoustic enclosure). Although the training and test stages share
+the same features, they differ in both velocity and speakers’
+identities, Through subsections IV-C and IV-D, we assess the
+inﬂuenceoftwohyper-parametersontheperformanceofLOCA,
+alsohavingmatchingacousticsetupbetweenthetrainingandtest
+stage. Namely, the considered hyper-parameters are the number
+of speakers that provide anchors during training and the latency
+during test stage. In subsection IV-F, we test LOCA’s sensitivity
+to different array-speaker constellations during the test phase. In
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 7 =====
+2924
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+Fig. 4.
+Block diagram visualization of both the training (including the burst acquisition algorithm) and inference stages.
+that case, we will have a mismatch between the training and test
+data. Finally, in subsection IV-G, we assess the inﬂuence of the
+two methodological changes we introduce for LOCA’s training
+process. There, we focus on a speciﬁc acoustic setting where the
+test data matches the constellation of the training data.
+A. Evaluation and Performance Measures
+The performance of all methods was evaluated using two
+metrics. We deﬁne an outlier DOA estimate as an instance that
+diverges more than 15◦from the true DOA. Therefore, our ﬁrst
+performance measure is the Accuracy, which corresponds to
+the percentage of inlier estimates that do not exceed the 15◦
+threshold. Denote:
+Ninliers =
+			
+
+i|1 ≤i ≤Ntest,
+			ˆθi −θi
+			 ≤15◦			
+(14)
+The Accuracy is then deﬁned as:
+Accuracy = Ninliers
+Ntest
+%.
+(15)
+The second performance measure is the root mean square error
+(RMSE). Only inlier estimates are considered for calculating the
+RMSE over the test set.
+RMSE =
+
+1
+Ninliers
+Ninliers
+i=1
+
+ˆθi −θi
+2
+.
+(16)
+For each experiment, we will specify the test set used for the
+evaluation.
+B. Simulation I - Method Comparison
+In the following simulation, we compare our method with
+competing algorithms. As stated before, we present the results
+for different acoustic settings, each with a different level of
+noise and reverberation, examining different amounts of anchor
+samples. For each acoustic setting, a Monte Carlo simulation is
+conducted. A single simulation comprises 20 different constel-
+lations, which are determined by the position and orientation of
+the microphone array within a [6, 6, 2.4] m simulated room. In
+this simulation, for each constellation, a LOCA-neural network
+is trained and evaluated on the same constellation. Consequently,
+a distribution of the RMSEs over the different constellations and
+their average accuracy is obtained.
+1) Training Data: To create the training dataset, 28 random
+speakers were sampled from the TIMIT dataset [64], equally
+distributed between males and females. Several recordings from
+each speaker were concatenated to create an extended recording
+of continuous speech. To simulate the moving speakers’ signals,
+we used the signal generator package1 for MATLAB. Each
+speaker was modeled as an omnidirectional source. For each
+constellation, the extended recordings of each speaker were used
+to simulate a single complete traversal over the arc at a constant
+velocity of 0.25 m/s.
+The directional noise signals, ui(t), are generated using
+a simulated white Gaussian noise (WGN) source located at
+[4, 1, 1.8]. The source is located 60 cm above the plane where
+the microphones are stationed, at z = 1.2 m. These sources are
+1Available at the repository - github.com/ehabets/Signal-Generator
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 8 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2925
+static and are therefore generated by using the RIR generator2 to
+simulate their RIRs, and then convolving the RIRs with WGN
+signals.
+These 28 two-microphone signals of each constellation are
+then used along with Algorithm 1 to collect all possible bursts
+for training, resulting in 117,000 training bursts. The VAD
+algorithm that is used during this process is WebRTC-VAD,3
+with the aggressiveness level set to 2. The amount of context
+frames used to estimate the training iRTFs is N train
+c
+= 10.
+In this simulation, we are exploring the scenario where only
+one of the speakers is used to provide labeled anchor samples.
+Speciﬁcally, we are investigating cases where the number of
+anchor samples NL is 3, 4, or 5, and the anchors are evenly
+positioned along the arc.
+An additional train dataset was created in order to evaluate
+LOCA’s performance when it is trained using a dynamic WGN
+source signal traversing the arc only once. Here, a single train
+recording is simulated in the same manner as the TIMIT record-
+ings. After applying Algorithm 1, we are left with 1,520 training-
+bursts only. The idea here is to exploit the fact that the power
+spectral density of the WGN is richer. This approach might
+be advantageous in simplifying the training process—requiring
+only a single traversal of the sound source over the arc, thus
+resulting in substantially fewer training bursts and much faster
+model convergence. The drawback, however, is that the learned
+model should be able to generalize to our test set, which consists
+of speech data. In the result section, the two approaches are
+distinguished by using either of the terms LOCA_Speech or
+LOCA_WGN.
+2) Test Data: An additional 28 new speakers were sampled
+from the TIMIT dataset for the test dataset. For each constel-
+lation, the signals were simulated along the arc using the same
+approach as in the training dataset, with a single difference that
+the test speakers’ velocities are selected from a set of values
+[0.25, 0.55, 0.85, 1.15] m/s. For each speaker, 20 test samples
+are drawn from the region of interest per test velocity, resulting
+in an overall of 2,240 test samples for each constellation. In this
+simulation, the number of context frames used to estimate the
+test iRTFs is N test
+c
+= 20.
+3) Competing Methods: The competing methods we con-
+sider are deep ranking (DR) [49], manifold regularization learn-
+ing (MRL) [46] and isometrically regularized variational auto
+encoder (IRVAE) [65]. It is essential to acknowledge that while
+both DR and MRL were developed and evaluated for the speciﬁc
+aim of speaker localization and tracking, IRVAE has not been
+applied to acoustic data thus far. A single challenge with IRVAE
+was that while it learns an isometric mapping for the embedding,
+the authors do not provide a means to anchor the embedding
+coordinates to the real-world positions. Our most effective solu-
+tion involved post-training calibration of the embedding using
+the anchor set, similar to the calibration in [52].
+4) Results and Discussion: Fig. 5 comprises multiple box
+plots that depict the performance of the different methods over
+the different acoustic settings, considering the various amounts
+2Available at the repository github.com/ehabets/RIR-Generator
+3Available at the repository - https://github.com/wiseman/py-webrtcvad
+of anchor samples. Examining LOCA_Speech, it is evident
+that we obtain very impressive results, having reached median
+RMSEs as low as 4◦with an accuracy of nearly 100 %. Even
+though the training is performed on sources moving at a constant
+velocity, the results indicate that all methods can generalize their
+predictions to higher velocities as well. We stress that a minimal
+number of labeled anchor samples was required to achieve this
+notable performance. It is only under extreme conditions, where
+both the reverberation and the noise level are high, that we see
+a noticeable decrease in performance compared to the other
+methods. It may seem that sometimes other methods, namely the
+IRVAE, obtain better RMSEs. In most acoustic settings, how-
+ever, LOCA_speech provides the best performance in terms of
+accuracy while, more importantly, judging the whiskers’ length,
+it shows lower variance, thus providing more reliable conver-
+gence across different constellations. In that sense, IRVAE,
+which might appear to be a good approach, is inconsistent when
+trained on different constellations. In the case of LOCA_WGN,
+we observe highly stable results, indicated by signiﬁcantly thin-
+ner whiskers. However, the performance measures are not as
+robust as those achieved by LOCA_Speech. This conﬁrms our
+concern that the learned model might struggle to generalize from
+the WGN-induced training data to the dynamic-speaker-induced
+test data. Nevertheless, in cases where achieving fast model
+convergence is a top priority or when obtaining training speakers
+is challenging, a viable compromise would be to train on a single
+WGN recording.
+We evaluate the computational resources required for the
+proposed method, comparing it to DR and IRVAE, the two other
+deep-learning-based approaches. The measures we consider are
+1) Number of Model Parameters, 2) GPU Memory Usage,4 3)
+Inference Time,5 4) Peak Memory,6 5) CUDA Execution Time,7
+6) FLOPS8 - number of ﬂoating point operations per sample.
+The reported measures, which are reported in Table I, were
+all computed using NVIDIA’s Tesla T4 GPU. While LOCA
+seems to reach better results, it is also the heaviest model of
+the compared approaches.
+C. Simulation II - Number of Speakers Providing Anchors
+In the second simulation, we focus solely on LOCA_Speech’s
+performance. In the previous simulation, only a single speaker
+was used to generate a set of NL uniformly spread labeled
+anchor samples on the arc. We aim to investigate the impact
+of the number of speakers providing labels on the results. In
+4GPUmemory usage is recorded using nvidia-smi, an NVIDIAcommand-line
+utility that tracks GPU resource consumption, including memory allocation. The
+reported memory usage is measured with a batch size of 1 for all methods to
+ensure consistency.
+5Inference time is measured as the average time required for a single forward
+pass, computed over 1,000 runs on a CUDA-enabled device. Timing is recorded
+with torch.cuda.Event(enable_timing=True).record().
+6Peak memory consumption during the forward pass is tracked using
+torch.cuda.memory.max_memory_allocated().
+7CUDA execution time represents the average processing time per inference
+sample across 1,000 runs, measured using torch.profiler.
+8FLOPS
+is
+the
+number
+of
+ﬂoating
+points
+operations
+per
+inference
+sample.
+It
+is
+estimated
+using
+PyTorch’s
+torch.utils.flop_counter.FlopCounterMode.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 9 =====
+2926
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+Fig. 5.
+A comparison between the RMSE and Accuracy measures for the different acoustic settings (Simulation I). Each sub-ﬁgure is attributed to a different
+amount of labeled anchor samples used. Within each sub-ﬁgure, a comparison is made for each possible combination of the examined SNR and reverberation
+levels. The boxes represent the distribution of RMSEs (16) achieved for 20 different constellations, while the red triangles denote their tracking accuracy (15).
+this scenario, we ﬁx NL = 5 uniformly spread labeled training
+samples per such speaker. Both the training and test data remain
+the same as in the previous simulation, with the only difference
+being the increase in number of anchored speakers.
+1) Results and Discussion: The simulation results are de-
+picted in Fig. 6. It is evident that while the improvement is
+less pronounced at low to mid-reverberation levels, a signiﬁcant
+enhancement is observed in highly reverberated acoustic envi-
+ronments. Speciﬁcally, notable improvement is observed when
+the number of anchored speakers is increased to three. This
+outcome effectively addresses the challenges we encountered
+earlier in the extreme acoustic conditions. While not requiring
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 10 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2927
+Fig. 6.
+Comparison between LOCA-Speech’s performance over various amounts of speakers that provide labeled samples, demonstrated for the discussed
+reverberated and noisy conditions (Simulation II). For each speaker, 5 uniformly spaced anchor samples are drawn from the arc. The boxes represent the distribution
+of RMSEs (16) achieved for 20 different constellations, while the red triangles denote their tracking accuracy (15).
+TABLE I
+COMPARISON OF THE REQUIRED COMPUTATIONAL RESOURCES FOR THE
+COMPETING METHODS
+a signiﬁcant amount of additional labels, we are now able to
+consistently achieve good results in these settings both in terms
+of tracking accuracy and RMSE.
+D. Simulation III - Inﬂuence of the Number of Context-Frames
+When addressing the task of online dynamic speaker track-
+ing, it is crucial to consider the proposed solution’s ability to
+perform effectively across various latency levels. Consequently,
+we found interest in exploring LOCA’s ability to generalize
+its predictions for different values of context frames utilized
+during the test phase compared to those used during the training
+phase. We implement the same training methodology used in
+Simulation I for this simulation. Similar to Simulation I, only a
+single anchored speaker is providing anchors for training. The
+primary difference lies in the evaluation of LOCA’s performance
+across different number of context frames. These test datasets
+differ only in the number of context frames used for iRTF
+estimation, where the considered values for N test
+c
+range from 6
+to 20.
+1) Results and Discussion: Fig. 7 illustrates the evaluation
+results of LOCA on a different number of context frames. In
+most acoustic settings, a slight improvement is noticeable when
+additional context frames are used to estimate the test iRTFs.
+This improvement is apparent both in Accuracy and in RMSE
+distribution, and it is due to the more precise estimation of the
+iRTF acoustic features when more context frames are utilized.
+However, a slight decrease in performance is noticeable in the
+case of N test
+c
+= 6, mainly in challenging reverberation and noise
+conditions. This performance degradation may be due to the
+decreased accuracy in the acoustic feature estimation as the
+number of context frames decreases, an issue that is especially
+evident in harsh environmental conditions. Nonetheless, it is
+apparent that LOCA presents robust generalization capabilities,
+offering signiﬁcant ﬂexibility in handling variations between the
+number of context frames during training and test phases.
+E. Simulation IV - Generalization to Radial Distance
+Variations
+As explained in detail in Section III-A, the only parameter
+governing the acoustic manifold in our setup is the speaker’s
+DOA along a ﬁxed-radius arc. This constraint allowed us to
+establish a direct mapping between the acoustic features and
+the single parameter that deﬁnes the manifold. In the current
+setup, we introduce a new degree of freedom during the test
+phase—the speaker’s radial position—which becomes an addi-
+tional parameter governing the manifold. To assess the model’s
+ability to generalize under this new condition, we conducted
+an additional experiment where, during testing, the speaker’s
+radius varied sinusoidally between 1.8 m and 2.2 m, while the
+model was still trained on a ﬁxed 2 m arc. We followed the
+same Monte Carlo procedure, this time incorporating this more
+complex dynamics into the test data. The results, presented
+in Fig. 8, demonstrate that the model successfully adapts to
+these variations, maintaining robust performance even when the
+radial distance changes during inference. However, performance
+degradation is observed under highly reverberant conditions.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 11 =====
+2928
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+Fig. 7.
+Performance comparison of LOCA model that was trained on speech data (LOCA-Speech) when evaluated over a different number of test context frames
+Ntest
+c
+(Simulation III). Here, the amount of context frames used for training is Ntrain
+c
+= 10.
+Fig. 8.
+Comparison between LOCA-Speech’s performance for various rever-
+berated and noisy conditions (Simulation IV), evaluated when the speaker moves
+along an arc with a sinusoidally varying radius between 1.8 m and 2.2 m. The
+results demonstrate the model’s ability to generalize to radial distance variations
+during inference.
+F. Simulation V - Sensitivity to Array-Speaker Constellation
+In our ﬁnal simulation, we aim to investigate LOCA’s sen-
+sitivity to different array-speaker constellations. Essentially,
+this could be thought of as some sort of spatial generalization
+interpolation of a trained model to new mic-array positions and
+orientations within the enclosure. Given an acoustic setting,
+LOCA is trained on dynamic speakers drawn from a set of
+training constellations. The task is then to track speakers drawn
+from new constellations in the enclosure that were not seen
+during training. Recall that different constellations are simply
+determined by the position and orientation of the microphone
+pair and the speakers within the enclosure. We note that all of
+the constellations in this simulation are constrained to the plane
+z = 1.2 m. Furthermore, the constellations under consideration
+involve speakers positioned at a radius of r = 2 m from the
+microphone pairs. The position of the noise source remains
+Fig. 9.
+An abstract visualization for Simulation V - assessing LOCA’s sensitiv-
+ity to array-speaker constellation. Our training data consists of speakers traveling
+along arcs of a number of constellations (gray arcs). The test data belongs to
+constellations not seen during training (red arcs). The interference source is
+located on [x, y] = [4, 1], similar to the previous simulations. Both training and
+evaluation are conducted under the same acoustic setting (i.e., under the same
+reverberation and SNR levels).
+unaltered. Since this scenario is signiﬁcantly more challenging
+than previous ones, we excluded the 10 dB SNR case, as the
+method did not produce meaningful results under such severe
+noise conditions. The above idea is conceptualized in Fig. 9.
+1) Training Data: To generate the training dataset, we con-
+sidered 24 different training constellations for any given acoustic
+setting. For ideal training, different training constellations are
+chosen so that the entire room is covered in the most symmetrical
+manner. Each training constellation includes 7 random speakers
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 12 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2929
+drawn from the TIMIT dataset. Similarly to Simulation I, we
+use the extended speaker recordings and the signal generator
+package for MATLAB. The speakers were simulated with a
+constant velocity of 0.25 m/s, this time while conducting back-
+and-forth traversal along the arc. After applying Algorithm 1
+for training-bursts collection with N train
+c
+= 10 training con-
+text frames, each training constellation provided approximately
+9,100 bursts, resulting in a total of 218,400 bursts from the
+entire acoustic enclosure. For this simulation, which is already
+very challenging, we allow each of the 7 speakers to provide 5
+equally-spaced anchor samples in each training constellation.
+2) Test Data: For evaluation, we consider 24 test constel-
+lations that the model has not seen during training. In each
+constellation, 10 speakers are considered for evaluation. Once
+again, we are interested in evaluating the model’s perfor-
+mance over multiple velocities, examining speaker velocities of
+[0.25, 0.55, 0.85, 1.15] m/s. For each speaker, the iRTF features
+are estimated using N test
+c
+= 20, of which 20 samples are drawn
+per each of the four speaker velocities. This results in a total of
+19,200 test samples per acoustic setting.
+3) Results and Discussion: In this simulation, it is important
+to note that the training is conducted collectively using data
+extracted from multiple constellations within the enclosure. This
+differs from our previous simulations, in which the models were
+trained and evaluated individually on the exact constellations
+for each acoustic setting. In the current setup, both the training
+and test datasets are drawn from all possible array-speaker
+constellations in the enclosure. Consequently, we train a single
+model for the entire enclosure. Unlike previously, the results are
+not visualized through box plots of a Monte Carlo simulation
+but are instead represented in a tabular format, showcasing
+the performance measures achieved across the combined test
+dataset. The baseline model used for comparison is the IRVAE
+discussed earlier. The MRL approach was not considered for
+the task, as the great number of training samples is an obstacle
+for kernel-based methods. Additionally, multiple attempts to
+utilize the DR model for the task approach were not successful
+at all.
+Table II presents the simulation results. Aside from showing
+the results of the current experiment (Cur.), we include the nomi-
+nal results (Nom.) from Simulation I to show the degradation in
+performance due to dealing with the more challenging setup.
+It is worth noting that both IRVAE and LOCA demonstrate
+considerable success in this challenging task, LOCA appears
+less sensitive to the array-speaker constellation. As observed,
+both approaches generally experience a decline in performance
+as the noise and reverberation levels increase. Inspecting LOCA,
+we see that, as expected, both the prediction accuracy and the
+prediction RMSE are negatively affected in this setup compared
+to previous simulations. However, in almost every acoustic set-
+ting, LOCA outperforms IRVAE when comparing both median
+RMSE and accuracy measures. A single acoustic setting that sets
+the most signiﬁcant obstacle for LOCA is the challenging setting
+of SNR = 15 dB and RT60 = 600 ms. Under these conditions,
+the model learns an unreliable embedding for the manifold, and
+consequently, predictions signiﬁcantly diverge from the actual
+positions.
+TABLE II
+COMPARISON BETWEEN THE MODIFIED LOCA AND IRVAE IN THE
+ARRAY-SPEAKER SENSITIVITY EXPERIMENT (SIMULATION V))
+G. Ablation Study
+As stressed earlier in this manuscript, we have included sev-
+eral methodological adjustments to the LOCA training frame-
+work to achieve more consistent convergence. In [51], a post-
+training calibration was suggested for incorporating the real-
+world coordinates into the learned embedding. Later, in [52],
+the single-step minimization of the loss function was suggested
+while the post-training calibration approach was still used. In
+the current work, we also include the single-step minimization
+approach as an adjustment for the loss term, which is an alter-
+native to the multi-step minimization approach (Section III-D).
+However, the main modiﬁcation we introduce involves incorpo-
+rating the additional anchoring loss term into the optimization
+process.
+In the following brief ablation study, we demonstrate the
+training stability of our proposed approach by comparing it with
+two ablated versions. The ﬁrst ablated version, referred to as
+‘Multi-step minimization,’ is identical to our proposed approach
+except that it integrates multi-step minimization of the loss func-
+tion. The second ablated approach, referred to as ‘Post-training
+calibration,’ also retains the core components of our approach
+but includes post-training calibration of the embedding instead
+of the proposed additional anchoring loss term. By comparing
+the performance of these ablated approaches with our proposed
+approach, we aim to assess each component’s impact on the
+LOCA framework’s overall effectiveness.
+The models are trained and evaluated using our 1-dimensional
+data, following the performance measures discussed earlier.
+We conduct a Monte Carlo simulation for the task, mirror-
+ing the approach used in Simulation I and utilizing the same
+training and test datasets. Speciﬁcally, we consider an acoustic
+setting with reverberation and noise levels of RT60 = 600 ms
+and 30 dB, respectively. The results are presented in Fig. 10.
+It is evident that the proposed approach achieves both the
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 13 =====
+2930
+IEEE TRANSACTIONS ON AUDIO, SPEECH AND LANGUAGE PROCESSING, VOL. 33, 2025
+Fig. 10.
+An ablation study on the stability of training for the different training
+approaches of LOCA. The results shown are attributed to the acoustic setting of
+RT60 = 600 ms and 30 dB SNR.
+lowest median RMSE and the narrowest whiskers. In com-
+parison, the ablated versions achieve slightly inferior results
+in median RMSE, with signiﬁcantly wider and skewed RMSE
+distributions observed across the 20 constellations in the en-
+closure. These ﬁndings clearly indicate that the proposed ap-
+proach leads to signiﬁcantly more stable and reliable overall
+performance.
+V. CONCLUSION
+In this paper, we adopt LOCA, a DNN-based manifold learn-
+ing approach. LOCA, which was proven viable for the task
+of acoustic scene mapping, is now used for semi-supervised
+dynamic speaker tracking. We introduce two novel adjustments
+to the original algorithm to further optimize the training process:
+the anchoring loss term and the single-step minimization. By uti-
+lizing high-dimensional instantaneous relative transfer function
+(iRTF) acoustic features lying on a manifold, the model learns
+an embedding that is isometric to the latent manifold underlying
+the data. Our approach aims to utilize a minimal amount of
+labeled data, a resource often scarce. To achieve that, we apply
+the synthetic aperture training paradigm to exploit local relations
+between subsequent samples, effectively leveraging the speak-
+ers’ movement during the training phase. A series of simulations
+showcases the proposed method’s ability to track speakers under
+challenging noise and reverberation conditions and the inﬂuence
+of the number of labeled samples. Furthermore, it demonstrates
+notable generalization capabilities, enabling predictions for both
+higher speaker velocities, varying levels of latency, and varying
+radial distance from the microphone array. Lastly, it shows
+robustness for different array-speaker constellations within the
+acoustic enclosure.
+REFERENCES
+[1] B. H. Yoshimi and G. S. Pingali, “A multimodal speaker detection and
+tracking system for teleconferencing,” in Proc. 10th ACM Int. Conf.
+Multimedia, ser. MM02, Dec. 2002, pp. 427–428.
+[2] H. Gamper, S. Tervo, and T. Lokki, “Speaker tracking for teleconferencing
+via binaural headset microphones,” in Proc. Int. Workshop Acoust. Signal
+Enhancement, 2012, pp. 1–4.
+[3] C. Zieger, A. Brutti, and P. Svaizer, “Acoustic based surveillance system
+for intrusion detection,” in Proc. 6th IEEE Int. Conf. Adv. Video Signal
+Based Surveill., Sep. 2009, pp. 314–319.
+[4] M. Crocco, M. Cristani, A. Trucco, and V. Murino, “Audio surveillance:
+A systematic review,” ACM Comput. Surv., vol. 48, no. 4, pp. 1–46, 2016.
+[5] C. Knapp and G. Carter, “The generalized correlation method for estima-
+tion of time delay,” IEEE Trans. Acoust., Speech, Signal Process., vol. 24,
+no. 4, pp. 320–327, Aug. 1976.
+[6] H. Do, H. F. Silverman, and Y. Yu, “A real-time SRP-PHAT source
+location implementation using stochastic region contraction (SRC) on a
+large-aperture microphone array,” in Proc. IEEE Int. Conf. Acoust., Speech
+Signal Process., 2007, pp. I-121–I-124.
+[7] R. Schmidt, “Multiple emitter location and signal parameter estimation,”
+IEEE Trans. Antennas Propag., vol. 34, no. 3, pp. 276–280, Mar. 1986.
+[8] J. H. DiBiase, H. F. Silverman, and M. S. Brandstein, “Robust localization
+in reverberant rooms,” in Microphone Arrays. Berlin, Germany: Springer,
+2001, pp. 157–180.
+[9] J. P. Dmochowski and J. Benesty, “Steered beamforming approaches for
+acoustic source localization,” in Speech Processing in Modern Communi-
+cation. Berlin, Germany: Springer, 2010, pp. 307–337.
+[10] T. G. Dvorkind and S. Gannot, “Time difference of arrival estimation of
+speech source in a noisy and reverberant environment,” Signal Process.,
+vol. 85, no. 1, pp. 177–204, Jan. 2005.
+[11] A. Levy, S. Gannot, and E. A. P. Habets, “Multiple-hypothesis extended
+particle ﬁlter for acoustic source localization in reverberant environments,”
+IEEE Trans. Audio, Speech, Lang. Process., vol. 19, no. 6, pp. 1540–1555,
+Aug. 2011.
+[12] S. Chakrabarty, K. Kowalczyk, M. Taseska, and E. A. P. Habets,
+“Extended kalman ﬁlter with probabilistic data association for multiple
+non-concurrent speaker localization in reverberant environments,” in Proc.
+IEEE Int. Conf. Acoust., Speech Signal Process., 2014, pp. 7445–7449.
+[13] C. Evers, E. A. P. Habets, S. Gannot, and P. A. Naylor, “DoA reliability for
+distributed acoustic tracking,” IEEE Signal Process. Lett., vol. 25, no. 9,
+pp. 1320–1324, Sep. 2018.
+[14] D. Bechler, M. Grimm, and K. Kroschel, “Speaker tracking with a micro-
+phone array using Kalman ﬁltering,” Adv. Radio Sci., vol. 1, pp. 113–117,
+May 2003.
+[15] D. Salvati, C. Drioli, and G. L. Foresti, “Localization and tracking of an
+acoustic source using a diagonal unloading beamforming and a Kalman
+ﬁlter,” in Proc. LOCATA Chall. Workshop Satellite Event IWAENC, 2018.
+[16] S. Gannot and T. G. Dvorkind, “Microphone array speaker localizers
+using spatial-temporal information,” EURASIP J. Adv. Signal Process.,
+vol. 2006, no. 1, May 2006, Art. no. 059625 .
+[17] U. Klee, T. Gehrig, and J. McDonough, “Kalman ﬁlters for time delay
+of arrival-based source localization,” EURASIP J. Adv. Signal Process.,
+vol. 2006, no. 1, Mar. 2006, Art. no. 012378.
+[18] Z. Liang, X. Ma, and X. Dai, “Robust tracking of moving sound source
+using multiple model Kalman ﬁlter,” Appl. Acoust., vol. 69, no. 12,
+pp. 1350–1355, Dec. 2008.
+[19] J. Traa and P. Smaragdis, “A wrapped Kalman ﬁlter for azimuthal speaker
+tracking,” IEEE Signal Process. Lett., vol. 20, no. 12, pp. 1257–1260,
+Dec. 2013.
+[20] J. Vermaak and A. Blake, “Nonlinear ﬁltering for speaker tracking in noisy
+and reverberant environments,” in Proc. IEEE Int. Conf. Acoustics, Speech,
+Signal Process., 2001, pp. 3021–3024.
+[21] D. Ward, E. Lehmann, and R. Williamson, “Particle ﬁltering algorithms for
+tracking an acoustic source in a reverberant environment,” IEEE Speech
+Audio Process., vol. 11, no. 6, pp. 826–836, Nov. 2003.
+[22] Y. Chen and Y. Rui, “Real-time speaker tracking using particle ﬁlter sensor
+fusion,” Proc. IEEE, vol. 92, no. 3, pp. 485–494, Mar. 2004.
+[23] X. Zhong and J. R. Hopgood, “Nonconcurrent multiple speakers tracking
+based on extended Kalman particle ﬁlter,” in Proc. IEEE Int. Conf. Acoust.,
+Speech Signal Process., Mar. 2008, pp. 293–296.
+[24] T. Li and W. Ser, “Three dimensional acoustic source localization and
+tracking using statistically weighted hybrid particle ﬁltering algorithm,”
+Signal Process., vol. 90, no. 5, pp. 1700–1719, May 2010.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 14 =====
+COHEN et al.: SYNTHETIC APERTURE LOCAL CONFORMAL AUTOENCODER FOR SEMI-SUPERVISED SPEAKER’S DOA TRACKING
+2931
+[25] N. Roman and D. Wang, “Binaural tracking of multiple moving sources,”
+IEEE Trans. Audio, Speech, Lang. Process., vol. 16, no. 4, pp. 728–739,
+May 2008.
+[26] K. Weisberg and S. Gannot, “Multiple speaker tracking using coupled
+HMM in the STFT domain,” in Proc. IEEE Int. Workshop Comput. Adv.
+Multi-Sensor Adaptive Process., Dec. 2019, pp. 286–290.
+[27] N. T. Pham, W. Huang, and S. H. Ong, “Multiple sensor multiple object
+tracking with GMPHD ﬁlter,” in Proc. 10th IEEE Int. Conf. Inf. Fusion,
+2007, pp. 1–7.
+[28] M. Beard and S. Arulampalam, “Performance of PHD and CPHD ﬁltering
+versus JIPDA for bearings-only multi-target tracking,” in Proc. 15th IEEE
+Int. Conf. Inf. Fusion, 2012, pp. 542–549.
+[29] Q. Liu, W. Wang, T. de Campos, P. J. B. Jackson, and A. Hilton, “Multiple
+speaker tracking in spatial audio via PHD ﬁltering and depth-audio fusion,”
+IEEE Trans. Multimedia, vol. 20, no. 7, pp. 1767–1780, Jul. 2018.
+[30] Z. Fu, F. Angelini, J. Chambers, and S. M. Naqvi, “Multi-level cooperative
+fusion of GM-PHD ﬁlters for online multiple human tracking,” IEEE
+Trans. Multimedia, vol. 21, no. 9, pp. 2277–2291, Sep. 2019.
+[31] K. Weisberg, B. Laufer-Goldshtein, and S. Gannot, “Simultaneous track-
+ing and separation of multiple sources using factor graph model,”
+IEEE/ACM Trans. Audio, Speech, Lang. Process., vol. 28, pp. 2848–2864,
+2020.
+[32] O. Schwartz and S. Gannot, “Speaker tracking using recursive EM algo-
+rithms,” IEEE/ACM Trans. Audio, Speech, Lang. Process., vol. 22, no. 2,
+pp. 392–402, Feb. 2014.
+[33] D. Giacobello, “An online expectation-maximization algorithm for track-
+ing acoustic sources in multi-microphone devices during music playback,”
+in Proc. 26th Eur. Signal Process. Conf., 2018, pp. 1547–1551.
+[34] Y. Dorfan, A. Plinge, G. Hazan, and S. Gannot, “Distributed expectation-
+maximization algorithm for speaker localization in reverberant environ-
+ments,” IEEE/ACM Trans. Audio, Speech, Lang. Process., vol. 26, no. 3,
+pp. 682–695, Mar. 2018.
+[35] X. Li, Y. Ban, L. Girin, X. Alameda-Pineda, and R. Horaud, “Online
+localization and tracking of multiple moving speakers in reverberant envi-
+ronments,” IEEE J. Sel. Topics Signal Process., vol. 13, no. 1, pp. 88–103,
+Mar. 2019.
+[36] Y. Dorfan, B. Schwartz, and S. Gannot, “Forward-backward recursive
+expectation-maximization for concurrent speaker tracking,” EURASIP J.
+Audio, Speech, Music Process., vol. 2021, no. 1, Jan. 2021, Art. no. 2 .
+[37] A. Bross and S. Gannot, “Training-based multiple source tracking using
+manifold-learning and recursive expectation-maximization,” IEEE/ACM
+Trans. Audio, Speech, Lang. Process., vol. 31, pp. 1124–1140, Mar. 2023.
+[38] S. Chakrabarty and E. A. Habets, “Multi-speaker DOA estimation using
+deep convolutional networks trained with noise signals,” IEEE J. Sel.
+Topics Signal Process., vol. 13, no. 1, pp. 8–21, Mar. 2019.
+[39] H. Hammer, S. E. Chazan, J. Goldberger, and S. Gannot, “Dynami-
+cally localizing multiple speakers based on the time-frequency domain,”
+EURASIP J. Audio, Speech, Music Process., vol. 2021, no. 1, Apr. 2021,
+Art. no. 16.
+[40] A. Bohlender, A. Spriet, W. Tirry, and N. Madhu, “Exploiting temporal
+context in CNN based multisource DOA estimation,” IEEE/ACM Trans.
+Audio, Speech, Lang. Process., vol. 29, pp. 1594–1608, 2021.
+[41] S. Adavanne, A. Politis, and T. Virtanen, “Localization, detection and
+tracking of multiple moving sound sources with a convolutional recurrent
+neural network,” in Proc. Acoust. Scenes Events Workshop, 2019, pp. 20–
+24.
+[42] A. Bohlender, L. Roelens, and N. Madhu, “Improved deep speaker local-
+ization and tracking: Revised training paradigm and controlled latency,” in
+Proc. IEEE Int. Conf. Acoust., Speech Signal Process., Jun. 2023, pp. 1–5.
+[43] J. Datta, M. Adams, and C. Perez, “Dense-u-Net assisted localization of
+speech sources in motion under reverberant conditions,” in Proc. 12th
+IEEE Int. Conf. Control Automat. Inf. Sci., 2023, pp. 440–447.
+[44] A. Schwartz, E. Hadad, S. Gannot, and S. E. Chazan, “Array conﬁguration
+mismatch in deep DOA estimation: Towards robust training,” in Proc.
+IEEE Workshop Appl. Signal Process. to Audio Acoust., New Paltz, USA,
+Oct. 2023, pp. 1–5.
+[45] B. Laufer-Goldshtein, R. Talmon, and S. Gannot, “Semi-supervised
+source localization on multiple manifolds with distributed microphones,”
+IEEE/ACM Trans. Audio, Speech, Lang. Process., vol. 25, no. 7,
+pp. 1477–1491, Jul. 2017, doi: 10.1109/TASLP.2017.2696310.
+[46] B. Laufer-Goldshtein, R. Talmon, and S. Gannot, “A hybrid approach for
+speaker tracking based on TDOA and data-driven models,” IEEE/ACM
+Trans. Audio, Speech, Lang. Process., vol. 26, no. 4, pp. 725–735,
+Apr. 2018.
+[47] M. J. Bianco, S. Gannot, E. Fernandez-Grande, and P. Gerstoft, “Semi-
+supervised source localization in reverberant environments with deep
+generative modeling,” IEEE Access, vol. 9, pp. 84956–84970, 2021.
+[48] R. Opochinsky, B. Laufer-Goldshtein, S. Gannot, and G. Chechik, “Deep
+ranking-based sound source localization,” in Proc. IEEE Workshop Appl.
+Signal Process. Audio Acoust., Oct. 2019, pp. 283–287.
+[49] R. Opochinsky, G. Chechik, and S. Gannot, “Deep ranking-based DOA
+tracking algorithm,” in Proc. 29th Eur. Signal Process. Conf., 2021,
+pp. 1020–1024.
+[50] P.-A. Grumiaux, S. Kiti´c, L. Girin, and A. Guérin, “A survey of sound
+source localization with deep learning methods,” J. Acoustical Soc. Amer-
+ica, vol. 152, no. 1, pp. 107–151, 2022.
+[51] E. Peterfreund et al., “Local conformal autoencoder for standardized data
+coordinates,” Proc. Nat. Acad. Sci., vol. 117, no. 49, pp. 30918–30927,
+Nov. 2020.
+[52] I. Cohen, S. Gannot, and O. Lindenbaum, “Unsupervised acoustic scene
+mappingbasedonacousticfeaturesanddimensionalityreduction,”inProc.
+IEEE Int. Conf. Acoust., Speech Signal Process., 2024, pp. 386–390.
+[53] B. Laufer-Goldshtein, R. Talmon, and S. Gannot, “Semi-supervised sound
+source localization based on manifold regularization,” IEEE/ACM Trans.
+Audio, Speech, Lang. Process., vol. 24, no. 8, pp. 1393–1407, Aug. 2016.
+[54] B.Laufer-Goldshtein,R.Talmon,andS.Gannot,“AStudyonManifoldsof
+Acoustic Responses,” in Latent Variable Analysis and Signal Separation.
+Berlin, Germany: Springer Int. Publishing, 2015, pp. 203–210.
+[55] B. Laufer-Goldshtein, R. Talmon, and S. Gannot, “Data-driven multi-
+microphone speaker localization on manifolds,” Foundations Trends Sig-
+nal Process., vol. 14, no. 12, pp. 1–161, 2020.
+[56] J. B. Tenenbaum, V. de Silva, and J. C. Langford, “A global geometric
+framework for nonlinear dimensionality reduction,” Science, vol. 290,
+no. 5500, pp. 2319–2323, Dec. 2000.
+[57] A.SingerandR.R.Coifman,“Non-linearindependentcomponentanalysis
+with diffusion maps,” Appl. Comput. Harmon. Anal., vol. 25, no. 2,
+pp. 226–239, Sep. 2008.
+[58] W. M. Brown, “Synthetic aperture radar,” IEEE Trans. Aerosp. Electron.
+Syst., vol. AES- 3, no. 2, pp. 217–229, Mar. 1967.
+[59] Y. Deville and M. Puigt, “Temporal and time-frequency correlation-based
+blind source separation methods. part I: Determined and underdeter-
+mined linear instantaneous mixtures,” Signal Process., vol. 87, no. 3,
+pp. 374–407, 2007.
+[60] S. Rickard and O. Yilmaz, “On the approximate W-disjoint orthogonality
+of speech,” in Proc. IEEE Int. Conf. Acoustics, Speech, Signal Process.,
+2002, pp. I-529–I-532.
+[61] S. Arberet, R. Gribonval, and F. Bimbot, “A robust method to count and
+locate audio sources in a multichannel underdetermined mixture,” IEEE
+Trans. Signal Process., vol. 58, no. 1, pp. 121–133, Jan. 2010.
+[62] C. Blandin, A. Ozerov, and E. Vincent, “Multi-source TDOA estimation in
+reverberant audio using angular spectra and clustering,” Signal Process.,
+vol. 92, no. 8, pp. 1950–1960, 2012.
+[63] D. Pavlidi, A. Grifﬁn, M. Puigt, and A. Mouchtaris, “Real-time multiple
+sound source localization and counting using a circular microphone array,”
+IEEETrans.Audio,Speech,Lang.Process.,vol.21,no.10,pp. 2193–2206,
+Oct. 2013.
+[64] J. Garofolo et al., “Darpa timit acoustic-phonetic continuous speech corpus
+CD-ROM,” NIST Interagency/Internal Rep. (NISTIR), Nat. Inst. Stand.
+Technol., Gaithersburg, MD, USA, 1993.
+[65] Y. Lee, S. Yoon, M. Son, and F. C. Park, “Regularized autoencoders for
+isometric representation learning,” in Proc. Int. Conf. Learn. Representa-
+tions, 2022.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:36:10 UTC from IEEE Xplore.  Restrictions apply. 

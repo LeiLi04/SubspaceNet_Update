@@ -1,0 +1,1402 @@
+
+
+===== PAGE 1 =====
+ 
+Frequency-domain Robust Underwater Direction-of-
+arrival Tracking 
+ 
+Boxuan Zhang * 
+The 705 Research Institute 
+China State Shipbulding 
+Corporation Limited 
+Xi’an, China 
+bxzhang_uw@outlook.com 
+*Corresponding author 
+Jun Zhang 
+The 705 Research Institute 
+China State Shipbulding 
+Corporation Limited 
+Xi’an, China 
+zhangjun52137@163.com 
+ 
+Junjie Yang 
+The 705 Research Institute 
+China State Shipbulding 
+Corporation Limited 
+Xi’an, China 
+JJYang2023@126.com 
+ 
+Wenyu Kang 
+The 705 Research Institute 
+China State Shipbulding 
+Corporation Limited 
+Xi’an, China 
+kangwy@163.com 
+ 
+ 
+ 
+ 
+ 
+ 
+Hao Cao 
+The 705 Research Institute 
+China State Shipbulding 
+Corporation Limited 
+Xi’an, China 
+CH_UW_research@163.com 
+ 
+ 
+Xianghao Hou 
+School of Marine Science and 
+Technology 
+Northwestern Polytechnical 
+University 
+Xi’an, China 
+houxianghao1990@nwpu.edu.cn 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Abstract—The 
+robust 
+underwater 
+frequency-domain 
+direction-of-arrival (DOA) tracking is proposed to develop the 
+performance of the DOA tracking in the scenario of uncertain 
+environment noise. The time-domain signal received by 
+hydrophone array is transform to frequency-domain signal, and 
+the frequency-domain measurement model of the bearing angle of 
+the target is establish in the frame work of the EKF. Thus, the 
+frequency-domain EKF for DOA tracking is proposed. The 
+uncertain environment noise in the frequency-domain is easily 
+filtered out by extract the frequencies around the frequency of the 
+target signal. By utilizing the EKF scheme, the kinematic model of 
+the underwater target is introduced to decrease the influence of 
+the uncertain measurement noise. By utilizing the frequency-
+domain measurement, the uncertain environment noise is easily 
+filtered out by extract the frequencies around the frequency of the 
+target signal in the frequency domain. The proposed method is 
+demonstrated and verified by the simulation, and both of the 
+robustness and accuracy are proved. 
+Keywords—underwater direction-of-arrival tracking, robust 
+tracking, extended Kalman filter, Fourier transform, frequency-
+domain tracking 
+I. INTRODUCTION 
+Estimating the bearing angle of an uncooperative underwater 
+target is an important research area in the field of underwater 
+acoustic engineering [1]-[3]. Considering the unknown 
+underwater environment sometimes causes the uncertain 
+measurement noise that will degrade the estimation accuracy of 
+the interested target’s bearing angle, robust bearing angle 
+estimating technique is necessary and has attracted a number of 
+researchers’ attentions [4], [5]. In addition, the passive bearing 
+angle estimation techniques can be divided to two categories, 
+namely the direction-of -arrival (DOA) estimation that merely 
+depends on the measurements from a certain period of time and 
+the DOA tracking that depends on both of the target’s 
+kinematics and the measurements of the current tracking step. 
+Although the DOA estimation has already made a lot of 
+milestones in various bearing angle estimation missions [6],[7], 
+its ignorance of the target’s kinematics makes the DOA 
+estimation techniques always have superior estimating results 
+when the target is nearly static and the environment is stable. 
+When the target is maneuvering or the measurement noise shifts 
+since the underwater environment is uncertain, the DOA 
+estimation methods can hardly have satisfied results. Also, in 
+order to make reliable and accurate estimations of an 
+uncooperative underwater target’s bearing angle, the DOA 
+estimation techniques usually need a wide range of observation 
+window, which will cost more on-board computational time 
+than the recursively DOA tracking techniques. 
+Considering the advantages and drawbacks of the DOA 
+estimation methods, the DOA tracking techniques have been 
+proposed. Instead of merely utilizing the measurements 
+information, the DOA tracking methods also consider the 
+target’s kinematic model as a prior information. Based on the 
+Bayesian estimation principle, the DOA tracking techniques can 
+reach higher estimating accuracy and occupy less on-board 
+computing or storage resources especially when the underwater 
+target is maneuvering [8], [9]. 
+Also, in the real scenario of underwater DOA tracking, the 
+unknown underwater environment always results in uncertain 
+measurement noise, which will degrade the bearing angle 
+estimation accuracy or even make the estimating procedure 
+diverge. Under this circumstance, the robust DOA tracking 
+technique is necessary to guarantee the accuracy and robustness 
+of the whole estimation process. To deal with the uncertain 
+measurement noise in underwater DOA tracking, the methods 
+based on measurement noise covariance matrix (MNCM) 
+estimation is proposed to estimate the MNCM in real time of 
+tracking and substitute it into the tracking process to reduce the 
+tracking error. The existing MNCM-estimation-based methods 
+are divided into two categories, the Sage-Husa (SH) methods 
+380
+2025 8th International Conference on Information Communication and Signal Processing
+979-8-3503-5765-3/25/$31.00 ©2025 IEEE
+2025 8th International Conference on Information Communication and Signal Processing (ICICSP) | 979-8-3503-5765-3/25/$31.00 ©2025 IEEE | DOI: 10.1109/ICICSP66564.2025.11338321
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:02 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+and the variational Bayesian (VB) methods. The SH algorithm 
+utilizes good estimations from a long tracking period to adjust 
+the weight of the poor measurements when the measurement 
+noise becomes uncertain. The VB technique assumes the prior 
+probability density functions (PDFs) of the covariance matrix of 
+the uncertain measurement noise and estimate it along with the 
+tracking parameters. SH methods and VB methods are both used 
+to carry out robust underwater DOA tracking [10]-[15]. 
+However, the SH online estimator depends on good historical 
+estimation and measurements, and the VB tracking approach 
+depends on the accurate assumption of the PDF of MNCM. 
+When the duration of poor measurement is long and the 
+assumption of the PDF of MNCM is hard to obtain, the 
+performance of SH and VB tracking methods degrades. Thus, 
+new method for robust multi-target DOA tracking needs to be 
+research. 
+To solve the problem of SH and VB tracking methods, we 
+proposed the frequency-domain EKF (FD-EKF) for robust DOA 
+tracking to perform robust tracking without estimating the 
+measurement noise. Firstly, the kinematic model of the 
+underwater target is established based on the kinematic 
+characteristic of the underwater target. Secondly, the frequency-
+domain measurement is established based on the Fourier 
+transform technique, which the interested signal is easily 
+extracted in frequency-domain. Finally, the frequency-domain 
+EKF for robust is proposed based on the established underwater 
+target kinematic model and the frequency-domain measurement. 
+By extracting the signal at desired frequencies in frequency 
+domain and perform frequency-domain EKF tracking technique, 
+the effect of the uncertain measurement noise is mostly 
+eliminated. Thus, the problem of uncertain measurement noise 
+in underwater DOA tracking scenario is solved in a new way. 
+The rest of this paper is organized as follows: In Sec. II, the 
+problem of underwater multi-target DOA tracking is formulated. 
+In Sec. III, the frequency-domain measurement and the FD-EKF 
+for DOA tracking is described. In Sec. IV, simulation is made 
+and the superior performance of the proposed FD-EKF for 
+robust underwater DOA tracking is proved. Finally, conclusions 
+are drawn in Sec. V. 
+II. PROBLEM FORMULATION 
+A. Kinematic Model 
+Since the underwater target is usually performing in a 
+constant velocity to keep invisibility and is far from the 
+hydrophone arrays, the kinematic model of the target’s bearing 
+angle can be modeled as the constant velocity (CV) model. 
+Let 
+k denotes the bearing angle of the target (
+k is the angle 
+between the target and the positive x-axis with the positive 
+counterclockwise direction.) and 
+k
+ denotes the change rate of 
+k. Then, the CV motion kinematic model of the bearing angle 
+is expressed as: 
+ 
+|
+1
+1
+1
+1
+2
+|
+1
+1
+1
+/ 2
+, 
+=
+0
+1
+k
+k k
+k
+k
+k
+k k
+k
+w
+T
+T
+T
+−
+−
+−
+−
+−
+−
+=
++
+
+
+
+
+
+
+
+=
+
+
+
+
+
+
+
+
+
+
+x
+F
+x
+G
+F
+G
+ 
+(1) 
+where
+(
+)
+T
+,
+k
+k
+k
+
+=
+x
+ is the system state at time step k, and ( )
+T
+
+ 
+denotes the matrix transposition, 
+|
+1
+k k −
+F
+ and 
+k
+G  are the state 
+transition matrix for CV motion and the noise driving matrix, 
+and 
+1
+k
+w − denotes the zero mean Gaussian process noise with the 
+covariance matrix 
+1
+k
+Q − caused by the unknown underwater 
+environment, T is the interval between the adjacent time steps. 
+1
+k
+Q − is named process noise covariance matrix (PNCM) for 
+convenience. 
+B. Measurement Model 
+A ULA with P elements and interval d of element is used to 
+obtain the measurement in this section. The configuration of the 
+ULA and the underwater target is shown in Fig. 1. 
+The measurement of the ULA at time step k  can be 
+expressed as: 
+ 
+(
+) ( )
+(
+)
+real
+k
+k
+k
+s k
+
+=
++
+z
+A
+v  
+(2) 
+where 
+( )
+real  denotes the real part, 
+(
+)
+k
+A
+ is the array 
+manifold vector of the ULA, and 
+( )
+s k  is the narrowband 
+acoustic signal emitted by the target, 
+kv  is the measurement 
+noise vector. 
+Target
+x
+y
+ULA
+O
+k
+
+ 
+Fig. 1. Configuration of the ULA based measurement system. 
+The signal of the target ( )
+s k  is given by: 
+ 
+( )
+(
+)
+(
+)
+0
+exp
+2
+s k
+a
+j
+fkT
+
+
+=
++ f
+ 
+(3) 
+where f, a, 
+0
+f  denote the frequency, amplitude and initial phase 
+of the signal, respectively. 
+The array manifold vector of the ULA 
+(
+)
+k
+A
+ is given as 
+follows: 
+ 
+
+
+(
+)
+(
+)
+(
+)
+(
+)
+T
+1
+2
+(
+)
+(
+),
+(
+),...,
+(
+)
+exp
+2
+1
+sin
+k
+k
+k
+P
+k
+p
+k
+k
+A
+A
+A
+A
+j
+f
+p
+d c
+
+
+
+
+
+
+
+
+=
+
+=
+−
+
+A
+ 
+(4) 
+where p is the element number and 
+1,2,...,
+p
+P
+=
+. 
+In order to improve the performance, M snapshots of the 
+received signal are taken in a measurement for more information. 
+The snapshots are taken from a small period within every 
+tracking interval T to guarantee the target remains stationary. 
+Then, we can express the measurement model at tracking step k 
+as: 
+381
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:02 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+ 
+( )
+(
+)
+(
+)
+(
+)
+(
+)
+(
+) ( )
+(
+)
+(
+) (
+)
+(
+)
+(
+)
+(
+)
+(
+)
+(
+)
+1
+real
+real
+2
+real
+1
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+M
+s k
+s k
+s k
+M
+
+
+
+
+
+
+
+
+
+
+
++
+
+
+=
+=
++
+
+
+
+
+
+
++
+−
+
+
+
+
+
+
+
+
++
+=
++
+
+
+
+
+
+
++
+−
+
+
+
+
+z
+z
+Z
+h
+x
+V
+z
+A
+A
+V
+A
+ 
+(5) 
+where τ is the interval between adjacent snapshots, and 
+M
+T
+
+, 
+(
+)
+k
+k
+h x
+ denotes the nonlinear measurement 
+function, 
+kV  is the multi-snapshots measurement noise. 
+The measurement noise 
+kV  is usually assumed to be 
+statistical-characteristic stable in the underwater tracking 
+problem. However, in the real underwater tracking scenario, the 
+unknown underwater environment can result in uncertain 
+measurement noise, which make the statistical-characteristic of 
+the measurement noise become fluctuant and hard to deal with 
+by using the traditional tracking techniques. This problem 
+seriously degrades the tracking performance. 
+III. FD-EKF FOR DOA TRACKING 
+A. Frequency-domain Measurement Model 
+In order to eliminate the effect of the uncertain measurement 
+noise on tracking performance, the time-domain array received 
+signal in convert to the frequency-domain signal to extract the 
+signal around the frequency of the target signal. Then, the DOA 
+tracking is performed by using the extracted frequency-domain 
+signal as the measurement in the framework of the EKF. 
+The frequency-domain array received signal is obtained by 
+using Fourier transform as follows: 
+ 
+( )
+2
+j
+f
+k
+f
+e
+d
+
+
+−
+−
+= 
+F
+Z
+ 
+(6) 
+By substituting Equation (5) into Equation (6), the 
+frequency-domain array received signal is expressed as follows: 
+ 
+( )
+(
+)
+2
+j
+f
+f
+k
+k
+k
+f
+h
+e
+d
+
+
+−
+−
+=
++
+
+F
+x
+v  
+(7) 
+where 
+f
+kv  denotes the frequency-domain measurement noise. 
+The signal around the frequency of target signal is extracted 
+as follows: 
+ 
+( )
+(
+)
+2
+,    
+h
+h
+B
+l
+l
+f
+f
+f
+j
+f
+k
+k
+k
+l
+c
+h
+f
+f
+f
+h
+e
+d
+f
+f
+f
+
+
+−
+−
+=
++
+
+
+
+F
+x
+v
+ (8) 
+where 
+lf  and 
+hf  is the low limit and the high limit of the 
+interested frequency band, respectively, 
+cf
+ is the center 
+frequency of the target signal, 
+Bf
+kv
+ denotes the frequency-
+domain measurement noise in the extracted frequency band. It 
+is assumed that the stochastic measurement noise of each 
+element is independent and subject to the same distributions. 
+Thus, the measurement noise 
+kV  at tracking step k  is defined as 
+a zero-mean Gaussian noise with covariance matrix of 
+2
+,
+=
+k
+MP
+r k
+
+R
+I
+, where 
+MP
+I
+ is the MP-order identity matrix and 
+2
+,
+r k
+
+ is the variance of the measurement noise of each element 
+at tracking step k. 
+Since the frequency-domain measurement is obtained by 
+using Fourier transform, Equation (8) is written as follows for 
+convenience: 
+ 
+( )
+(
+)
+(
+)
+,    
+h
+h
+B
+l
+l
+f
+f
+f
+k
+k
+k
+l
+c
+h
+f
+f
+f
+FT h
+f
+f
+f
+=
++
+
+
+F
+x
+v
+ 
+(9) 
+where 
+( )
+FT  denotes the Fourier transform. 
+B. Algorithm 
+Because of the nonlinear measurement model depicted by 
+equation (5), the extended Kalman filter (EKF) scheme is 
+utilized. Considering the bearing angle kinematic model of the 
+target depicted by equation (1), the one-step prediction of the 
+state estimate 
+|
+1
+ˆk k−
+x
+ is calculated as: 
+ 
+|
+1
+|
+1
+1
+ˆ
+ˆ
+k k
+k k
+k
+−
+−
+−
+=
+x
+F
+x
+ 
+(10) 
+where 
+|
+1
+k k −
+F
+ is the state transition matrix given by equation (1), 
+and 
+1
+ˆk −
+x
+ is the state estimate at tracking step k. Similarly, by 
+utilizing the bearing angle kinematic model, the one-step 
+prediction of the estimation error covariance matrix 
+|
+1
+k k−
+P
+ is 
+expressed as: 
+ 
+|
+1
+|
+1
+1
+|
+1
+T
+T
+k k
+k k
+k
+k k
+k
+k
+k
+Q
+−
+−
+−
+−
+=
++
+P
+F
+P
+F
+G
+G
+ 
+(11) 
+where 
+1
+k −
+P
+ is the estimation error covariance matrix at step k-
+1, 
+k
+G  is the noise driving matrix given by equation (1), and 
+k
+Q  
+is the covariance matrix of the process noise. 
+Then, by utilizing the frequency-domain measurement 
+model, the Kalman filter gain is calculated to modify the one-
+step predictions of the state and the estimation error covariance 
+matrix. Considering the measurement model given in equation 
+(9), the Kalman filter gain 
+k
+K  is then expressed based on the 
+EKF scheme as: 
+ 
+(
+)
+1
+| -1
+|
+1
+T
+T
+k
+k k
+k
+k
+k k
+k
+k
+−
+−
+=
++
+K
+P
+Η
+Η P
+Η
+R
+ 
+(12) 
+where 
+k
+Η  is the first order Taylor expansion of the nonlinear 
+measurement 
+model, 
+i.e., 
+the 
+Jacobian 
+matrix 
+of 
+(
+)
+(
+)
+|
+1
+ˆ
+h
+l
+f
+k
+k k
+f
+FT h
+−
+x
+. 
+k
+R  is the uncertain MNCM caused by the 
+unknown underwater environment. According to equation (5), 
+the expression of 
+k
+Η  is given by: 
+ 
+1,1
+2,1
+,1
+1,2
+2,2
+,2
+1,
+2,
+,
+0
+0
+0
+0
+0
+0
+0
+0
+0
+T
+P
+P
+M
+M
+P M
+k
+h h
+h
+h
+h
+h
+h
+h
+h
+
+
+
+
+
+
+
+
+
+
+
+= 
+
+
+
+Η
+(13) 
+The elements of the matrix 
+,
+p m
+h
+ (
+1,2,...,
+p
+P
+=
+, 
+1,2,...,
+m
+M
+=
+) are given by: 
+382
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:02 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+(
+)
+(
+)
+(
+)
+(
+)
+(
+)
+,
+|
+1
+|
+1
+ˆ
+ˆ
+ˆ
+2
+cos
+real
+1
+p m
+k k
+p
+k k
+d
+h
+FT
+f
+jA
+s k
+m
+c
+
+
+
+
+−
+−
+
+
+
+=
+−
++
+−
+
+
+
+
+ (14) 
+where 
+(
+)
+(
+)
+ˆ
+1
+s k
+m
+
++
+−
+ denotes the estimate of the target signal. 
+The method for target signal estimation refer to Ref. [10]. 
+Then, in order to obtain the bearing angle estimate, the one-
+step prediction of the state 
+|
+1
+ˆk k−
+x
+ is modified by utilizing the 
+measurement at step k along with the Kalman filter gain 
+k
+K . 
+Thus, the state estimate ˆkx  at tracking step k is expressed as: 
+ 
+(
+)
+(
+)
+(
+)
+|
+1
+|
+1
+ˆ
+ˆ
+ˆ
++
+k
+k k
+k
+k
+k k
+FT h
+−
+−
+=
+−
+x
+x
+K
+Z
+x
+ 
+(15) 
+where the measurement prediction (
+)
+|
+1
+ˆk k
+h
+−
+x
+ is obtained by 
+equation (5), and 
+k
+Z
+ denotes the measurement at step k. 
+Similarly, the one-step prediction of the estimation error 
+covariance matrix 
+|
+1
+k k−
+P
+ is modified by 
+k
+K , i.e., 
+ 
+(
+)
+|
+1
+k
+k
+k
+k k −
+=
+−
+P
+I
+K H
+P
+ 
+(16) 
+where 
+kP  denotes the estimation error covariance matrix at 
+tacking step k. Once the initial state estimate 
+0ˆx  and the initial 
+estimation error covariance matrix 
+0P  are given, the bearing 
+angle estimate at tracking step k can be obtained iteratively by 
+equations (10)-(16) according to the measurement at step k. 
+IV. SIMULATIONS 
+A. Simulation Scenario 
+As presented in this section, comprehensive simulations 
+were carried out to verify the performance of the proposed FD-
+EKF for DOA tracking. In the simulations, an underwater target 
+was assumed to perform in a CV motion model with the initial 
+state 
+0
+[90,0.02]
+=
+X
+, and the process noise covariance matrix Q 
+was 10-4 °/s2. The total simulation time was set to 5000 s with a 
+1 s interval. The bearing angles of the target were simulated. 
+Furthermore, the frequency f, amplitude a and the initial 
+phase 
+0 of the target signal were 170 Hz, 1 and 0 rad, 
+respectively. The sample frequency 
+1000Hz
+sf =
+, and the 
+underwater sound velocity 
+1500 m/s
+c =
+. A ULA with 12 
+elements is used, and 
+sf  snapshots were taken at each tracking 
+step for FD-EKF. 
+The proposed FD-EKF for DOA tracking was tested. The 
+CBF-based DOA estimation and the EKF for DOA tracking 
+were also tested for comparison. The scanning bearing angle of 
+the CBF-based DOA estimation varied every 0.1° from -90° to 
+90°. The state estimate of the EKF and the FD-EKF was 
+initialized as 
+0
+0
+ˆ
+[
+,0]
+
+
+=
++
+X
+, where 
+0 is the true bearing 
+angle of target at k=0, and  is the initial error of the bearing 
+angle estimate. 
+kP  was initialized as 
+(
+)
+2
+0
+diag [
+,0.1]
+
+=
+P
+.  
+In order to test the robustness of the FD-EKF with regards to 
+the uncertain environment disturbances, strong Gaussian white 
+noise was added from 3600 s to 4000 s. And the covariance 
+matrix 
+k
+R  of the measurement noise was expressed as: 
+ 
+2
+,
+2
+,
+       0
+3600,4000
+5000
+10
+   3600
+4000
+MP
+r k
+k
+MP
+r k
+k
+k
+k
+
+
+
+
+
+
+
+
+= 
+
+
+
+I
+R
+I
+ 
+(17) 
+Then, the measurements of the target were simulated.  
+B. Verification 
+The tracking trajectories of the FD-EKF with different initial 
+state estimates in one simulation are shown in Fig. 2. The results 
+of the CBF-based DOA estimation and the EKF, SH-EKF and 
+VB-EKF for DOA tracking are also provided for comparison. 
+ 
+     (a)                                                         (b)
+ 
+     (c)                                                         (d) 
+ 
+(e) 
+Fig. 2. Tracking results of (a) CBF, (b) EKF, (c) SH-EKF, (d) VB-EKF, (e) 
+FD-EKF for robust DOA tracking. 
+Fig. 2 shows that the precision of the DOA estimation was 
+acceptable when the measurement noise was weak and 
+stationary. However, since DOA estimation excessively relies 
+on the present measurement, it was invalid during the presence 
+of the strong noise from 3600 s to 4000 s. The tracking 
+trajectories of the EKF, SH-EKF, VB-EKF and FD-EKF 
+tracking methods fluctuated significantly at the beginning (1000 
+s). Owing to the Bayesian filter that the tracking methods are 
+based on, the error of the bearing angle estimate was gradually 
+eliminated with time. Thus, the precision of the tracking 
+trajectories significantly improved after 1000 s. The time taken 
+for tracking methods stabilizing is acceptable in applications. 
+The precision of the tracking methods was higher than that of 
+the DOA estimation after the algorithm converged.  
+383
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:02 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+Even from 3600 s to 4000 s, The EKF, SH-EKF, VB-EKF 
+and FD-EKF provided valid tracking due to their use of the 
+kinematic model of the underwater target. Moreover, the 
+performance of the FD-EKF was scarcely affected by the strong 
+noise from 3600 s to 4000 s. The reason is that the FD-EKF 
+converts the time-domain array received signal to the frequency 
+domain signal to extract the desired signal and perform 
+Bayesian-filter-based tracking in frequency-domain. Thus, the 
+FD-EKF avoids most of the effect of the uncertain noise, and the 
+precision of the FD-EKF after the algorithm converged was the 
+highest of all the methods. 
+Fig. 3 gives the root mean square error (RMSE) of the 
+tracking results of EKF, SH-EKF, VB-EKF, FD-EKF for robust 
+DOA tracking in 500 Monte Carlo simulations, which proves 
+the superior of the proposed FD-EKF for DOA tracking again. 
+ 
+Fig. 3. RMSE of the tracking results of EKF, SH-EKF, VB-EKF, FD-EKF for 
+robust DOA tracking. 
+V. CONCLUSION 
+The robust underwater DOA tracking problem in uncertain 
+measurement noise scenario is studied. The FD-EKF for DOA 
+tracking is proposed to provide robust tracking in uncertain 
+measurement noise scenario. The time-domain signal received 
+by hydrophone array to frequency-domain signal and the signal 
+at interested frequencies is extracted. Then, the proposed 
+method uses extracted signal as the measurement to perform 
+robust tracking. Thus, the effect of the uncertain measurement is 
+eliminated in a new way different from the existing noise-
+estimating methods. 
+Compared to the SH tracking method and the VB tracking 
+method, which requires accurate assumptions in application 
+scenarios, FD-EKF has better universality in underwater target 
+DOA tracking scenarios with uncertain measurement noise. 
+Since the SH tracking method and the VB tracking method need 
+to estimate noise statistics, both of them require to preset the 
+hyperparameters of the proposed algorithms before DOA 
+tracking. These hyperparameters significantly affect the 
+estimation of noise statistics, which resulting in affecting the 
+tracking performance. In engineering applications, it is not easy 
+to determine these hyperparameters. However, the FD-EKF 
+does not need to set the hyperparameters to estimate noise 
+statistics, which makes it easier for engineering applications. 
+REFERENCES 
+[1] 
+B. P. Rideout, S. E. Dosso, D. E. Hannay, “Underwater passive acoustic 
+localization of Pacific walruses in the northeastern Chukchi Sea,” J. 
+Acoust. Soc. Am. 134(3): 2534-2545 (2013). 
+[2] 
+X. Zhu, J. R. Buck, “Designing nonuniform linear arrays to maximize 
+mutual information for bearing estimation,” J. Acoust. Soc. Am. 128(5): 
+2926-2939 (2010). 
+[3] 
+C. Yardim, Z. -H. Michalopoulou and P. Gerstoft, "An Overview of 
+Sequential Bayesian Filtering in Ocean Acoustics," in IEEE J OCEANIC 
+ENG, 
+vol. 
+36, 
+no. 
+1, 
+pp. 
+71-89, 
+Jan. 
+2011, 
+doi: 
+10.1109/JOE.2010.2098810 
+[4] 
+W. Zeng, H. C. So, L. Huang, “l-MUSIC: Robust direction-of-arrival 
+estimator for impulsive noise environments,” IEEE T. Signal Proces. 
+61(17): 4296-4308 (2013). 
+[5] 
+B. Wang, Y. D. Zhang, W. Wang, “Robust DOA estimation in the 
+presence of miscalibrated sensors,” IEEE Signal Proc. Let. 24(7): 1073-
+1077 (2017). 
+[6] 
+T. Li, A. Nehorai, “Direction-of-arrival estimation of hydroacoustic 
+signals from marine vessels containing random and sinusoidal 
+components,” IEEE Signal Proc. Let. 19(8): 503-506 (2012). 
+[7] 
+Z. Zheng, C. Yang, “Direction-of-arrival estimation of coherent signals 
+under direction-dependent mutual coupling,” IEEE Commun. Lett. 25(1): 
+147-151 (2021). 
+[8] 
+J. Zhao, R. Gui, X. Dong, S. Wu, “Time-Varying DOA Tracking 
+Algorithm Based on Generalized Labeled Multi-Bernoulli,” IEEE Access 
+9: 5943-5950 (2021). 
+[9] 
+A. Saucan, T. Chonavel, C. Sintes, J. Le Caillec, “Marked poisson point 
+process PHD filter for DOA tracking,” in 2015 23rd European Signal 
+Processing Conference (EUSIPCO), 2015, pp. 2621-2625. 
+[10] Zhang Boxuan, Hou Xianghao, Yang Yixin. Robust underwater direction-
+of-arrival tracking with uncertain environmental disturbances using a 
+uniform circular hydrophone array. Journal of the Acoustical Society of 
+America, 2022, 151(6): 4101-4113. 
+[11] Zhang Boxuan, Gao Guangen, Ding Xiaokun, Hou Xianghao. Robust 
+underwater direction-of-arrival tracking with uncertain measurement 
+noise. Advances in Guidance, Navigation and Control. ICGNC 2022. 
+Lecture Notes in Electrical Engineering. Berlin, Germany: Springer, 2022, 
+845: 6879–6888. 
+[12] Hou Xianghao, Qiao Yueyi, Zhang Boxuan, Yang Yixin. Robust 
+underwater direction-of-arrival tracking based on variational Bayesian 
+extended Kalman filter. JASA Express Letters, 2023, 3(1): 014801. 
+[13] Zhang Boxuan, Hou Xianghao, Yang Yixin. A fast variational Bayesian 
+adaptive extended Kalman filter for robust underwater direction-of-
+arrival tracking[J]. IEEE Sensors Journal, 2023, 23(13): 14709-14720. 
+[14] Zhang Boxuan, Hou Xianghao, Yang Yixin. Robust underwater multi-
+target direction-of-arrival tracking with uncertain measurement noise. 
+Acta Acustica, 2023, 48(04): 605-617. (In Chinese) 
+[15] Zhang Boxuan, Hou Xianghao, Yang Yixin, Zhou Jianbo, Xu Shengli. 
+Variational Bayesian cardinalized probability hypothesis density filter for 
+robust underwater multi-target direction-of-arrival tracking with 
+uncertain measurement noise. Frontiers in Physics, 2023, 11: 1142400. 
+ 
+384
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:43:02 UTC from IEEE Xplore.  Restrictions apply. 

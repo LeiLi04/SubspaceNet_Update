@@ -1,0 +1,1581 @@
+
+
+===== PAGE 1 =====
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+14709
+A Fast Variational Bayesian Adaptive Extended
+Kalman Filter for Robust Underwater
+Direction-of-Arrival Tracking
+Boxuan Zhang, Xianghao Hou , Yixin Yang , Member, IEEE, Long Yang ,
+and Yong Wang , Member, IEEE
+Abstract—Underwater direction-of-arrival (DOA) tracking
+using hydrophone array is an important research subject in
+passive sonar signal processing. In this study, the robust
+underwater DOA tracking with the unknown measurement
+noise results from underwater environmental noise is con-
+cerned. To deal with the unknown measurement noise, the
+existing variational Bayesian adaptive extended Kalman filter
+(VB-AEKF) for robust underwater DOA tracking jointly esti-
+mates the covariance matrix of unknown measurement noise
+and the DOA by using variational Bayesian approach in the
+framework of extended Kalman filter. However, the iteration
+process of VB approach and the nonlinear measurement model based on hydrophone array signal result in significant
+computational complexity of the VB-AEKF for DOA tracking. To better solve the problem of robust DOA tracking with
+unknown measurement noise covariance matrix, a novel computationally efficient version of the existing VB-AEKF,
+which is named the fast variational Bayesian adaptive extended Kalman filter (FVB-AEKF), is proposed. An equivalent
+variational iteration process to estimate the measurement noise covariance matrix is derived. The proposed FVB-AEKF
+is identical to the VB-AEKF but reduces the computational complexity of the algorithm. The proposed method is tested
+via Monte Carlo simulations of an underwater DOA tracking scenario and an experiment in the South China Sea in July
+2021. The results of the simulations and the experiment verified the accuracy and the computational efficiency of the
+FVB-AEKF.
+Index Terms— Adaptive tracking, Kalman filter, nonlinear measurement model, underwater direction-of-arrival (DOA)
+tracking, variational Bayesian approach.
+I. INTRODUCTION
+D
+IRECTION-OF-ARRIVAL (DOA) estimation of under-
+water targets is an important research topic in passive
+sonar signal processing. For scenarios of a moving target,
+traditional DOA estimation methods cut the measurements of
+the received signal into sequential periods by comprehensively
+considering the change rate of the DOA and the number of
+snapshots to process them. However, the kinetic characteristics
+of the moving target are ignored [1], [2], [3], [4]. By utilizing
+Manuscript received 25 March 2023; revised 26 April 2023; accepted
+7 May 2023. Date of publication 16 May 2023; date of current ver-
+sion 29 June 2023. This work was supported in part by the National
+Natural Science Foundation of China under Grant 12104113, in part
+by the Foundation of Central University Operating Expenses Project
+under Grant G2022KY05102, and in part by the Fundamental Research
+Funding for Characteristic Disciplines under Grant G2022WD0235. The
+associate editor coordinating the review of this article and approv-
+ing it for publication was Dr. Jurgen Kosel. (Corresponding author:
+Xianghao Hou.)
+The authors are with the School of Marine Science and Technology,
+Northwestern Polytechnical University, Xi’an, Shaanxi 710072, China,
+and also with the Shaanxi Key Laboratory of Underwater Information
+Technology, Xi’an, Shaanxi 710072, China (e-mail: bxzhang@mail.
+nwpu.edu.cn; houxianghao1990@nwpu.edu.cn; yxyang@nwpu.edu.cn;
+lyang@nwpu.edu.cn; yongwang@nwpu.edu.cn).
+Digital Object Identifier 10.1109/JSEN.2023.3275318
+not only the measurements but also the motion model of the
+underwater target, DOA tracking methods can provide a more
+robust and accurate bearing angle estimation than traditional
+DOA estimation methods [5], [6], [7], [8], [9], [10], [11].
+Considering the superior characteristics of DOA tracking
+methods, a number of research studies have been carried out.
+DOA tracking methods are mostly based on the Bayesian
+filter, and recursively estimate the state (bearing angle of
+the target) from the array-signal-based measurement (output
+signal of the hydrophone array containing the signal emitted
+by the target) in real time. To deal with the nonlinear relation
+between the bearing angle of the target and the measurement,
+i.e., nonlinear measurement model, many tracking techniques
+have been proposed based on nonlinear Bayesian filters, such
+as extended Kalman filter (EKF) [5], unscented Kalman filter
+(UKF) [12], cubature Kalman filter (CKF) [13], and particle
+filter (PF) [6]. Among these nonlinear Bayesian filters, the
+EKF is both robust and computationally efficient due to its
+simple algorithm principle. Thus, the EKF is widely used in
+engineering applications.
+In most research studies of underwater tracking, the mea-
+surement noise is usually assumed to be subject to a zero-mean
+Gaussian distribution with a known fixed covariance matrix.
+1558-1748 © 2023 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+14710
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+However, this measurement noise covariance matrix (MNCM)
+may become unknown and unstable in real underwater tracking
+scenarios because of the unknown underwater environmental
+noise. The mismatch between the actual unknown and unstable
+MNCM and the assumed known fixed MNCM will signifi-
+cantly degrade the tracking performance. In order to deal with
+unknown and unstable MNCM, a number of adaptive Kalman
+filters based on different algorithms are proposed by estimating
+the MNCM. Zhang et al. [7] used the Sage-Husa (SH) algo-
+rithm [14] to estimate the MNCM and carried out a robust
+underwater DOA tracking method by substituting the esti-
+mated MNCM into EKF. By estimating the MNCM in a max-
+imum likelihood (ML) framework, the expectation maximum
+adaptive Kalman filter (EM-AKF) was proposed [15], [16].
+Sarkka and Nummenmaa [19], and Hartikainen [20] assumed
+the MNCM to be subject to an inverse Wishart distribution
+and iteratively estimated the MNCM by using a variational
+Bayesian approach [17], [18], namely the variational Bayesian
+adaptive Kalman filter (VB-AKF). Huang et al. [21] assumed
+the mean square error matrix to be also subject to an inverse
+Wishart distribution and jointly estimate it along with MNCM
+to improve the performance of VB-AKF. In the existing works,
+the superior accuracy and stability of the VB-AKF were
+demonstrated [19], [20], [21]. However, due to the iteration
+process of the variational Bayesian approach, the VB-AKF has
+significant computation for high-dimensional systems. In order
+to address this problem, Xu et al. [22] proposed a com-
+putationally efficient VB-AKF for a liner transfer alignment
+system with a high-dimensional state. In addition, based on the
+VB-AKF [19], Hou et al. [23] derived a variational Bayesian
+adaptive extended Kalman filter (VB-AEKF) to adaptively
+estimate the MNCM for robust underwater DOA tracking.
+In this article, robust underwater DOA tracking with regard
+to unknown measurement noise was studied. The abovemen-
+tioned VB-AEKF for DOA tracking [23] is also proposed
+for the same task. Similar to VB-AKF, the VB-AEKF for
+DOA tracking uses the variational Bayesian approach in the
+framework of the extended Kalman filter to jointly estimate
+the state and the covariance of measurement noise, and the
+MNCM needs to update by several variational iterations to
+ensure the estimation accuracy. It should be noted that the
+array-signal-based measurements bring a high-dimensional
+and complicated nonlinear measurement model, which leads
+to significant computations of the measurement function and
+the Jacobian matrix. For such a measurement model, the
+variational iteration process of the VB-AEKF results in a
+high computational overload. This problem goes against the
+application of VB-AEKF for DOA tracking.
+To avoid this issue of VB-AEKF for DOA tracking,
+a fast VB-AEKF (FVB-AEKF) for DOA tracking is pro-
+posed in this article. Inspired by the computationally efficient
+VB-AKF [22] for linear systems with high-dimensional states,
+we derive a variational iteration process equivalent to that of
+the VB-AEKF but more computationally efficient for DOA
+tracking with a high-dimensional and nonlinear measurement
+model. The proposed variational iteration process degrades
+the number of computations by reducing the iterations of
+parameters, such as the measurement function and its Jacobian
+matrix. Based on this novel variational iteration process, the
+Fig. 1. Configuration of the UCA-based measurement system.
+FVB-AEKF is proposed. Rich simulations and experiments
+are carried out in the underwater DOA tracking scenario with
+unknown measurement noise, and the superior performance
+of the proposed FVB-AEKF both in terms of robustness and
+computational efficiency is verified.
+The rest of this article is organized as follows: In
+Section II, the underwater DOA tracking problem is formu-
+lated. In Section III, the VB-AEKF for robust underwater DOA
+tracking is derived in detail, and the number of computations
+of it is analyzed. The innovative fast method for robust under-
+water DOA tracking, namely the FVB-AEKF, is proposed in
+Section IV. In Sections V and VI, comprehensive simulations
+and an experiment in the South China Sea in July 2021 are
+conducted to verify the superior performance of FVB-AEKF
+in terms of accuracy and computational efficiency. Finally,
+in Section VII, the conclusions are drawn.
+II. PROBLEM FORMULATION
+A. Kinematic Model of the Underwater Target by the
+Bearing Angle
+The motion process of the underwater target is considered
+to be a stochastic process. The bearing angle of the target
+is assumed to perform in the constant velocity (CV) motion
+mode.
+Let θk denotes the bearing angle of the target and ˙θk denotes
+the change rate of θk at time step k, the system state is
+expressed as xk = (θk, ˙θk)T . Then, the CV motion kinematic
+model of the bearing angle is expressed as
+xk = Fk|k−1xk−1 + Gkwk
+(1)
+where Fk|k−1 is the state transition matrix, xk−1 is the system
+state at time step k −1, Gk is the noise driving matrix,
+and wk denotes the zero mean Gaussian process noise with
+the covariance matrix Qk caused by the unknown underwater
+environment. Qk is usually set by engineering experience in
+target tracking scenario. Fk|k−1 and Gk is given by
+Fk|k−1 =
+ 1
+T
+0
+1
+
+(2)
+Gk =
+
+T 2/2
+T
+
+(3)
+where T is the interval between the adjacent time steps.
+B. Measurement Model Based on the Received
+Signal of the UCA
+Considering the bearing angle of the target varies in a
+wide range in a long-time tracking scenario, the uniform
+circular array (UCA) is used since it is free from the port and
+starboard ambiguity problem and possesses uniform aperture
+at all bearing angles [24], [25].
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+ZHANG et al.: FVB-AEKF FOR ROBUST UNDERWATER DIRECTION-OF-ARRIVAL TRACKING
+14711
+The configuration of the UCA and the underwater target is
+shown in Fig. 1. Considering the target emits a narrowband
+acoustic signal at the frequency f with the amplitude a and the
+initial phase φ0, the target signal at k is expressed as
+s(k) = α exp( j(2π f kT + φ0)).
+(4)
+The emitted signal given by (4) is received by the UCA
+with P elements at time step k. The P elements are uniformly
+placed around the circle with the radius R and the center at
+the origin of the cartesian coordinates. It is assumed that the
+range of the target satisfies the far-field condition to regard the
+arrived signal as a plane wave, and the sound velocity is c.
+Then, the measurement vector of the received signal at time
+step k can be expressed as
+zk = hk(xk) + vk = real(A(θk)s(k)) + vk
+(5)
+where hk(xk) denotes the nonlinear measurement function,
+A(θk) is the array manifold vector of the UCA, and vk denotes
+the measurement noise. A(θk) is given by
+(
+A(θk) = [A1(θk), A2(θk), . . . , AP(θk)]T
+Ap (θk) = exp( j2π f r/c cos(θk −2πp/P))
+(6)
+where θk is the angle between the target and the positive x-axis
+with the positive counterclockwise direction, p is the number
+of elements and p = 1, 2, . . . , P.
+The measurement noise vk at the time step k is defined as
+a zero mean Gaussian noise with a P-order covariance matrix
+Rk. The MNCM Rk is usually assumed to be fixed value by
+engineering experience in most tracking problems. However,
+in the real underwater tracking scenario, the unknown under-
+water environment can result in the fluctuant MNCM, which
+is hard to deal with by using traditional tracking techniques.
+This problem seriously degrades the performance of traditional
+tracking techniques.
+III. COMPUTATIONAL LOAD ANALYSIS VB-AEKF
+FOR DOA TRACKING
+By using the VB iteration approach, the existing VB-AEKF
+jointly estimates the state and the MNCM, whose probability
+distributions are assumed to be Gaussian distribution and
+inverse Wishart distribution, respectively. According to [23],
+the pseudo-code of the VB-AEKF for DOA tracking using
+UCA at a one time step is given in Algorithm 1.
+The meaning of input parameters is given as follows:
+ˆxk−1|k−1 is the state of the target at the time step k −1,
+Pk−1|k−1 is the mean-square error matrix at the time step k−1,
+zk is the measurement vector at time step k, Qk is the process
+noise covariance matrix. ˆuk−1|k−1, ˆUk−1|k−1, ρ and N are the
+parameters for the variational Bayesian approach to estimate
+the MNCM at a time step k −1. ˆuk−1|k−1 and ˆUk−1|k−1 is the
+degree of free (dof) and the prior inverse scale matrix for the
+variational Bayesian approach, respectively. ρ is the forgetting
+factor (ρ ∈(0, 1]), and N is the number of VB iterations.
+The meaning of output parameters is given as follows:
+ˆxk−1|k−1 is the state of the target at time step k, Pk|k is
+the mean-square error matrix at time step k. ˆuk−1|k−1 and
+ˆUk−1|k−1 are the updated dof and the prior inverse scale
+matrix.
+Algorithm 1 One Time Step of the VB-AEKF for DOA
+Tracking Using UCA
+Inputs:ˆxk−1|k−1, Pk−1|k−1, zk, ˆuk−1|k−1, ˆUk−1|k−1, Qk, ρ, N.
+Time update
+1. ˆxk−1|k−1 = Fk−1|k−1 ˆxk−1|k−1.
+2. Pk|k−1 = Fk|k−1 Pk−1|k−1FT
+k|k−1 + Gk QkGT
+k .
+3. ˆuk−1|k−1 = ρ( ˆUk−1|k−1 −n −1) + n + 1, ˆUk−1|k−1 =
+ρ ˆUk−1|k−1.
+Iteration measurement update
+4. Initialization: ˆx(0)
+k|k = ˆxk|k−1, ˆR
+(0)
+k
+= ˆUk|k−1/ˆuk|k−1.
+For i = 0 : N −1
+Update q(i+1)(xk) = N|(xk; x(i+1)
+k|k
+, P(i+1)
+k|k
+)
+5. Calculate ˆs(i)
+k|k(k), h(ˆx(i)
+k|k), and H(i)
+k .
+6. K (i+1)
+k
+= Pk|k−1(H(i)
+k )T (H(i)
+k Pk|k−1(H(i)
+k )T + ˆR
+(i)
+k )−1,
+7. ˆx(i+1)
+k|k
+= ˆxk|k−1 + Ki+1
+k
+(zk −h(ˆx(i)
+k|k) −H(i)
+k (ˆxk|k−1 −
+ˆX
+(i)
+k|k)),
+8. P(i+1)
+k|k
+= Pk|k−1 −K (i+1)
+k
+H(i)
+k Pk|k−1.
+Update q(i+1)(Rk) = IW(Rk; ˆui+1
+k|k , ˆU
+(i+1)
+k|k
+9. Calculate ˆs(i+1)
+k|k
+(k), h(ˆx(i+1)
+k|k
+, and H(i+1)
+k
+.
+10. B(i+1)
+k
+= (zk −h(ˆx(i+1)
+k|k
+)TH(i+1)
+k
+P(i+1)
+k|k
+(H(i+1)
+k
+)T,
+11.
+ˆU
+(i+1)
+k|k
+= ˆUk|k + B(i+1)
+k
+, ˆu(i+1)
+k|k
+= ˆuk|k−1 + 1,
+12.
+ˆR
+(i+1)
+k
+= ˆU
+(i+1)
+k|k
+/ˆu(i+1)
+k|k
+.
+End for
+13. ˆxk|k = ˆx(N)
+k|k , Pk|k = P(N)
+k|k , ˆuk|k = ˆu(N)
+k|k , ˆUk|k ˆU
+(N)
+k|k .
+Outputs: ˆxk|k, Pk|k, ˆuk|k, ˆUk|k.
+TABLE I
+FLOPS OF COMMON MATRIX CALCULATIONS
+In Algorithm 1, N(·; µ, Σ) denotes the probability distri-
+bution function (pdf) of the Gaussian distribution with mean
+µ and covariance matrix Σ, IW(·; λ, Ψ) denotes the pdf
+of the inverse Wishart distribution with dof λ and inverse
+scale matrix Ψ (details of the pdf of the IW distribution
+could be found in [21]), forgetting factor ρ is to spread
+the previous posterior parameters ˆuk−1|k−1 and ˆUk−1|k−1 to
+prior parameters ˆuk−1|k−1 and ˆUk−1|k−1, which indicates the
+extent of the time-fluctuations of the MNCM. The expression
+of ˆs(i)
+k|k(k), h(ˆxk−1|k−1) and H(i)
+k
+are given in the Appendix.
+Moreover, step 5 of the algorithm is obviously unnecessary
+to operate after the first iteration because ˆs(i)
+k|k(k), h(ˆxk−1|k−1)
+and H(i)
+k
+have already been calculated in the last iteration.
+In computer calculation, the total number of floating-point
+operations (FLOPs), such as addition, multiplication, square
+root, and trigonometric function, can represent the compu-
+tational complexity of the algorithm [25], [26]. The FLOPs
+of common matrix calculations are given in Table I, where
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+14712
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+TABLE II
+FLOPS OF THE VB-AEKF FOR DOA TRACKING
+FLOPA, FLOPM, and FLOPSR denote the FLOPs of addition,
+multiplication, and square-root operation, respectively, and
+the inverse of the matrix is calculated using the Cholesky
+decomposition.
+According to Agorithm 1 and Table I, the number of
+FLOPs of the VB-AEKF for DOA tracking at a one time
+step is derived. Significantly, ˆs(i)
+k|k(k), h(ˆxk−1|k−1) and H(i)
+k
+involve complex calculations. The addition of complex num-
+bers costs 2 FLOPAs, the multiplication of complex numbers
+costs 2 FLOPAs and 4 FLOPMs, the inversion of a complex
+number costs a FLOPA, 2 FLOPMs and 2 FLOPDs (FLOPs
+of division), and the exponent of a complex number costs 2
+FLOPT s (FLOPs of trigonometric function). Then, the FLOPs
+of the VB-AEKF for DOA tracking at a one time step are
+given in Table II, where a and b denote the dimension of the
+state vector xk and the measurement vector zk, respectively.
+2π f r/c and 2πp/P in the calculation of h(ˆxk−1|k−1) and H(i)
+k
+can both be calculated just one time at the beginning of the
+algorithm, which carried out insignificant computational load
+and thus the computations of them are ignored.
+According to Table II, the total number of computations of
+the VB-AEKF at a one time step are given as follows:
+
+
+
+FLOPA = N(a3+4a2b+3ab2+0.5b3−3ab+0.5b2 + 2b)
++(N + 1)(16b −1) + 2a3 −a
+FLOPM = N(a3 + 4a2b + 3ab2 + 0.5b3 + ab + 2.5b2)
++(N + 1)(24b + 6) + 2a3 + 2a2 + b2 + a + 1
+FLOPD = b2 + 2(N + 1) + Nb2
+FLOPSR = Nb
+FLOPT = 7(N + 1)b.
+(7)
+As can be seen from Algorithm 1, the high-dimensional
+measurement function h(ˆx(i)
+k|k) and Jacobian matrix H(i)
+k
+need
+to be calculated to obtain P(i+1)
+k|k
+for the parameter B(i+1)
+k
+in
+every variational iteration. Besides, the trigonometric functions
+in the calculations of h(ˆx(i)
+k|k) and H(i)
+k
+bring much more
+computational load than additions, and even more than multi-
+plications and square roots. Thus, the trigonometric function
+operations and the high-dimensional measurement function
+and the Jacobian matrix result in high computational complex-
+ity. In order to solve this problem, we derive a novel iteration
+process in Section IV to avoid the calculation of P(i+1)
+k|k
+and
+reduce the iterations of h(ˆx(i)
+k|k) and H(i)
+k .
+IV. FAST VB-AEKF FOR DOA TRACKING
+A. Formula Derivation
+The above analyses proved that the iterations of P(i+1)
+k|k
+and the calculations of h(ˆx(i)
+k|k) and H(i)
+k
+result in the high
+computational complexity of the VB-AEKF for DOA tracking
+given in Algorithm 1. Similar to the main thought of compu-
+tationally efficient VB-AKF [22], we derived a fast variational
+iteration process equivalent to VB-AEKF. Different from the
+computationally efficient VB-AKF for linear systems with
+high-dimensional states, this novel fast variational iteration
+process is suitable for DOA tracking with nonlinear and high-
+dimensional measurement. The novel fast variational iteration
+process improves the computational efficiency by calculating
+B(i+1)
+k
+for the MNCM estimation without iteratively calculat-
+ing P(i+1)
+k|k
+and reducing the iterations of h(ˆx(i)
+k|k) and H(i)
+k .
+Then, an FVB-AEKF for DOA tracking (FVB-AEKF) is
+proposed by using this novel iteration process. The derivation
+of the novel iteration process is given in detail as follows.
+According to the equation for calculation of B(i+1)
+k
+in step
+14 of Algorithm 1, we respectively derive the two terms on
+the right side of the equation (zk −h(ˆx(i+1)
+k|k
+))(zk −h(ˆxi+1
+k|k ))
+and H(i+1)
+k
+P(i+1)
+k|k
+(H(i+1)
+k
+)T as follows.
+The first-order Tayler expansion of h(ˆx(i+1)
+k|k
+) at ˆxk|k is
+h(ˆx(i+1)
+k|k
+) = h(ˆxk|k−1) + Hk|k−1(ˆx(i+1)
+k|k
+−ˆxk|k−1).
+(8)
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+ZHANG et al.: FVB-AEKF FOR ROBUST UNDERWATER DIRECTION-OF-ARRIVAL TRACKING
+14713
+Moreover, according to the standard EKF, the measurement
+update of the state ˆx(i+1)
+k|k
+is expressed as
+ˆx(i+1)
+k|k
+= ˆxk|k−1 + K (i+1)
+k
+(zk −h(ˆxk|k−1)).
+(9)
+Substituting (8) and (9) into zk −h(ˆx(i+1)
+k|k
+), we obtained
+zk −h(ˆx(i+1)
+k|k
+) = zk −h(ˆxk|k) −Hk|k−1(ˆx(i+1)
+k|k
+−ˆxk|k−1)
+= zk −h(ˆxk|k−1)−Hk|k−1K (i+1)
+k
+(zk −h(ˆxk|k−1))
+= (Ib −Hk|k−1K (i+1)
+k
+)(zk −h(ˆxk|k−1)).
+(10)
+Then, the term (zk −h(ˆx(i+1)
+k|k
+)zk −h(ˆx(i+1)
+k|k
+))T in step 14 of
+Algorithm 1 is expressed as
+(zk −h(ˆx(i+1)
+k|k
+)zk −h(ˆx(i+1)
+k|k
+))T
+= (Ib −Hk|k−1K (i+1)
+k
+) ˜P
+zz
+k|k−1(Ib −Hk|k−1K (i+1)
+k
+)T
+(11)
+where
+˜P
+zz
+k|k−1 = (zk −h(ˆxk|k−1)zk −h(ˆxk|k−1))T .
+(12)
+In
+order
+to
+derive
+the
+expression
+of
+the
+term
+H(i+1)
+k
+P(i+1)
+k|k
+(H(i+1)
+k
+)T in step 14 of Algorithm 1, we first
+give the mean square error matrix ˜P
+zz
+k|k and the Kalman filter
+gain K (i+1)
+k
+according to the standard EKF as follows:
+˜P
+(i+1)
+k|k
+= Pk|k−1 −K (i+1)
+k
+H(i)
+k Pk|k−1
+(13)
+K (i+1)
+k
+= Pk|k−1(H(i)
+k )T (H(i)
+k Pk|k−1(H(i)
+k )T + ˆR
+(i)
+k )−1
+≈Pk|k−1HT
+k|k−1(H(i)
+k Pk|k−1(H(i)
+k )) + ˆR
+(i)
+k )−1. (14)
+Then, the term
+H(i+1)
+k|k
+ˆP
+(i+1)
+k|k
+(H(i+1)
+k|k
+)T
+is derived as
+follows:
+H(i+1)
+k|k
+ˆP
+(i+1)
+k|k
+(H(i+1)
+k|k
+)T
+≈Hk|k−1 ˆP
+(i+1)
+k|k
+H T
+k|k−1
+= Hk|k−1 Pk|k−1HT
+k|k−1−Hk|k−1K (i+1)
+k
++Hk|k−1 Pk|k−1HT
+k|k−1
+= Hk|k−1 Pk|k−1HT
+k|k−1
+−Hk|k−1 Pk|k−1HT
+k|k−1(Pzz(i+1)
+k|k−1 )−1Hk|k−1 Pk|k−1H|T
+k|k−1
+(15)
+where
+Pzz(i+1)
+k|k−1
+= H(i)
+k Pk|k−1(H(i)
+k )T + ˆR
+(i)
+k .
+(16)
+Let
+D(i)
+k
+= H(i)
+k Pk|k−1(H(i)
+k )T −Hk|k−1 Pk|k−1HT
+k|k−1
+(17)
+˜R
+(i)
+k
+= D(i)
+k + ˆR
+(i)
+k
+(18)
+then Pzz(i+1)
+k|k−1
+given by (16) can be expressed as
+Pzz(i+1)
+k|k−1
+= Hk|k−1 Pk|k−1HT
+k|k−1 −Hk|k−1 Pk|k−1HT
+k|k−1
++ H(i)
+k Pk|k−1(H(i)
+k )T + ˆR
+(i)
+k
+= Hk|k−1 Pk|k−1HT
+k|k−1 + D(i)
+k + ˆR
+(i)
+k
+= Hk|k−1 Pk|k−1HT
+k|k−1 + ˜R
+(i)
+k .
+(19)
+Similar to the derivation given by (13)–(20) of [22],
+we obtain
+B(i+1)
+k
+= ˜R
+(i)
+k + C(i+1)
+k
+( ˜P
+zz
+k|k−1 −Pzz(i+1)
+k|k−1 )(C(i+1)
+k
+)T
+(20)
+where
+C(i+1)
+k
+= ˜R
+(i)
+k (Pzz(i+1)
+k|k−1 )−1.
+(21)
+Let
+1R(i+1)
+k
+= C(i+1)
+k
+( ˜P
+zz
+k|k−1 −Pzz(i+1)
+k|k−1 )(C(i+1)
+k
+)T
+(22)
+then (20) can be expressed as
+B(i+1)
+k
+= ˜R
+(i)
+k + 1R(i+1)
+k
+.
+(23)
+Substituting (23) into Algorithm 1, the algorithm of the
+FVB-AEKF is obtained. In order to reduce the calculation
+complexity further, we stop the update of H(i)
+k
+when the
+deviation between H(i−1)
+k
+and H(i)
+k
+is less than a threshold,
+i.e.,
+ε =
+H(i)
+k −H(i−1)
+k
+
+2 < δ
+(24)
+where ∥·∥2 denotes the two-norm of the matrix, δ denotes the
+threshold.
+According to the derivations above, the pseudo-code of the
+FVB-AEKF for DOA tracking using UCA at one time step is
+given in Algorithm 2.
+B. Computational Load Analysis of the VB-AEKF
+According to Algorithm 2, the number of computations of
+all calculation steps in one time step of the FVB-AEKF for
+DOA tracking is derived in Table III. Thus, the total number
+of computations of the FVB-AEKF for DOA tracking at one
+time step is given as follows:
+
+
+
+FLOPA = N(2a2b+2ab2+3.5b3−2ab−2.5b2+14b−1)
++NH(2a2b + 2ab2 −2ab −b2) + 3a3 + 3a2b
++2ab2 + 0.5b3 −a2 −2ab −0.5b2 −a + 5b
+FLOPM = N(2a2b + 2ab2 + 3.5b3 + 2.5b2 + 19b + 6)
++NH(2a2b+2ab2)+3a3+3a2b + 2ab2 + 0.5b3
++2a2 + ab + 4.5b2 + a + 5b + 1
+FLOPD = b2 + N(2 + b2)
+FLOPSR = (N + 1)b
+FLOPT = 3b + 4NHb
+(25)
+where NH denotes the iterations number of H(i)
+k . Setting
+the element number and the iteration number to 12 and 10,
+respectively, we have a = 2, b = 12, and NH ≤N = 10.
+By substituting them into (7) and (25), the total number of
+computations of the VB-AEKF and the FVB-AEKF for DOA
+tracking are compared in Table IV.
+Table IV shows that although the number of FLOPAs
+and FLOPMs of the FVB-AEKF is greater than that of the
+VB-AEKF, the number of FLOPTs of the FVB-AEKF is less
+than that of the VB-AEKF, while the number of FLOPDs
+and FLOPSRs of VB-AEKF and FVB-AEKF are almost the
+same. Since computers utilize the Taylor expansion to operate
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+14714
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+TABLE III
+FLOPS OF THE VB-AEKF FOR DOA TRACKING
+TABLE IV
+COMPARISON OF THE FLOPS FOR THE VB-AEKF AND THE VB-AEKF
+FOR DOA TRACKING
+trigonometric functions, the FLOPTs carry out much more
+computational load than the basic operations FLOPA, FLOPM,
+and FLOPD. Therefore, compared with the VB-AEKF, the
+FVB-AEKF for DOA tracking significantly improves com-
+putational efficiency. This conclusion will be verified by the
+results of simulations and an experiment in the following
+sections.
+V. SIMULATIONS
+In this section, comprehensive simulations were carried out
+to verify the superiority of the proposed FVB-AEKF for DOA
+tracking in terms of robustness and computational efficiency.
+A. Simulation Scenario
+In the simulations, an underwater target was assumed to per-
+form in CV motion mode with the initial state x0 = [90, 0.02],
+and the process noise covariance matrix was 2 × 10−4◦/s2.
+The total simulation time was set to 5000 s with a 1 s
+interval. Then, the bearing angles of the target are simulated
+by using (1).
+Furthermore, for the measurement model, the frequency f ,
+amplitude a, and the initial phase φ0 of the target signal
+were 170 Hz, 1, and 0, respectively, and the sampling fre-
+quency of the received signal fs was 1000 Hz. A 12-element
+UCA was used to obtain the measurements. The underwater
+sound velocity c was assumed to be 1500 m/s.
+In order to test the robustness of the FVB-AEKF to the
+unknown measurement noise caused by the unknown under-
+water environment, a strong Gaussian white noise was added
+from 3600 to 4000 s of the measurements. Once the MNCM
+Rk during the period without the strong noise was set to I Pσ 2
+r ,
+Rk at all steps was expressed as
+Rk =
+(
+I Pσ 2
+r ,
+0 ≤k < 3600, 4000 < k ≤5000
+10I Pσ 2
+r ,
+3600 ≤k ≤4000
+(26)
+σ 2
+r
+was set to 0.25 and then the measurement data were
+simulated by using (5).
+The proposed FVB-AEKF for DOA tracking given by
+Algorithm 2 was tested by the simulated measurement data.
+The results of the conventional beamforming (CBF)-based
+DOA estimation [1], the standard EKF, the SH-AEKF for
+DOA tracking [7], and the VB-AEKF for DOA tracking [23]
+given by Algorithm 1 were also given for comparison. The
+scanning bearing angle of the CBF varies every 1◦from 0◦to
+360◦. The state estimate of EKF, VB-AEKF, and FVB-AEKF
+were initialized to ˆx0 = [ ˆθ0
+CBF, 0], where ˆθ0
+CBF was the bearing
+angle estimated by using CBF at k = 0. Pk|k was initialized
+to P0 = diag([5, 0.01]). The process noise covariance matrix
+Q for EKF, SH-AEKF, VB-AEKF, and FVB-AEKF were all
+set to 2 × 10−4◦/s2. The MNCM of EKF was set to I P.
+The initial estimate of the MNCM and the forgetting factor
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 7 =====
+ZHANG et al.: FVB-AEKF FOR ROBUST UNDERWATER DIRECTION-OF-ARRIVAL TRACKING
+14715
+Algorithm 2 One Time Step of the Proposed FVB-AEKF
+Based DOA Tracking Using UCA
+Inputs: ˆxk−1|k−1, Pk−1|k−1, zk, ˆuk−1|k−1, ˆUk−1|k−1, Qk−1,
+ρ, N.
+Time update
+1. ˆxk−1|k−1 = Fk−1|k−1 ˆxk−1|k−1.
+2. Pk|k−1 = Fk|k−1 Pk−1|k−1FT
+k|k−1 + Gk QkGT
+k .
+3. ˆuk−1|k−1 = ρ(ˆuk−1|k−1 −n −1) + n + 1, ˆUk−1|k−1 =
+ρ ˆUk−1|k−1.
+Iteration measurement update
+4. Initialization: ˆx(0)
+k|k = ˆxk|k−1, ˆR
+(0)
+k
+= ˆUk|k−1/ˆuk|k−1.
+5. Calculate ˆsk|k−1 (k) and h(ˆxk|k−1).
+6. Calculate Hk|k−1
+7. H(0)
+k
+= Hk|k−1.
+8.
+˜P
+zz
+k|k−1 = (zk −h(ˆxk|k−1))(zk −h(ˆxk|k−1))T.
+For i = 0 : N −1
+Update q(i+1)(Rk) = IW(Rk; ˆu(i+1)
+k|k
+, ˆU
+(i+1)
+k|k
+If ε =
+H(i)
+k −H(i−1)
+k
+
+2 < δ
+9. D(i)
+k
+= D(i−1)
+k
+, D(i)
+k
+and H(i)
+k
+will not be updated in
+following iterations.
+Else
+10. Calculate ˆs(i)
+k|k(k) and H(i)
+k .
+11. D(i)
+k
+= H(i)
+k Pk|k−1(H(i)
+k )T −Hk|k−1 Pk|k−1HT
+k|k−1.
+End if
+12.
+˜R
+(i)
+k
+= D(i)
+k + ˆR
+(i)
+k ,
+13. Pzz(i+1)
+k|k−1
+= Hk|k−1 Pk|k−1HT
+k|k−1 + ˜R
+(i)
+k ,
+14. C(i+1)
+k
+= ˜R
+(i)
+k (Pzz(i+1)
+k|k−1 )−1,
+15. 1R(i+1)
+k
+= C(i+1)
+k
+( ˜P
+zz
+k|k−1 −Pzz(i+1)
+k|k−1 )(C(i+1)
+k
+)T,
+16. B(i+1)
+k
+= ˜R
+(i)
+k + 1R(i+1)
+k
+,
+17.
+ˆU
+(i+1)
+k|k
+=
+ˆ
+Uk|k−1 + B(i+1)
+k
+, ˆu(i+1)
+k|k
+= ˆuk|k−1 + 1,
+18.
+ˆR
+(i+1)
+k
+= ˆU
+(i+1)
+k|k
+/ˆu(i+1)
+k|k
+.
+End for
+19.
+ˆRk = ˆR
+(N)
+k
+, ˆuk|k = ˆu(N)
+k|k , ˆUk|k = ˆU
+(N)
+k|k .
+Update q(xk) = N(xk; xk|k, Pk|k)
+20. K k = Pk|k−1HT
+k|k−1(Hk|k−1 Pk|k−1HT
+k|k−1 + ˆRk)−1,
+21. ˆxk|k = ˆxk|k + K k(zk −h(ˆxk|k−1)),
+22. Pk|k = Pk|k−1 −K k Hk|k−1 Pk|k−1.
+Outputs: ˆxk|k, Pk|k, ˆuk|k, ˆUk|k.
+for the SH-AEKF was set to I P and 0.9999, respectively.
+For the VB-AEKF and FVB-AEKF, the dof ˆu0 and the
+inverse scale matrix ˆU0 of the inverse Wishart distribution
+were set to 16 and 16I P, respectively, and the forgetting
+factor ρ was set to 0.9975. The VB iteration number was
+set to 10.
+In order to statistically evaluate the performance of the
+FVB-AEKF, 500 Monte Carlo simulations were performed on
+a PC configured with an Intel Core i7-9700F CPU (at 3.0 GHz)
+and a RAM of 16 GB. The root mean square error (RMSE)
+for the DOA tracking results at time step k was defined as
+RMSEθ =
+v
+u
+u
+t 1
+N
+N
+X
+n=1
+( ˆθk,n −θk)2
+(27)
+where N is the total number of the Monte Carlo trials, ˆθk,n is
+the bearing angle estimate of the target in the nth trail, θk is
+the true bearing angle of the target.
+To evaluate the precision of the FVB-AEKF in total time,
+the average RMSE for the DOA tracking results in total time
+was defined as:
+RMSEθ =
+v
+u
+u
+t 1
+K N
+K
+X
+k=1
+N
+X
+n=1
+( ˆθk,n −θk)2
+(28)
+where K is the total number of the time steps. A less RMSE
+represents a higher precision of the DOA tracking.
+B. Verification of VB-AEKF and FVB-AEKF
+1) Bearing Angle Estimate Results: The bearing angle track-
+ing results of the FVB-AEKF for DOA tracking are shown in
+Fig. 2. The results of the CBF, the EKF, the SH-AEKF, and
+the VB-AEKF are also shown in Fig. 2 for comparison.
+Fig. 2 shows that the performance of the CBF was accept-
+able when the measurement noise was weak and station-
+ary. However, the CBF was invalid during the strong noise
+from 3600 to 4000 s due to its excessive reliance on the present
+measurement. The trajectory obtained by the DOA tracking
+methods EKF, SH-AEKF, VB-AEKF, and FVB-AEKF fluc-
+tuated in the beginning and stabilized after about 1000 s,
+which means these algorithms converged after 1000 s. The
+time for stabilization cost by these DOA tracking methods is
+acceptable in the application. The reason is that some errors
+existed in the initial state estimate ˆx0 and the mean square
+error matrix P0, which affect the tracking performance at the
+beginning. After these methods were performed for a period
+of time, the error was gradually eliminated by the correction
+of the new measurements. The precision of the EKF was
+higher than that of the CBF-based DOA estimation after the
+algorithm converged. Furthermore, since EKF considers the
+kinematic model of the underwater target, the EKF provided
+valid tracking even from 3600 to 4000 s. The SH-AEKF is less
+affected by the strong noise because it provides more accurate
+Kalman filter gains due to the estimation of the MNCM,
+which can significantly improve the tracking performance. The
+tracking path of the FVB-AEKF was largely consistent with
+the VB-AEKF since the FVB-AEKF is another mathematical
+expression of the VB-AEKF. Moreover, the VB-AEKF and the
+FVB-AEKF provided the most high-precision tracking. The
+reason is that the VB-AEKF and the FVB-AEKF give the prior
+distribution of MNCM, and uses the VB iteration method to
+jointly estimate the MNCM and the target state, which improve
+the accuracy of MNCM estimation.
+2) RMSE Analysis: In order to statistically evaluate the
+performance of the proposed FVB-AEKF, Monte Carlo sim-
+ulations were carried out. The RMSEs of the bearing angle
+estimates and the run time of the methods are given and
+analyzed. Fig. 3(a) shows the RMSEs of the bearing angle
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 8 =====
+14716
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+Fig. 2. Bearing angle tracking results of (a) CBF, (b) EKF, (c) SH-AEKF, (d) VB-AEKF, and (e) FVB-AEKF.
+TABLE V
+AVERAGE RMSES AND MEANS OF THE RUN TIME IN ONE TIME STEP
+OF THE CBF, EKF, VB-AEKF, AND FVB-AEKF
+estimates of the FVB-AEKF at all time steps, and Fig. 3(b)
+gives the partially magnified results for details. Table V shows
+the average RMSEs and the mean of the run time in one
+time step. The results of the CBF, the EKF, SH-AEKF, and
+VB-AEKF are also given for comparison.
+Fig. 3 and the average RMSEs results in Table V show
+that similar to the conclusion in the previous subsection, the
+DOA tracking methods EKF, VB-AEKF, and FVB-AEKF
+converged after a period of time. The tracking precision of
+SH-AEKF is superior to that of EKF. The VB-AEKF and
+the FVB-AEKF provide the most high-precision tracking even
+during the existence of the strong noise, while the CBF was
+invalid during this time. The superior performance of the
+proposed VB-AEKF and the FVB-AEKF was verified again.
+Table V also shows that the CBF cost the longest time
+because it needs to scan all bearing angles in space. The EKF
+cost the least time because of its simple computation. Since the
+SH-AEKF cost time to estimate the MNCM, the runtime of it
+was longer than EKF. The VB-AEKF cost more time than EKF
+and SH-AEKF because of its iteration process. The run time of
+the FVB-EKF decreased by 65% compared to the VB-AEKF.
+The reason is that the FVB-AEKF significantly reduces the
+computations of the FLOPs of trigonometric functions with
+high computational complexity. What is more, the tracking
+Fig. 3.
+RMSEs of (a) CBF and (b) EKF, SH-AEKF, VB-AEKF, and
+FVB-AEKF at all time steps.
+performance of the VB-AEKF and the FVB-AEKF were
+almost the same. The superiority of FVB-AEKF in terms of
+computational efficiency and precision was then verified. The
+conclusion above is consistent with the theoretical analysis in
+Section IV. In addition, it should be noticed that, although the
+FVB-EKF cost more time than EKF and SH-AEKF, FVB-EKF
+provided more accurate tracking than EKF and SH-AEKF.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 9 =====
+ZHANG et al.: FVB-AEKF FOR ROBUST UNDERWATER DIRECTION-OF-ARRIVAL TRACKING
+14717
+Fig. 4.
+Configuration of the underwater buoy system. (a) Photograph
+of the underwater buoy system. (b) Configuration of the UCA and the
+compass system.
+VI. EXPERIMENTAL RESULTS
+A. Experimental Setup and Description
+The data from an acoustic experiment in the South China
+Sea in July 2021 was used to test the FVB-AEKF. An acoustic
+signal emission system fixed on a ship that consists of a
+signal generator, a power amplifier, and an acoustic emission
+transducer was considered as a target. The signal generator
+and the power amplifier were deployed on the board and the
+acoustic emission transducer was placed 3 m under the sea
+surface. The electric signal output by the signal generator
+was amplified by the power amplifier and then transduced
+to the acoustic signal by the acoustic emission transducer.
+The ship equipped with the acoustic signal emission sys-
+tem kept moving when an acoustic signal at 170 Hz was
+emitted continuously for 7 500 s with a sound source level
+of 145 dB.
+An underwater buoy system shown in Fig. 4(a) was placed
+at 20 m under the sea surface before the experiment. The
+distance from it to the acoustic signal emission system satisfied
+the far-field assumption. A uniform circular hydrophone array
+with a radius of 1 m with 12 elements and a digital acquisition
+system was fixed on the underwater buoy. Elements 1 to
+12 were placed counterclockwise around the periphery of the
+circle. Considering the underwater buoy system rotated with
+the waves, a compass system was fixed on it as shown in
+Fig. 4(b) to measure the bearing of hydrophone 1 to offset
+the rotation angle. In Fig. 4(b), the rectangle represents the
+compass system, and ϕ (measured clockwise with respect
+to the north) represents the bearing of element 1. During
+emitting the acoustic signal, the digital acquisition system
+sampled the output of the circular hydrophone array at a
+frequency of 8 192 Hz and the compass system measured
+the bearing angles of hydrophone 1 every second. The sound
+TABLE VI
+ABEES OF THE CBF, EKF, SH-AEKF, VB-AEKF, AND FVB-AEKF
+velocity was measured to be constant at 1544 m/s at the depth
+from 0 to 20 m with a conductivity, temperature, depth (CTD)
+profiler before the experiment.
+In order to provide the true bearing angle of the target rela-
+tive to the circular hydrophone array for reference, the acoustic
+signal emission system and the underwater buoy system were
+equipped with Global Positioning Systems (GPS). The GPSs
+recorded the locations of the acoustic signal emission system
+and the underwater buoy system every second. Considering the
+bearing angle of the target is measured clockwise with respect
+to the north, the bearing angle trajectory is calculated by the
+GPS data.
+B. Comparison of CBF, EKF, VB-AEKF, and FVB-AEKF
+for DOA Tracking
+The VB-AEKF and the FVB-AEKF were tested using
+the experimental data of all 7 500 s. The CBF-based DOA
+estimation, the EKF, SH-AEKF, VB-AEKF, and FVB-AEKF
+were also carried out for comparison. The parameters are set to
+be the same as those in the simulation. In order to numerically
+compare the precision of the bearing angle estimation, the
+bearing angle estimation error (BEE) and the averaged BEE
+(ABEE) were defined as the performance metrics, which are
+given as follows:
+BEE (k) =
+ ˆθk −θGPS
+k
+
+(29)
+ABEE (k) =
+v
+u
+u
+t 1
+K
+K
+X
+k=1
+
+ˆθk −θGPS
+k
+2
+(30)
+where ˆθk is the bearing angle estimate at time k and θGPS
+k
+is
+the true bearing angle obtained by the GPS data.
+The trajectories obtained by the CBF, EKF, SH-AEKF,
+VB-AEKF, and FVB-AEKF are shown in Fig. 5(a). The
+BEEs and the ABEEs are shown in Fig. 5(b) and Table VI,
+respectively. Specifically, considering the complexity of the
+actual underwater environment, the CBF obtained bearing
+angles every 10 s by using ten measurements as snapshots for a
+higher precision [7]. However, this higher precision is obtained
+at the expense of the real-time tracking capability. In order
+to further test the robustness of the proposed FVB-AEKF to
+unknown measurement noise, a period of Gaussian noise with
+the covariance of 2I P was added to the raw measurement data
+from 2600 to 3000 s, and then the methods were tested again.
+The results are shown in Fig. 5(c) and (d) and Table VI. The
+black dotted lines in Fig. 5(c) and (d) denote the beginning
+and ending times of the added noise.
+Fig. 5(a) and (b) show that the trajectories obtained by
+all methods using raw experimental data fluctuated around
+the true trajectory due to the effect of the underwater envi-
+ronmental noise. Fig. 5(a) and (b) and Table VI shows
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 10 =====
+14718
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+Fig. 5.
+Experimental results of CBF-based DOA estimation, EKF, SH-AEKF, VB-AEKF, and FVB-AEKF. (a) Trajectories obtained using raw data.
+(b) BEEs obtained using raw data. (c) Trajectories obtained using the data with added noise. (d) BEEs obtained using the data with added noise.
+that the VB-AEKF and the FVB-AEKF provided the most
+accurate tracking of all the methods. The reason is that the
+VB-AEKF and the FVB-AEKF not only predict the bear-
+ing angle of the target using the kinematic model of the
+underwater target but also accurately estimate the MNCMs.
+The tracking precision of SH-AEKF is lower than VB-AEKF
+and FVB-AEKF because the VB iteration process pro-
+vided more accurate MNCMs than the Sage-Husa algorithm.
+The trajectory obtained by the EKF fluctuated more than
+SH-AEKF, VB-AEKF, and FVB-AEKF due to the mismatch-
+ing between the known and stationary MNCM assumption
+and the actual unknown and unstable MNCM. The CBF-based
+DOA estimation provided the trajectory with the largest error
+because of ignoring the kinematic information of the under-
+water target.
+The trajectories obtained using the data with added noise
+given in Fig. 5(c) and (d) show a similar conclusion to
+the above. Furthermore, the VB-AEKF and FVB-AEKF still
+provided robust tracking even after the added noise presented,
+while the performance of the EKF and the CBF-based DOA
+estimation obviously degraded. The performance of SH-AEKF
+is also slightly affected by the added noise, but the preci-
+sion of SH-AEKF is lower than VB-AEKF and FVB-AEKF.
+The ABEEs obtained using the data with added noise given
+in Table VI show the superiority of the VB-AEKF and
+FVB-AEKF in the precision again.
+The run time in the one time step of the CBF-based DOA
+estimation, the EKF, the VB-AEKF, and the FVB-AEKF are
+shown in Table VII. The run time of the FVB-EKF decreased
+by half compared to the VB-AEKF in both the process of
+the raw data and that of the data with added noise. This
+TABLE VII
+RUN TIMES IN ONE TIME STEP OF CBF, EKF, SH-AEKF,
+VB-AEKF, AND FVB-AEKF
+shows once again that the FVB-EKF can provide higher
+computational efficiency than VB-EKF while the performance
+loss introduced by replacing the VB-AEKF with the FVB-EKF
+can be ignored. The EKF and SH-AEKF cost less time than
+the FVB-EKF, but provide DOA trajectories with larger errors.
+Thus, FVB-AEKF shows superiority in terms of robustness
+and precision.
+VII. CONCLUSION
+The robust underwater DOA tracking with a nonlinear
+measurement model in the scenario of unknown measure-
+ment noise is studied in this article. First, for the sake of
+accurate tracking and minimum underwater acoustic resource
+utilization, the kinematic model of the underwater target by
+bearing angle and the nonlinear measurement model based
+on the received signal of a UCA are designed. Then, based
+on the determined model, the algorithm of VB-AEKF for
+robust underwater DOA tracking with unknown measurement
+noise is given. Finally, by deriving the equivalent process with
+less computations of VB-AEKF, the FVB-AEKF for DOA
+tracking with nonlinear and high-dimensional measurement is
+proposed. The FVB-AEKF improves computational efficiency
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 11 =====
+ZHANG et al.: FVB-AEKF FOR ROBUST UNDERWATER DIRECTION-OF-ARRIVAL TRACKING
+14719
+while tracking accuracy is ensured. The simulations and the
+experiment verified the superior tracking performance and the
+high efficiency of the FVB-AEKF in underwater DOA tracking
+scenarios. It is believed that the proposed FVB-AEKF has
+significant potential in real-time underwater DOA tracking
+missions.
+APPENDIX
+The estimate of the signal ˆs(i)
+k|k(k) is obtained by using the
+ML approach as [5]
+ˆs(i)
+k|k(k) =
+
+AH 
+θ(i)
+k|k
+
+A
+
+θ(i)
+k|k
+−1
+AH 
+θ(i)
+k|k
+
+Hilbert (z (k))
+(31)
+where A(θ(i)
+k|k) is the array manifold vector given by (6),
+(·)H and Hilbert(·) denote the conjugate transposition and the
+Hilbert transform, respectively.
+The estimate of the measurement function h(ˆx(i)
+k|k) is given
+by
+h(ˆx(i)
+k|k) = real(A(θ(i)
+k|k)ˆs(i)
+k|k(k))
+where real(·) denotes the real part.
+The Jacobian matrix of the measurement function, H(i)
+k ,
+is given by [7]
+H(i)
+k
+=
+∂h
+
+ˆx(i)
+k|k
+
+∂ˆx(i)
+k|k
+=
+
+
+∂h
+
+ˆx(i)
+k|k
+
+∂ˆθ(i)
+k|k
+, 0
+
+=
+ h′
+1, h′
+2 . . . h′
+P
+0, 0, . . . , 0
+T
+.
+(32)
+The element of the matrix h′
+p(p = 1, 2, . . . , P) is expressed
+as
+h′
+p = −2π f r/c sin
+
+ˆθ(i)
+k|k −2πp/P
+
+real
+
+j Ap
+
+ˆθ(i)
+k|k
+
+ˆs(i)
+k
+
+.
+(33)
+REFERENCES
+[1] B. D. Van Veen and K. M. Buckley, “Beamforming: A versatile approach
+to spatial filtering,” IEEE ASSP Mag., vol. ASSP-5, no. 2, pp. 4–24,
+Apr. 1988.
+[2] Y. D. Zhang, M. G. Amin, and B. Himed, “Sparsity-based DOA
+estimation using co-prime arrays,” in Proc. IEEE Int. Conf. Acoust.,
+Speech Signal Process., May 2013, pp. 3967–3971.
+[3] F. Yan, M. Jin, and X. Qiao, “Low-complexity DOA estimation based on
+compressed MUSIC and its performance analysis,” IEEE Trans. Signal
+Process., vol. 61, no. 8, pp. 1915–1930, Apr. 2013.
+[4] R. Cao, B. Liu, F. Gao, and X. Zhang, “A low-complex one-snapshot
+DOA estimation algorithm with massive ULA,” IEEE Commun. Lett.,
+vol. 21, no. 5, pp. 1071–1074, May 2017.
+[5] D. Kong and J. Chun, “A fast DOA tracking algorithm based on
+the extended Kalman filter,” in Proc. IEEE Nat. Aerosp. Electron.
+Conference. (NAECON), Oct. 2000, pp. 235–238.
+[6] M. Orton and W. Fitzgerald, “A Bayesian approach to tracking multiple
+targets using sensor arrays and particle filters,” IEEE Trans. Signal
+Process., vol. 50, no. 2, pp. 216–223, Aug. 2002.
+[7] B. Zhang, X. Hou, and Y. Yang, “Robust underwater direction-of-arrival
+tracking with uncertain environmental disturbances using a uniform
+circular hydrophone array,” J. Acoust. Soc. Amer., vol. 151, no. 6,
+pp. 4101–4113, Jun. 2022.
+[8] A.-A. Saucan, T. Chonavel, C. Sintes, and J.-M. Le Caillec, “CPHD-
+DOA tracking of multiple extended sonar targets in impulsive environ-
+ments,” IEEE Trans. Signal Process., vol. 64, no. 5, pp. 1147–1160,
+Mar. 2016.
+[9] A. Masnadi-Shirazi and B. D. Rao, “A covariance-based superpositional
+CPHD filter for multisource DOA tracking,” IEEE Trans. Signal Pro-
+cess., vol. 66, no. 2, pp. 309–323, Jan. 2018.
+[10] G. Li, P. Wei, Y. Li, and Y. Chen, “A labeled multi-Bernoulli filter for
+multisource DOA tracking,” in Proc. Int. Conf. Control, Autom. Inf. Sci.
+(ICCAIS), Chengdu, China, Oct. 2019, pp. 1–6.
+[11] J. Zhao, R. Gui, and X. Dong, “A new measurement association mapping
+strategy for DOA tracking,” Digit. Signal Process., vol. 118, Nov. 2021,
+Art. no. 103228.
+[12] S. K. Rao, K. R. Rajeswari, and K. S. Lingamurty, “Unscented Kalman
+filter with application to bearings-only target tracking,” IETE J. Res.,
+vol. 55, no. 2, pp. 63–67, Sep. 2009.
+[13] P. H. Leong, S. Arulampalam, T. A. Lamahewa, and T. D. Abhayapala,
+“A Gaussian-sum based cubature Kalman filter for bearings-only track-
+ing,” IEEE Trans. Aerosp. Electron. Syst., vol. 49, no. 2, pp. 1161–1176,
+Apr. 2013.
+[14] A. P. Sage and G. W. Husa, “Adaptive filtering with unknown prior
+statistics,” in Proc. Joint Autom. Control Conf., 1969, pp. 760–769.
+[15] D. Huang, H. Leung, and N. El-Sheimy, “Expectation maximization
+based GPS/INS integration for land-vehicle navigation,” IEEE Trans.
+Aerosp. Electron. Syst., vol. 43, no. 3, pp. 1168–1177, Jul. 2007.
+[16] Y. Huang, Y. Zhang, B. Xu, Z. Wu, and J. A. Chambers, “A new
+adaptive extended Kalman filter for cooperative localization,” IEEE
+Trans. Aerosp. Electron. Syst., vol. 54, no. 1, pp. 353–368, Feb. 2018.
+[17] C. M. Bishop, Pattern Recognition and Machine Learning. Berlin,
+Germany: Springer, 2007.
+[18] G. H. Golub and C. F. Van Loan, Matrix Computations. Baltimore, MD,
+USA: Johns Hopkins Univ. Press, 2013.
+[19] S. Sarkka and A. Nummenmaa, “Recursive noise adaptive Kalman
+filtering by variational Bayesian approximations,” IEEE Trans. Autom.
+Control, vol. 54, no. 3, pp. 596–600, Mar. 2009.
+[20] S. Särkkä Jouni Hartikainen, “Variational Bayesian adaptation of noise
+covariances in non-linear Kalman filtering,” 2013, arXiv:1302.0681.
+[21] Y. Huang, Y. Zhang, Z. Wu, N. Li, and J. Chambers, “A novel adaptive
+Kalman filter with inaccurate process and measurement noise covariance
+matrices,” IEEE Trans. Autom. Control, vol. 63, no. 2, pp. 594–601,
+Feb. 2018.
+[22] G. Xu, Y. Huang, Z. Gao, and Y. Zhang, “A computationally efficient
+variational adaptive Kalman filter for transfer alignment,” IEEE Sensors
+J., vol. 20, no. 22, pp. 13682–13693, Nov. 2020.
+[23] X. Hou, Y. Qiao, B. Zhang, and Y. Yang, “Robust underwater direction-
+of-arrival tracking based on variational Bayesian extended Kalman
+filter,” JASA Exp. Lett., vol. 3, no. 1, Jan. 2023, Art. no. 014801.
+[24] Z. Ye, L. Xiang, and X. Xu, “DOA estimation with circular array via
+spatial averaging algorithm,” IEEE Antennas Wireless Propag. Lett.,
+vol. 6, pp. 74–76, 2007.
+[25] Y. Hao, N. Zou, L. Qiu, C. Li, Y. Wang, and G. Liang, “Spatial rotation-
+based direction-of-arrival estimation for uniform circular hydrophone
+array,” Appl. Acoust., vol. 178, Jul. 2021, Art. no. 107945.
+[26] K. D. Ikramov and N. V. Savel’eva, “Conditionally definite matrices,”
+J. Math. Sci., vol. 98, no. 1, pp. 1–50, Jan. 2000.
+Boxuan Zhang received the B.S. and M.S.
+degrees
+in
+underwater
+acoustic
+engineer-
+ing from Northwestern Polytechnical University
+(NPU), Xi’an, China, in 2016 and 2018, respec-
+tively, where he is currently pursuing the Ph.D.
+degree in underwater acoustic engineering with
+the School of Marine Science and Technology.
+His research interests include array signal pro-
+cessing and target tracking.
+Xianghao Hou received the B.S. degree in
+detection,
+guidance
+and
+control,
+the
+M.S.
+degree in guidance, navigation, and control,
+and the Ph.D. degree in aerospace engineer-
+ing from Northwestern Polytechnical University
+(NPU), Xi’an, China, in 2012, 2015, and 2019,
+respectively.
+From 2019 to 2021, he was a Postdoc-
+toral Fellow with Harbin Engineering University,
+Harbin, China. He is currently an Associate Pro-
+fessor with NPU. His research interests include
+information fusion and target tracking.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 12 =====
+14720
+IEEE SENSORS JOURNAL, VOL. 23, NO. 13, 1 JULY 2023
+Yixin Yang (Member, IEEE) received the B.S.
+degree in applied electronic engineering and the
+M.S. and Ph.D. degrees in underwater acous-
+tic engineering from Northwestern Polytechnical
+University (NPU), Xi’an, China, in 1997, 1999,
+and 2002, respectively.
+From June 2002 to June 2004, he was a
+Research Fellow with the School of Electrical
+and Electronic Engineering, Nanyang Techno-
+logical University, Singapore. Since July 2004,
+he has been with the School of Marine Science
+and Technology, NPU, where he became a Professor in 2006. He is cur-
+rently the Vice President of NPU. His research interests include acoustic
+array signal processing, spectral estimation, and their applications.
+Dr. Yang is also the Chair of the Underwater Acoustics Committee of
+the Acoustical Society of China and a member of the Acoustical Society
+of America.
+Long
+Yang
+received
+the
+B.S.
+degree
+in
+electronic engineering and the Ph.D. degree
+in
+underwater
+acoustic
+engineering
+from
+Northwestern Polytechnical University (NPU),
+Xi’an, China, in 2011 and 2017, respectively.
+From 2017 to 2020, he was a Postdoctoral
+Fellow with Xidian University, Xi’an. He is
+currently an Associate Professor with NPU.
+His
+research
+interests
+include
+adaptive
+beamforming and direction-of-arrival estimation.
+Yong Wang (Member, IEEE) received the B.S.
+degree in applied electronic engineering and the
+M.S. and Ph.D. degrees in underwater acous-
+tic engineering from Northwestern Polytechnical
+University (NPU), Xi’an, China, in 2009, 2011,
+and 2015, respectively.
+From 2016 to 2017, he was a Postdoctoral
+Fellow with Xi’an Jiaotong University, Xi’an.
+He is currently an Associate Professor with the
+School of Marine Science and Technology, NPU.
+His research interests include array signal pro-
+cessing, parameter estimation, target recognition, and sonar signal
+processing.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:34 UTC from IEEE Xplore.  Restrictions apply. 

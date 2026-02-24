@@ -1,0 +1,3535 @@
+
+
+===== PAGE 1 =====
+Robust DOA Tracking of an
+Underwater Target in
+Non-Gaussian and
+Nonstationary Environmental
+Noise
+XIANGHAO HOU
+YUXUAN CHEN
+WEISI HUA
+YIXIN YANG
+, Member, IEEE
+Northwestern Polytechnical University, Xi’an, China
+Shaanxi Key Laboratory of Underwater Information Technology, Xi’an,
+China
+Xi’an Research Center, Xi’an, China
+Estimating the direction of arrival (DOA) of underwater targets
+using hydrophone array signals is a key research issue in the ﬁeld
+of underwater acoustic signal processing. The strong nonlinearity
+of array signal models, the high-dimensionality of multisnapshot
+sonar acoustic vector (SAV) measurements, and the non-Gaussian
+and nonstationary noise in complex underwater environments make
+continuous and robust DOA tracking a signiﬁcant challenge. To ad-
+dress this challenge, this article proposes a robust DOA tracking
+algorithm for underwater targets in non-Gaussian and nonstation-
+ary noise environments. First, by applying the central limit theo-
+rem, the high-dimensional non-Gaussian SAV measurements are re-
+duced to a 1-D innovation measurement that, under sufﬁcient sample
+Received 5 March 2025; revised 5 June 2025; accepted 30 June 2025. Date
+of publication 4 July 2025; date of current version 8 December 2025.
+DOI. No. 10.1109/TAES.2025.3585897
+Refereeing of this contribution was handled by Y. Huang.
+This work was supported in part by the National Natural Science Founda-
+tion of China under Grant 62431023, in part by the Stable Supporting Fund
+of National Key Laboratory of Underwater Acoustic Technology under
+Grant JCKYS2023604SSJS010, and in part by the Shanghai Aerospace
+Science and Technology Innovation Foundation under Grant SAST2022-
+011.
+Authors’ addresses: Xianghao Hou, Yuxuan Chen, Weisi Hua, and
+Yixin Yang are with the School of Marine Science and Technol-
+ogy, Northwestern Polytechnical University, Xi’an 710072, China,
+also with the Shaanxi Key Laboratory of Underwater Information
+Technology, Xi’an 710072, China, and also with the Hanjiang Na-
+tional Laboratory, Xi’an Research Center, Xi’an 710072, China, E-
+mail: (Houhouxianghao1990@nwpu.edu.cn; crainx@mail.nwpu.edu.cn;
+huaweisi@mail.nwpu.edu.cn; yxyang@nwpu.edu.cn). (Corresponding
+author: Yixin Yang.)
+0018-9251 © 2025 IEEE
+conditions, can be approximated as a Gaussian distribution. This
+Gaussian innovation serves as the measurement input for the ﬁl-
+tering process, thereby simplifying the treatment of complex, high-
+dimensional, and non-Gaussian noise in the SAV-based DOA track-
+ing algorithm. Next, a variational Bayesian method with multiprior
+constraints dynamically infers innovation measurement distribution
+parameter to handle nonstationarity. Finally, particle swarm opti-
+mization is applied to mitigate particle depletion and enhance ﬁltering
+performance. Simulations and South China Sea data (July 2021)
+validate that the algorithm signiﬁcantly outperforms conventional
+methods in robustness and accuracy under complex noise conditions.
+I.
+INTRODUCTION
+A.
+Background and Key Issues
+Accurate and continuous estimation of the direction
+of arrival (DOA) of underwater targets is crucial for both
+maritime defense and marine development [1], [2]. How-
+ever, factors, such as ﬂuctuating oceanic noise, random
+strong interference, and the low signal-to-noise ratio (SNR),
+negatively impact the accuracy and robustness of under-
+water target estimation [3], [4]. Consequently, the stable
+and continuous DOA of underwater targets in complex
+marine environments remains a key research challenge in
+underwater acoustic engineering. Currently, there are two
+main approaches for estimating the DOA of targets. The
+ﬁrst approach is DOA estimation based on array signal
+processing techniques, such as beamforming [5], [6], [7],
+[8]. This method provides good estimation results when the
+environment is relatively stable, and the number of snap-
+shots is sufﬁcient [5]. However, its performance deterio-
+rates signiﬁcantly in underwater environments with the low
+SNR. The second approach involves DOA tracking using
+Bayesian ﬁltering, combined with target motion informa-
+tion. Within this approach, two technical paradigms exist.
+The ﬁrst method processes the sonar acoustic vector (SAV)
+using traditional DOA estimation to obtain the target’s
+bearing angle, which is then used as an input to a Bayesian
+ﬁlter to track the DOA [9], [10], [11]. Although effective,
+this method requires two steps, signiﬁcantly increasing
+computational cost, and its accuracy is heavily dependent
+on the performance of the DOA estimation algorithm. The
+second method directly uses target motion information and
+output signals from a passive sonar array as measurements
+[12], [13], [14], [15], [16], [17], [18], [19], [20], [21], [22],
+[23], [24], [25]. This approach, by directly utilizing SAV
+signals, can capture more information and enable accurate
+and stable tracking of the target’s bearing angle. However,
+when passive sonar measurements have high dimensional-
+ity, and the underwater environmental noise is nonstationary
+and non-Gaussian [26], [27], [28], [29], [30], the accuracy
+of underwater target DOA tracking based on SAV signals
+is compromised, potentially leading to divergence of the
+tracking results. Therefore, the key technical challenge in
+achieving accurate and reliable DOA tracking of underwa-
+ter targets is addressing the impact of strong nonlinear-
+ity in the model and the nonstationary and non-Gaussian
+characteristics of the measurement noise on tracking
+accuracy.
+15412
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+B.
+Overview of Related Methods
+In SAV-based target DOA tracking systems, the array
+measurements, which contain the target’s bearing angle
+information, exhibit strong nonlinear characteristics. There-
+fore, a nonlinear Bayesian ﬁltering framework is required
+to process these measurements. Several algorithms have
+been proposed for nonlinear ﬁltering. The most widely used
+method, the extended Kalman ﬁlter (EKF) [12], [15], [16],
+[17], [19], linearizes the nonlinear state and observation
+model through a ﬁrst-order Taylor expansion, converting
+the nonlinear ﬁltering problem into a linear one. However,
+when the nonlinearity is strong, the error propagation and
+covariance matrix updates in the EKF may become inaccu-
+rate, leading to a decline in estimation accuracy. To improve
+tracking accuracy, the study in [18] proposes the use of
+the unscented Kalman ﬁlter (UKF), which approximates
+the state distribution of the nonlinear model using a set of
+deterministic sigma points, thus eliminating the lineariza-
+tion process in the EKF. However, in high-dimensional
+cases, the UKF may fail to capture the complex nonlinear
+characteristics of the system’s state effectively. The cuba-
+ture Kalman ﬁlter (CKF) [20], [21], based on the spheri-
+cal regression rule, generates sigma points that can better
+approximate the system’s nonlinear characteristics in high-
+dimensional spaces with fewer sigma points. Nevertheless,
+when addressing non-Gaussian noise, strong nonlinearity,
+and high-dimensional measurement, the CKF may not offer
+sufﬁcient accuracy. In these cases, the particle ﬁlter (PF)
+offers a more robust solution. The PF does not require
+linearization and approximates complex state distributions
+using a set of particles [22], [23], [24], [25], demonstrating
+improved accuracy and robustness in strongly nonlinear
+and high-dimensional systems. However, the issue with
+particle ﬁltering is that, due to the high dimensionality of
+SAV signals, the computation involves high-dimensional
+matrix operations, which increases the computational cost.
+In addition, particle ﬁltering faces inherent problems, such
+as particle degradation and impoverishment.
+In addition to the adverse effects of strong nonlinearity
+in the observation model, the non-Gaussian and nonsta-
+tionary characteristics of measurement noise caused by
+ﬂuctuating oceanic environments [26], [27], [28], [29], [30]
+are also key factors affecting the accuracy of underwater
+target bearing tracking. However, in underwater target DOA
+estimation, traditional methods typically assume the noise
+to be independent and identically distributed (i.i.d.) Gaus-
+sian noise with a mean of zero [5], [7], [8], [15], [23] and
+also assume that the noise is uncorrelated with the signal.
+This assumption is highly inconsistent with the true marine
+environment. In traditional DOA estimation methods, many
+approaches have been proposed for DOA estimation under
+non-Gaussian noise conditions [3], [4]. In ﬁltering and
+tracking algorithms, methods for handling non-Gaussian
+measurement noise generally fall into two categories. The
+ﬁrst approach is to treat non-Gaussian noise as Gaussian
+noise and apply standard methods designed for Gaussian-
+distributed measurements. In [15], [16], and [23], the noise
+is modeled as Gaussian to handle the actual SAV, essentially
+treating non-Gaussian noise as Gaussian noise. The second
+method improves algorithm robustness by approximating
+the actual non-Gaussian distribution with alternative distri-
+butions, such as Student’s t-distribution [31], [32], Gaus-
+sian mixture distribution [33], [34], Gaussian–Student’s
+t-mixture distribution [35], and α-distribution [36]. These
+methods have achieved some success in certain ﬁelds. How-
+ever, in underwater acoustic processing, due to the com-
+plexity of the underwater environment, the non-Gaussian
+nature of the measurement noise becomes more pronounced
+and exhibits various statistical properties over longer time
+scales [29]. In such cases, this method becomes much
+less effective. Furthermore, due to the characteristics of
+hydrophone arrays, obtaining sufﬁcient target information
+often requires a number of snapshots of SAV measurement,
+resulting in high-dimensional data. In such cases, when
+non-Gaussian noise is handled by ﬁtting, operations such as
+matrix inversion and likelihood computation may encounter
+issues like matrix singularity or numerical overﬂow, leading
+to poor ﬁltering results or even divergence.
+For nonstationary measurement noise, several studies
+have addressed this issue. In [22], maximum likelihood
+estimation is used to estimate the measurement noise
+covariance matrix. While maximum likelihood estimation
+typically
+assumes
+Gaussian
+noise,
+its
+performance
+degrades under small sample conditions. In [15], the
+nonstationarity of SAV measurement caused by the marine
+environment is considered, and the Sage–Husa (SH) noise
+estimation method is used to estimate the measurement
+noise covariance matrix. SH adjusts the weights of poor
+measurement when measurement noise is uncertain, using
+good estimates obtained during long-term tracking, and this
+method does not depend on the noise distribution. However,
+the SH online estimator does not guarantee convergence
+and heavily relies on good historical estimates and
+measurement. In [17], under the assumption of Gaussian
+noise, variational Bayes (VB) is used for the joint estimation
+of the measurement noise covariance matrix and the target
+state, resulting in an accurate noise covariance matrix and
+target’s bearing angle. In [37], a new adaptive Kalman ﬁlter
+based on VB is proposed for linear Gaussian state-space
+models with inaccurate process and measurement noise
+covariance matrices. The VB method is used to infer the
+state, as well as the prediction errors and measurement
+noise covariance matrices. Unfortunately, Zhang et al. [17]
+and Huang et al. [37] heavily depend on prior information
+when estimating the measurement noise covariance matrix.
+If the prior information is improperly set, it can lead to poor
+estimation performance. In [38], a sliding window state
+vector is employed within the Gaussian noise model to
+avoid ﬁxed-point iterations, enabling accurate estimation
+of slowly time-varying noise covariance matrices using
+the VB method. However, complex marine environmental
+noise often exhibits sudden increases, leading to outliers.
+In [39], under Student’s t noise model, the VB method is
+used to identify outliers in the sliding window and increase
+the corresponding measurement noise covariance matrix to
+suppress
+them,
+achieving
+adaptive
+estimation
+of
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15413
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+time-varying
+noise
+and
+identifying
+noise
+outliers.
+However, this complex modeling and inference can lead
+to computational difﬁculties and divergence when dealing
+with high-dimensional SAV. Based on the aforementioned
+analysis, when the noise distribution is known, VB assumes
+prior distributions for the parameters and derives them
+through rigorous mathematical inference, leading to more
+accurate noise parameters. However, the accuracy of
+the inference results is closely related to the choice of
+prior distribution. When the noise distribution is unknown,
+selecting an appropriate prior distribution becomes difﬁcult.
+In complex underwater environments, non-Gaussian noise
+often exhibits various statistical properties, making it
+difﬁcult to accurately describe the noise distribution.
+Furthermore, variational inference techniques in Markov
+ﬁltering processes face the issue of having limited inference
+samples, as the inference is based only on the current
+measurement. When measurements are high-dimensional
+vectors, this issue becomes exacerbated, leading to local
+convergence or even failure to converge.
+Based on the aforementioned analysis, Table I presents
+a comparison of the strengths and weaknesses of represen-
+tative works in the relevant literature.
+C.
+Proposed Methodology and Contributions
+To achieve robust angle estimation for underwater tar-
+gets, this study proposes a robust DOA tracking algorithm.
+The algorithm is based on dimensionality reduction of
+non-Gaussian SAV measurement noise and multiprior VB
+and is integrated with a particle-swarm-optimization-based
+particle ﬁlter (DMVB-PSOPF). This approach aims to ad-
+dress the strong nonlinearity of the observation model in
+underwater target tracking and overcome the challenge of
+directly processing high-dimensional, non-Gaussian, and
+nonstationary SAV measurement with ﬁlters. First, under
+the assumption of i.i.d. noise, the central limit theorem
+(CLT) is applied, taking into account the unique character-
+istic of passive sonar detection of slow-moving underwater
+targets, where multiple snapshots are made within a single
+tracking step. This article proposes a method that transforms
+high-dimensional non-Gaussian SAV measurement into a
+1-D innovation measurement which, under the CLT, can
+be approximated as Gaussian distributed. This approach
+effectively projects the complex nonlinear array-domain
+measurement into a 1-D autocorrelation power domain,
+thereby substantially simplifying the observation model
+and mitigating the challenges posed by high-dimensional
+nonlinearities. The method directly addresses the issue
+of non-Gaussian SAV measurement noise resulting from
+ﬂuctuations in the marine environment. Furthermore, to
+address the issue of local convergence in VB caused by
+a limited number of inference samples, a real-time VB
+measurement noise estimation method is proposed. This
+method, based on multiple prior conditions, effectively
+solves the nonstationary innovation measurement distri-
+bution parameter problem caused by ﬂuctuating marine
+environments. Considering the potential impact of parti-
+cle depletion caused by resampling in particle ﬁltering
+on the accuracy of underwater target DOA tracking, this
+study incorporates particle swarm optimization (PSO) to
+increase particle diversity, further ensuring the robustness
+of the proposed method in underwater target angle tracking.
+Finally, based on both simulation and real-world sea trial
+data, the proposed algorithm is thoroughly compared and
+analyzed with several works from the literature [15], [16],
+[22], [24], [38]. The simulation and experimental results
+demonstrate that the proposed algorithm is capable of robust
+angle tracking for underwater targets under non-Gaussian
+and nonstationary SAV measurement noise conditions and
+outperforms traditional methods. The contributions of this
+study compared to previous work in the ﬁeld are as follows.
+1) Non-Gaussian and high-dimensional SAV measure-
+ment is approximated as 1-D Gaussian innovation
+measurement and enables direct processing by the
+PF. This approach eliminates the inﬂuence of SAV
+measurement noise distribution on the selection of
+the likelihood function. As a result, it signiﬁcantly
+reduces computational complexity and effectively
+mitigates the impact of non-Gaussian SAV measure-
+ment noise on the ﬁltering process.
+2) A variational inference technique under multiple
+prior conditions is introduced to address the issue of
+local convergence in VB due to insufﬁcient samples,
+leading to more accurate measurement parameter
+estimation and improved tracking accuracy.
+3) By applying PSO principles, particle diversity is in-
+creased, which reduces particle degeneration during
+ﬁltering and enhances estimation accuracy.
+4) Consideringnon-Gaussianandnonstationarymarine
+environmental noise, the DMVB-PSOPF algorithm
+is proposed. Validation through simulation and real-
+world data shows that it outperforms existing meth-
+ods in terms of robustness in harsh marine environ-
+ments.
+The rest of this article is organized as follows.
+Section II introduces the motion and measurement models
+for the target. Section III presents the proposed solutions for
+non-Gaussian mechanisms and nonstationarity. Section IV
+describestherobustDOAtrackingalgorithmforunderwater
+targets in non-Gaussian nonstationary environmental noise.
+Section V provides simulation experiments to validate the
+algorithm. Section VI validates the algorithm using real-
+world experimental data. Finally, Section VII concludes this
+article and presents future directions.
+II.
+MODEL
+In underwater environments, targets typically move at
+a constant speed to conserve energy and maintain conceal-
+ment [40], and they are often located at signiﬁcant distances
+from the sonar array. Therefore, a constant-speed motion
+modelisusedtodescribetheunderwatertarget.Theuniform
+circulararray(UCA)ischosenforthisstudybecauseitisnot
+15414
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+TABLE I
+Performance Comparison of Representative Algorithms
+affected by port–starboard ambiguity and provides uniform
+aperture coverage at all bearing angles, making it suitable
+for long-duration tracking scenarios. This section provides
+a detailed description of the target’s kinematic model and
+its measurement model using the UCA.
+A.
+Kinematic Modeling
+Based on the aforementioned analysis, the target state is
+modeled. Assuming that at moment k, the target’s bearing
+angle relative to the hydrophone array is θk, and the angular
+velocity isω, the state of the target at moment k can be
+deﬁned as
+X k = (θk
+ω)T.
+(1)
+Based on the aforementioned assumption, when the
+target’s motion relative to the hydrophone array follows a
+constant velocity model, the following kinematic modeling
+applies:
+X k = FkX k−1 + W k.
+(2)
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15415
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+Fig. 1.
+Simple schematic diagram of a circular array.
+In this equation, X k is the one-step state transition pre-
+diction at moment k, X k−1 is the state at moment k −1, Fk is
+the state transition matrix, given as Fk = (1
+T
+0
+1 ), whereT
+is the time interval between observations, and W k is the
+disturbance term due to unknown underwater disturbances,
+which follows a Gaussian distribution with a mean of 0 and
+a variance of Qk.
+B.
+SAV Measurement Modeling
+The relative position of the hydrophone array and the
+target is shown in Fig. 1. It is assumed that the target’s radi-
+ated acoustic signal can be modeled as a single-frequency
+plane wave signal
+sk
+m = αe j(π f T (k+(m−1)τ )+ψ0)
+(3)
+where k represents the moment k, f is the signal frequency,
+α is the signal amplitude, ψ0 represents the initial phase of
+the signal, and T is the observation time interval. m denotes
+the mth snapshot. In the equation, τ represents the interval
+between adjacent snapshots, and Mτ ≪T .
+The received signal at time k by the P-element standard
+UCA is given by (3). The P elements of the array are
+uniformly distributed around the circumference of a circle
+centered at the origin with radius r. Assuming that the target
+is sufﬁciently distant, the arriving acoustic wave can be
+considered as a plane wave with a sound speed of c. Taking
+the ﬁrst element as the reference, the time delay of the pth
+element (p = 12,…,P) at moment k can be represented as
+(r/c)cos(θk −2π p/P). In addition, considering the target
+signal provided by the formula, the signal offset caused by
+the time delay for the pth element can be expressed as
+Ap (θk) = exp
+
+j2π f r
+ccos
+
+θk −2π
+
+p −1
+
+P
+
+.
+(4)
+At this point, the SNR is deﬁned as
+SNR = 10 log
+
+α2
+2σ 2
+(5)
+where α2 represents the signal power, and σ 2 represents the
+noise power.
+The SAV zk
+m of the mth snapshot of the circular array at
+time k can be expressed as
+zk
+m =
+
+A (θk) sk
+m
+
++ vk
+m
+(6)
+vk
+m =
+
+v1m
+v2m
+· · ·
+vpm
+T.
+(7)
+Here, A(θk) = [A1(θk)
+A2(θk)
+· · ·
+AP(θk)]
+T represents
+the array manifold vector of the standard UCA, vk
+m is the
+single snapshot SAV measurement noise, vpm is the received
+by the pth element at the mth snapshot, and v1m −vpm is the
+i.i.d. unknown noise. To improve algorithm performance,
+multiple snapshots are obtained within a time step k, with
+the number of snapshots set to M. The SAV is expressed as
+Zk =
+⎡
+⎢⎢⎢⎣
+zk
+1
+zk
+2...
+zk
+M
+⎤
+⎥⎥⎥⎦= h(θk) + V k
+=
+⎡
+⎢⎢⎢⎣
+A (θk) sk
+1
+A (θk) sk
+2
+...
+A (θk) sk
+M
+⎤
+⎥⎥⎥⎦+
+⎡
+⎢⎢⎢⎣
+vk
+1
+vk
+2...
+vk
+M
+⎤
+⎥⎥⎥⎦
+(8)
+where V k represents the SAV measurement noise of the
+sonar array at time step k for M snapshots. It is assumed
+that the SAV measurement noise of each array element and
+the SAV measurement noise from successive independent
+snapshots are uncorrelated and follow the same distribution.
+The method proposed in this article does not require the
+SAV measurement noise to satisfy a speciﬁc distribution
+assumption, and no speciﬁc noise distribution is imposed.
+h(θk) is the nonlinear equation for the SAV measurement
+signal.V k contains elements that are i.i.d. random variables.
+From the SAV model, it is evident that as the number of
+snapshots increases, the SAV becomes a large vector. For
+example, in the case of a medium-sized circular array with
+20 elements and 50 snapshots, the SAV becomes a 1000-D
+vector. Moreover, from (4), it can be seen that the SAV
+exhibitsstrongnonlinearitywithrespecttothebearingangle
+θ. The corresponding noise V k is also high-dimensional
+with non-Gaussian characteristics. Directly handling such
+nonlinear and non-Gaussian SAV measurement is very chal-
+lenging, thus requiring specialized processing.
+III.
+TECHNIQUES FOR HANDLING NON-GAUSSIAN
+AND
+NONSTATIONARY
+SAV
+MEASUREMENT
+NOISE
+Inthissection, basedonthe aforementionedSAVmodel,
+we analyze and process the non-Gaussian and nonstationary
+SAV measurement. First, the issue of non-Gaussian SAV
+measurement noise is analyzed. Then, the non-Gaussian
+SAV noise is addressed using the CLT, taking into account
+the characteristics of the SAV signal. Finally, the statistical
+properties of nonstationary noise are estimated using VB
+under multiple prior conditions, considering the physical
+characteristics of the marine environment.
+Before formally introducing the proposed method, it is
+necessary to analyze the non-Gaussian SAV measurement.
+SAV measurement noise typically exhibits non-Gaussian
+characteristics, and its exact distribution is often unknown,
+making it difﬁcult to model using analytical expressions.
+In ﬁltering algorithms, the selection of the likelihood func-
+tion is often dependent on the noise distribution. Without
+15416
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+knowledge of the noise distribution, it becomes challenging
+to model the likelihood function. Generally, the approach
+to handling non-Gaussian noise, as discussed in Section I,
+is to model the noise using distributions like Student’s
+t, Gaussian mixture models, or other non-Gaussian noise
+distributions. The likelihood function is then modeled using
+the corresponding probability density function, improving
+the algorithm’s ability to handle non-Gaussian noise. How-
+ever, due to the complexity of the underwater environment,
+non-Gaussianity in SAV measurement noise is particularly
+pronounced in the ﬁeld of underwater acoustics, exhibit-
+ing various complex statistical characteristics. In this case,
+simple ﬁtting methods become less effective and fail to
+fundamentally address the problem of non-Gaussian SAV
+measurement noise. To clarify the issue, let us use particle
+ﬁltering with a Student’s t SAV measurement noise model as
+an example. The following outlines the steps for calculating
+particle weights in a PF with this noise model:
+wi
+k
+= wi
+k−1P
+
+Zk|ˆθi
+k
+
+= wi
+k−1
+	
+ u+d
+2
+
+	
+ u
+2
+
+(uπ)
+d
+2 
+1
+2
+×
+
+1 +
+
+Zk −ˆZk
+T −1 
+Zk −ˆZk
+
+u
+−u+d
+2
+(9)
+where wi
+k−1 is the weight of the ith particle at time k – 1, d
+is the dimension of the measurement vector,  represents
+the SAV measurement noise covariance matrix, and u is the
+degree of freedom. Zk represents the true SAV measurement
+at time k, and ˆZ
+i
+k = h(ˆθi
+k) represents the model value of the
+ith particle’s state at time k. | · |represents the determinant.
+This approach models the noise as a non-Gaussian
+distribution to ﬁt the real noise, improving the algorithm’s
+adaptability to non-Gaussian noise. In some scenarios, this
+method shows good performance. However, in complex
+underwater environments, non-Gaussian noise exhibits var-
+ious statistical properties, making it difﬁcult for the ﬁlter
+to effectively handle the impact of real SAV measurement
+noise,thusreducingtheaccuracyandrobustnessoftheDOA
+tracking algorithm. Furthermore, due to the high dimen-
+sionality of array signals, which involve high-dimensional
+matrix operations, the increasing number of array elements
+and snapshots results in signiﬁcant computational burden
+and may even lead to overﬂow, causing the tracking algo-
+rithm to diverge and fail. Although some methods [24], [25]
+have avoided the selection of the likelihood function, these
+methods cannot handle nonstationary noise and have poor
+adaptability to non-Gaussian noise. Therefore, we need to
+address the high-dimensional SAV measurement noise.
+A.
+Non-Gaussian Measurement Noise Processing Based
+on the CLT
+To address non-Gaussian SAV measurement noise, the
+measurement error between the measurement data and
+the model data is treated as an innovation measurement.
+This innovation measurement not only includes the sum of
+noise power across all elements but also the error between
+the actual signal measurement and the predicted measure-
+ment from the particles. In addition, by aggregating the
+high-dimensional non-Gaussian noise inherent in the SAV
+measurement, the innovation measurement produces a 1-D
+statistic whose noise component can be well approximated
+as Gaussian, according to the CLT. This approach is derived
+based on the characteristics of passive SAV signals and their
+application scenarios. The explanation is as follows. First,
+the method is proposed under the assumption of i.i.d. noise,
+which is commonly valid and reasonable in sonar array
+signal processing. Second, the method utilizes the CLT,
+which requires a sufﬁcient amount of data, a condition met
+by passive sonar array signals. Finally, we need to ensure
+that the information contained in the sufﬁcient amount of
+data processed within a single time step is consistent. In
+underwater target tracking, the target is often slow moving,
+and the passive sonar typically has a high sampling rate,
+ensuring that the data processed contain consistent target
+location information. The process is as follows.
+First, calculate the difference between the actual SAV
+measurement and the predicted measurement from the par-
+ticles (referred to as the residual)
+˜Z
+i
+k = Zk −ˆZ
+i
+k =
+
+h (θk) −h
+ˆθi
+k|k
+
++ V k
+=
+
+˜zk
+1 (i)
+˜zk
+2 (i)
+· · ·
+˜zk
+M (i)
+(10)
+where ˜Z
+i
+k represents the residual of the ith particle at time
+step k, h() refers to the nonlinear array signal equation
+given by (8), and ˜zk
+m(i) represents the difference between
+the actual measurement and the predicted measurement of
+the ith particle at time step k for the mth snapshot
+˜zk
+m (i) = zk
+m −ˆzk
+m (i) =
+
+A (θk) sk
+m −A
+ˆθi
+k|k
+
+ˆsk
+m
+
++ vk
+m
+=
+˜zm
+1 (i, k)
+˜zm
+2 (i, k)
+· · ·
+˜zm
+p (i, k)T
+(11)
+where ˜zm
+p (i, k) represents the difference between the actual
+measurement and the predicted measurement of the ith
+particle at time step k for the mth snapshot and the pth array
+element.
+Compute the covariance matrix of the obtained residuals
+R(k) = E
+
+˜Z
+i
+k(˜Z
+i
+k)
+T
+=
+
+h (θk) −h
+ˆθi
+k|k
+ 
+h (θk) −h
+ˆθi
+k|k
+T + Rn (12)
+Rn = E[VkVT
+k]
+(13)
+where R(k) is the covariance matrix of ˜Z
+i
+k. Rn represents the
+covariance matrix of the measurement noise vector. Under
+the assumption of i.i.d. noise, it is a diagonal matrix, with
+the main diagonal elements being the noise power and the
+off-diagonal elements being 0. In particle ﬁltering, when
+calculating particle weights through the likelihood function,
+the main focus is on the characteristics of the noise: its
+distribution and magnitude. Therefore, only take the part of
+R(k) that contains measurement noise information, i.e., the
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15417
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 7 =====
+main diagonal elements of R(k), which is expressed as
+˜R (k) = diag (R (k))
+(14)
+where diag() represents extracting the main diagonal ele-
+ments to form a diagonal matrix. Further process the main
+diagonal elements of ˜R(k). Based on the assumption that the
+signal noise received by each array element at each snapshot
+is i.i.d., a set of i.i.d. random variables, when transformed
+by the same function, remains i.i.d.. Therefore, the elements
+in ˜R(k) are i.i.d.. According to Laplace’s CLT, when a set
+of i.i.d. random variables meets a certain quantity, their
+mean follows a Gaussian distribution [Proof can be found
+in Appendix A]
+Di
+k = trace
+ ˜R (k)
+NM
+(15)
+where Di
+k is the innovation measurement, with N represent-
+ing the number of array elements and M representing the
+number of snapshots.
+With this approach, we no longer focus on the charac-
+teristics of the noise in the original array signals. The non-
+Gaussian SAV measurement is approximated as Gaussian
+innovation measurement, and the NM-dimensional vector
+is reduced to 1-D scalar. This facilitates the selection of a
+more suitable likelihood function for particle weights, while
+signiﬁcantly improving the computational speed of the PF
+and simplifying the handling of nonstationary noise.
+B.
+Nonstationary Measurement Noise Processing Under
+Multiple Prior Conditions
+Many studies [26], [27] have shown that noise in com-
+plex marine environments is nonstationary, meaning that
+its statistical characteristics change over time. After trans-
+forming the high-dimensional non-Gaussian SAV measure-
+ments into 1-D Gaussian innovation measurements, the
+distribution parameters become unknown. Moreover, the
+innovation measurement fully inherits the nonstationarity
+of the SAV measurement, making it necessary to estimate
+the time-varying distribution parameters of the nonstation-
+ary innovation measurement. To achieve this, we use the
+VB method for parameter estimation. However, during the
+ﬁltering process, each inference step is based on only a
+single measurement, which makes the VB method prone
+to local convergence—especially when dealing with long-
+term nonstationary marine noise. To address this issue, we
+consider the physical characteristics of the marine environ-
+ment and propose a VB estimation method under multiple
+prior conditions. This method infers the variance and mean
+of the innovation measurement under multiple priors. The
+inference process is as follows.
+As mentioned earlier, Di
+k follows a Gaussian distribu-
+tion, so the probability density function p(Di
+k|μ, λ) is
+p
+
+Di
+k|μ, δ2
+= N
+
+Di
+k; μ, δ2
+(16)
+where N(·; μ, δ2) represents the probability density func-
+tion of a Gaussian distribution with mean μ and variance
+δ2. To infer the variance δ2 and mean μ, it is necessary
+to select a conjugate prior distribution for the time-varying
+variance δ2. In Bayesian theory, the Gamma distribution is
+commonly used as the conjugate prior for the variance of a
+Gaussian distribution.
+In addition, conjugate prior distributions for parameters
+μ and λ are introduced
+p (μ|λ) = N
+
+μ|μ0, [ε0λ]−1
+(17)
+p (λ) = Gam (λ|a0, b0) .
+(18)
+Inequation,ε0 representsthescalingfactor,λ = 1
+δ2 isthe
+Gaussian precision, μ0 is the prior mean of μ, Gam(·|a0, b0)
+denotes the shape parameter, and a0 is the inverse scale
+parameter of the Gamma distribution with parameter b0.
+Perform a variational approximation decomposition of
+the posterior probability distribution
+p
+
+μ, λ|Di
+k
+
+≈qμ (μ) qλ (λ)
+(19)
+
+qμ (μ) , qλ (λ)
+=
+argminKLD
+
+qμ (μ) qλ (λ) ||p
+
+μ, λ|Di
+k
+
+(20)
+where KLD(q(x) ∥p(x)) represents the kullback-leibler
+divergence (KLD) between q(x) and p(x).
+The optimal solution of (20) satisﬁes the following
+formula:
+log q∗
+μ(μ) = Eλ
+
+log p
+
+Di
+k, μ, λ
+
++ c
+log q∗
+λ(λ) = Eμ
+
+log p
+
+Di
+k, μ, λ
+
++ c
+(21)
+where c represents constant, and joint distribution can be
+expressed as
+p
+
+Di
+k, μ, λ
+
+= p
+
+Di
+k|μ, λ
+
+p (μ|λ) p (λ) .
+(22)
+Based on VB theory, the optimal distribution for each
+parameter can be derived. The optimal distribution q∗
+μ(μ)
+is as follows:
+ln q∗
+μ (μ)
+= Eλ
+
+ln p
+
+Di
+k|μ, λ
+
++ ln p (μ|λ)
++ c
+= −E [λ]
+2
+
+Di
+k −μ
+2 + ε0(μ −μ0)2
++ c
+= −1
+2
+
+(ε0 + 1) E [λ] μ2 −2
+
+ε0μ0 + Di
+k
+
+E [λ] μ
+
++ c
+(23)
+where μ0 is the prior mean of μ, ε0 is the adjustment factor,
+and λ = 1
+δ2 represents the Gaussian precision. It can be
+obtained
+q∗
+μ (μ) = N
+
+μ|μ∗,
+
+ε∗−1
+(24)
+where
+ε∗= (ε0 + 1) E [λ]
+(25)
+μ∗= ε0μ0 + Di
+k
+ε0 + 1
+.
+(26)
+Similarly, the optimal form of q∗
+λ(λ) is as follows:
+ln q∗
+λ (λ)
+= Eμ
+
+ln p
+
+Di
+k|μ, λ
+
++ ln p (μ|λ) + ln p (λ)
++ c
+15418
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 8 =====
+= a0 ln λ−
+
+b0+ 1
+2Eμ
+
+Di
+k−μ
+2+ε0(μ−μ0)2
+λ + c
+(27)
+where a0 represents the shape parameter, and b0 represents
+the inverse scale parameter.
+It can be obtained
+q∗
+λ (λ) = Gam
+
+λ|a∗, b∗
+(28)
+where
+a∗= a0 + 1
+(29)
+b∗= b0 + 1
+2Eμ
+
+Di
+k −μ
+2 + ε0(μ −μ0)2
+= b0 + ε0
+
+E
+
+μ2
++ μ0
+2 −2E [μ] μ0
+
++ 1
+2
+
+Di
+k
+2 + E
+
+μ2
+−2E [μ] Di
+k
+
+.
+(30)
+By iteratively updating, the variational estimation of the
+posterior distributions of the variance and mean can be per-
+formed. The expectations in the aforementioned equation
+are then calculated using equations (24) and (28)
+E [λ] = a∗/b∗
+(31)
+E [μ] = μ∗
+(32)
+E
+
+μ2
+=
+
+μ∗2 + 1
+ε∗.
+(33)
+During the ﬁrst iteration initialization, a∗= ainitial, b∗=
+binitial, μ∗= μinitial, and ε∗= εinitial are followed. To achieve
+more accurate estimates of variance and mean, multiple
+iterations can be performed. Let the values from the last
+iterationattimestepkbea∗
+NVB,b∗
+NVB,μ∗
+NVB,andε∗
+NVB,withNV B
+representing the number of iterations. Using equations (31)
+and (33), the Gaussian precision and variance are obtained
+as λk|k−1 = a∗
+NVB/b∗
+NVB and μk|k−1 = μ∗
+NVB, respectively. In
+the context of this study, each particle receives a single
+input Di
+k during each iteration. Despite multiple iterations,
+the resulting variance and mean may still lack sufﬁcient
+accuracy. Therefore, a smoothing factor ρ is introduced to
+improve the accuracy of variance and mean estimates by
+incorporating historical data. Thus, for time step k, we have
+λk|k = (1 −ρ) λk−1|k−1 + ρλk|k−1
+(34)
+μk|k = (1 −ρ) μk−1|k−1 + ρμk|k−1
+(35)
+where the parameter at time step k, denoted as λk|k and μk|k,
+is the ﬁnal posterior obtained using the smoothing factor,
+where ρ takes values between 0 and 1. In Appendix B,
+we provide detailed guidelines for selecting ρ to facilitate
+effective reproduction and application of the algorithm.
+As mentioned earlier, each particle at time step k only
+has one sample, meaning that prior information has a sig-
+niﬁcant impact on the estimation results. Incorrect prior
+parameter settings may lead to local convergence issues.
+To address this, introduce a smoothing factor to adjust the
+inference results using historical prior data. This approach
+works well when the measurement noise changes gradually,
+but when measurement noise changes abruptly, the correc-
+tive effect of historical data diminishes. This can lead to
+local convergence due to improper prior settings. To prevent
+the VB method from falling into local convergence when
+sample size is insufﬁcient, propose a VB estimator with
+multiple prior conditions. Based on the characteristics of
+the proposed algorithm, multiple sets of prior conditions
+are deﬁned. Speciﬁcally, different initial prior information
+sets are used for inference within a single iteration. Let the
+sets of initial information be 1
+initial, 2
+initial,…,L
+initial, with
+a total of L sets of prior information, where set 1
+initial =
+{al
+initial, bl
+initial, μl
+initial, εl
+initial} is deﬁned. The inference result
+for each group of initial prior information is denoted as:
+1
+k,2
+k,…,L
+k. Here, l
+k = {λl
+k|k, μl
+k|k}. λl
+k|k and μl
+k|k refer to
+the Gaussian precision and mean of the lth group at time step
+k, respectively. After inferring the Gaussian precision and
+mean for all groups, one or more thresholds are set. The
+innovation measurement information is compared to the
+thresholds, and different weighting coefﬁcients are derived.
+These coefﬁcients are then used to perform a weighted sum
+acrossallgroups.Theweightingmechanismintheproposed
+method is as follows.
+Since the proposed algorithm involves a small number
+of scalar parameters to infer, three sets of initial prior infor-
+mationarechosen.Thus,attimestepk,theinitialpriorinfor-
+mation sets are 1
+initial, 2
+initial, and 3
+initial. The different prior
+information is set according to the magnitude of the prior
+mean values, which is determined by the characteristics of
+the proposed algorithm. The value μinitial, in fact, represents
+the sum of squared errors between the particle prediction
+and the true state of the target, as well as the power of
+the SAV measurement noise. Therefore, μinitial is the most
+direct description of the array-domain measurement noise.
+Here, 1
+initial represents prior information with a smaller
+mean, 3
+initial corresponds to prior information with a larger
+mean, and 2
+initial contains prior information whose mean
+lies between 1
+initial and 3
+initial. The shape parameter ainitial,
+inverse scale parameter binitial, and adjustment factor εinitial
+can also be set accordingly.
+Variational iterations using three sets of prior informa-
+tionyieldthreesetsofposteriorparameters:1
+NVB, 2
+NVB,and
+3
+NVB. The comparison between innovation measurement
+information Di
+k and threshold γ determines the different
+weighting coefﬁcients, denoted as
+f (ζ1, ζ2, ζ3) =
+⎧
+⎨
+⎩
+ζ 1
+1 , ζ 1
+2 , ζ 1
+3
+Di
+k < γlow
+ζ 2
+1 , ζ 2
+2 , ζ 2
+3
+γlow ≤Di
+k ≤γhigh
+ζ 3
+1 , ζ 3
+2 , ζ 3
+3
+Di
+k > γhigh
+(36)
+where γlow represents the lower threshold, γhigh represents
+theupperthreshold,and f (ζ1, ζ2, ζ3)isthedecisionfunction
+for the weighting coefﬁcients under different conditions.
+The sum of the three terms ζ1, ζ2, and ζ3 equals 1. wl
+denotes the weighting coefﬁcient corresponding to l
+k. In
+the equation on the right-hand side of ζ i
+l , i is merely a
+distinguishing index, representing the different values of
+ζl under various conditions. The selection of thresholds
+and the weighting coefﬁcients are derived through environ-
+mental noise analysis or empirical methods. Based on the
+weights obtained from the discriminant results, a weighted
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15419
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 9 =====
+sum is then performed to obtain the ﬁnal inference result.
+At this point, λk|k and μk|k are updated as follows:
+λk|k = ζ1λ1
+k|k + ζ2λ2
+k|k + ζ3λ3
+k|k
+(37)
+μk|k = ζ1μ1
+k|k + ζ2μ2
+k|k + ζ3μ3
+k|k.
+(38)
+The innovation measurement distribution variance and
+mean obtained through this approach are more accurate, as
+the comparison between innovation measurement informa-
+tion and thresholds yields reasonable weighting values. The
+weighted sum allows for more precise posterior parameters
+even when sample size is insufﬁcient or noise changes
+abruptly. This provides more accurate parameters for the
+ﬁltering algorithm.
+IV.
+DIMENSIONALITY
+REDUCTION
+OF
+NON-
+GAUSSIAN
+NOISE
+AND
+MULTIPRIOR
+VARIA-
+TIONAL
+BAYESIAN
+PARTICLE
+SWARM
+OPTI-
+MIZATION PARTICLE FILTER ROBUST TRACKING
+ALGORITHM
+Within the PF framework, a multiprior VB PSO algo-
+rithm is proposed for continuous and robust tracking of un-
+derwater target DOA, incorporating the non-Gaussian and
+nonstationary noise handling methods presented in Section
+III.
+LetY1:k = {Y1
+Y2
+. . .
+Yk} represent the observa-
+tion in discrete time. The PF framework consists of three
+stages: prediction, update, and resampling. In the prediction
+stage, a set of sampled particles, denoted as {χi
+k|k}Ns
+i=1, is
+generated from the prior probability density function, where
+Ns represents the number of particles. At time step k, the
+prediction step is performed as follows:
+χi
+k|k ∼p
+
+χi
+k|k|χi
+1|1:k−1|k−1
+
+.
+(39)
+In the sequential PF, p(χi
+k|k|χi
+1|1:k−1|k−1) is simpliﬁed as
+the transition probability density function p(χi
+k|k|χi
+k−1|k−1),
+considering the target’s kinematic model given by (2). Par-
+ticle updates are as follows:
+χi
+k|k−1 = Fk ∗χi
+k−1|k−1 + Gk ∗Qk.
+(40)
+In the equation, χi
+k|k−1 represents the predicted state of
+the ith particle at time step k, Fk = (1
+T
+0
+1 ) is the one-step
+transition matrix, Gk = (
+1
+2
+1) is the noise driving matrix,
+and Qk is the disturbance term that follows a Gaussian
+distribution with a mean of 0.
+Excessive sampling in particle ﬁltering can lead to parti-
+cle depletion. To mitigate this, the PSO approach is used to
+update each particle, applying constraint-driven guidance
+to enhance particle diversity and prevent the decline in
+particle effectiveness. PSO is an optimization technique
+based on collective group behavior, inspired by the social
+behavior of bird ﬂocks and ﬁsh schools. The PSO algorithm
+involves a group of candidate solutions that search for the
+optimal solution in the problem space. These candidates
+are referred to as particles. As each particle moves through
+the search space, it adjusts its position and velocity based
+on its own experience (individual best solution) and the
+experiences of other particles (global best solution). In the
+proposed method, no ﬁtness function is used; thereby, real
+globaloptimalsolutioncannotbeobtained.Instead,thePSO
+conceptisappliedtoimposeconstraintsontheparticles.The
+PSO update process is as follows:
+ωi
+PSO = c1ω + c2r1
+
+θi
+best|k −θi
+k|k−1
+
+/T
++ c3r2
+
+θi
+allbest|k −θi
+k|k−1
+
+/T
+(41)
+where ωi
+PSO represents the PSO-corrected velocity of the
+ith particle at time step k. c1, c2, and c3 denote the iner-
+tia weight, individual learning factor, and global learning
+factor, respectively. r1 and r2 represent a random number
+between 0 and 1. θi
+best|k and θi
+allbest|k denote the local best
+solution and the global best solution for particle i at time
+step k, respectively.
+Due to the difﬁculty of obtaining a global optimal so-
+lution in this tracking problem, and considering that the
+process follows a Markov iteration, the local best solution
+is treated as the global best solution. The local best is de-
+termined by the initial angular velocity ω, which represents
+our overall prediction of the target’s motion speed, preset in
+advance. Therefore, θi
+best|k, θi
+allbest|k represent the expected
+position based on the previous step’s prediction. The PSO
+update allows the particles to explore the position space
+toward our expected location θi
+best|k, θi
+allbest|k
+θi
+allbest|k = θi
+best|k = ˆθi
+k−1|k−1 + ωT.
+(42)
+ˆθi
+k−1|k−1 represents the ﬁltered value at time step k – 1.
+ω denotes the angular velocity, and T is the time interval.
+The state update for the ith particle is obtained through the
+formula after PSO updating
+χi
+k|k = χi
+k|k−1 + P ∗ωi
+PSO
+(43)
+where χi
+k|k represents the PSO-corrected state of the ith par-
+ticle at time step k, χi
+k|k−1 denotes the proposed distribution
+state of the ith particle at time step k, and P = (T
+0 ) represents
+the correction applied to χi
+k|k−1 using ωi
+PSO.
+The PSO approach is only used to update the target
+position, but we do not wish to constrain or alter the velocity
+of the particles for two main reasons.
+1) In fact, we do not have an appropriate ﬁtness function
+to determine whether the local and global optima
+are truly optimal. Changes to the particle velocity
+would signiﬁcantly impact the next sampling, as
+the proposed algorithm uses one-step transitions for
+sampling. In addition, the target follows a constant
+velocity model, so we do not want the particle ve-
+locity to change drastically through PSO correction.
+2) In the subsequent likelihood function evaluation,
+the array signal contains only the target’s position
+information, and the particle weight is determined
+by position, not by the accuracy of the particle’s
+velocity. If a particle’s PSO-corrected position hap-
+pens to match the true position at a given time, but
+the PSO-corrected velocity is signiﬁcantly incorrect,
+15420
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 10 =====
+using this erroneous velocity as the particle’s speed
+would make the one-step transition sampling at the
+next time step meaningless. This would cause the
+particle to degenerate.
+In Appendix C, a more in-depth discussion of the PSO
+method is provided.
+The predicted SAV measurement is directly calculated
+from the state of the ith particle at time step k. The calcula-
+tion process is as follows:
+ˆZ
+i
+k = h(ˆθi
+k|k) =
+
+ˆzk
+1 (i)
+ˆzk
+2 (i)
+. . .
+ˆzk
+M (i)
+T
+=
+
+A
+
+ˆθi
+k|k
+
+sk
+1
+A
+
+ˆθi
+k|k
+
+sk
+2
+. . .
+A
+
+ˆθi
+k|k
+
+sk
+M
+T
+(44)
+where A() represents the array manifold vector of the
+circular array, which is given by (4). ˆzk
+m(i) denotes the SAV
+measurement signal for the ith particle at the mth snapshot
+at time step k. ˆθi
+k|k represents the current angle state of
+the particle. Due to the introduction of particles and the
+intermediate states in angle estimation in the subsequent
+algorithm, the subscript changes accordingly. ˆθi
+k|k has the
+same meaning as ˆθi
+k mentioned earlier, as noted here. sk
+m
+represents the sound signal radiated by the target at the mth
+snapshot of time step k. Since sk
+m is unknown in practical
+engineering problems, it is approximated by the estimated
+value of ˆsk
+m. The estimation method for ˆsk
+m is as follows [15]:
+ˆsk
+m =
+
+AH ˆθi
+k|k
+
+A
+ˆθi
+k|k
+−1AH ˆθi
+k|k
+
+Hilbert
+
+zk
+m
+
+(45)
+where A() represents the array manifold vector of the circu-
+lar array, which is given by (4). ˆθi
+k|k represents the bearing
+angle estimation result for the ith particle at time step k.
+Hilbert() denotes the Hilbert transform, and ()H represents
+the conjugate transpose. The proof of the equation can be
+found in Appendix D.
+In the update step, the weights in the sequential impor-
+tance sampling ﬁlter are determined by the importance sam-
+pling function, which is equal to the transition probability
+density function
+wi
+k = wi
+k−1
+p
+
+Y k|χi
+k|k
+
+p
+
+χi
+k|k|χi
+k−1|k−1
+
+q
+
+χi
+k|k|χi
+k−1|k−1,Y 1:k−1
+
+(46)
+q
+
+χi
+k|k|χi
+k−1|k−1,Y 1:k−1
+
+= p
+
+χi
+k|k|χi
+k−1|k−1
+
+. (47)
+The particle weights can be directly computed by the
+likelihood function
+wi
+k = wi
+k−1p
+
+Y k|χi
+k|k
+ 
+i = 1
+2
+. . .
+Ns
+
+.
+(48)
+By processing the non-Gaussian measurements and
+transforming them into a Gaussian distribution, the like-
+lihood function is redeﬁned, allowing the particle weights
+to be computed as
+wi
+k = wi
+k−1p
+
+Di
+k|μk, δ2
+k
+
+(49)
+where wi
+k−1 represents the weight of the ith particle at time
+k – 1, and p(Di
+k|μk, δ2
+k ) refers to the Gaussian distribution
+probability density function with a mean of μk, a variance
+of δ2
+k, and an input parameter of Di
+k. p(Di
+k|μk, δ2
+k ) is
+p(Di
+k|μk, δ2
+k ) =
+1
+
+2πδ2
+k
+exp
+
+−
+
+Di
+k −μk
+2
+2δ2
+k
+
+.
+(50)
+The weight of the ith particle is obtained through the
+formula, and the values of μk and δ2
+k in the equation are in-
+ferred using the VB method under multiple prior conditions,
+as discussed in Section III.
+The weight normalization process is
+wi
+k =
+wi
+k
+Ns
+
+i
+wi
+k
+,
+i = 1, 2, . . . , Ns.
+(51)
+To mitigate particle degradation, the proposed algorithm
+applies systematic resampling to the particles. Notably, the
+algorithm does not rely on a resampling threshold to de-
+termine when resampling is necessary; instead, resampling
+is performed after every run. This approach signiﬁcantly
+reduces particle degradation but can lead to particle impov-
+erishment. To address this issue, we incorporate the PSO
+method for particle update truncation, which introduces
+constraint-based guidance. The advantage of this approach
+is that it allows for effective tracking results with fewer par-
+ticles, as all particles remain valid. The steps for systematic
+resampling are as follows.
+First, compute the cumulative weights Ci
+Ci =
+i
+j=1
+w j
+k,
+i = 1, 2, . . . , Ns.
+(52)
+Generate Ns uniformly spaced sample point based on
+the starting point u
+ui = u + i −1
+Ns
+,
+i = 1, 2, . . . , Ns
+(53)
+where u is a random number uniformly distributed between
+0 and
+1
+Ns , denoted as u ∼Uniform(0, 1
+Ns ). For each sample
+point ui, the ﬁrst particle χi
+k|k that satisﬁes conditionCi ≥ui
+is found and copied into the new particle set {χi
+k|k
+’}Ns
+i=1. After
+resampling, the weights of all particles are reset
+wi
+k = 1
+Ns
+
+i = 1
+2
+. . .
+Ns
+
+.
+(54)
+Finally, the PF state is obtained by summing over all
+particles
+ˆX k =
+N
+
+i
+wi
+kχi
+k.
+(55)
+The algorithm ﬂow for the kth step of the DMVB-
+PSOPF is presented in Algorithm 1.
+As shown in Algorithm 1, the particle ﬁltering frame-
+work can be used to process nonlinear, non-Gaussian, and
+nonstationary SAV measurements to estimate the target’s
+bearing angle, enabling robust DOA tracking for underwa-
+ter targets. Speciﬁcally, step 1 performs particle sampling,
+followed by step 2 where PSO is used to enhance particle ac-
+tivity.Step5transformsthehigh-dimensionalnon-Gaussian
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15421
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 11 =====
+Algorithm 1: Pseudocode of the Proposed
+Algorithm.
+Input: χk−1|k−1, Zk, ˆX k−1, 1
+initial, 2
+initial, 3
+initial,
+{μ1
+k−1|k−1, μ2
+k−1|k−1, μ3
+k−1|k−1},
+{λ1
+k−1|k−1, λ2
+k−1|k−1, λ3
+k−1|k−1}
+Initialization:
+μ = 0 λ = 0// Store the mean and variance for
+the current step.
+u ∼Uniform(0, 1
+Ns )//Resample the starting point
+For i = 1: Ns
+1.
+χi
+k|k−1 = Fk ∗χi
+k−1|k−1 + Gk ∗Qk// particle
+sampling
+2.
+θi
+allbest|k = θi
+best|k = ˆθi
+k−1|k−1 + ωT
+ωi
+PSO = c1ω + c2r1(θi
+best|k −θi
+k|k−1)/T +
+c3r2(θi
+allbest|k −θi
+k|k−1)/T
+χi
+k|k = χi
+k|k−1 + P ∗ωi
+PSO// PSO correct
+3.
+ˆsk
+m = (AH(θk−1|k−1)A(θk−1|k−1))
+−1AH(θk−1|k−1)
+Hilbert(zk
+m)// Calculate the signal amplitude for
+each snapshot
+4.
+ˆZ
+i
+k = h(ˆθi
+k|k) = [ˆzk
+1(i)
+ˆzk
+2(i)
+. . .
+ˆzk
+M(i)]
+T
+= [A(ˆθi
+k|k)sk
+1
+A(ˆθi
+k|k)sk
+2
+. . .
+A(ˆθi
+k|k)sk
+M]
+T
+// Calculate predicted measurement for the ith
+particle.
+5.
+˜Z
+i
+k = Zk −ˆZ
+i
+k = (h(θk) −h(ˆθi
+k|k)) + V k
+= [˜zk
+1(i)
+˜zk
+2(i)
+· · ·
+˜zk
+M(i)]
+R(k) = E[˜Z
+i
+k(˜Z
+i
+k)
+T], ˜R(k) = diag(R(k)),
+Di
+k = trace( ˜R(k))
+NM
+// Convert non-Gaussian measurements into
+nonunidimensional Gaussian measurements.
+6.
+For l = 1:3 // This step performs variational
+inference based on three sets of prior conditions.
+Takeal
+initial, bl
+initial, μl
+initial, εl
+initial from l
+initial
+For n = 1: NVB//NVB represents the number of
+variational iterations.
+ε∗
+n = (εl
+initial + ND)E[λ], E[λ] = a∗
+n−1/b∗
+n−1
+μ∗
+n = εl
+initialμl
+initial+ND¯x
+εl
+initial+ND
+//¯x = Di
+k
+a∗
+n = al
+initial + ND+1
+2
+b∗
+n = bl
+initial + εl
+initial(E[μ2] + μl
+initial
+2 −2E[μ]μl
+initial)
++ 1
+2
+ND
+
+d=1
+(x2
+i + E[μ2] −2E[μ]xi)
+E[μ2] = μ∗
+n−1
+2 +
+1
+ε∗
+n−1 E[μ] = μ∗
+n−1
+//ε∗
+n represents the value at the nth
+iteration.ND = 1, when n = 1 a∗
+0 = al
+initial
+ε∗
+0 = εl
+initial ε∗
+0 = εl
+initial μ∗
+0 = μl
+initial
+//xi = Di
+k
+End For n = 1: NVB
+λl
+k|k−1 = a∗
+NVB/b∗
+NVB,
+λl
+k|k = (1 −ρ)λl
+k−1|k−1 + ρλl
+k|k−1, μk|k−1 = μ∗
+NVB,
+μl
+k|k = (1 −ρ)μl
+k−1|k−1 + ρμl
+k|k−1
+// update the mean and variance obtained for each
+particle.
+End For l = 1:3
+7.
+f (ζ1, ζ2, ζ3) =
+{
+ζ 1
+1 , ζ 1
+2 , ζ 1
+3 Di
+k < γlow
+ζ 2
+1 , ζ 2
+2 , ζ 2
+3 γlow ≤Di
+k ≤γhigh
+ζ 3
+1 , ζ 3
+2 , ζ 3
+3 Di
+k > γhigh
+//Substitute Di
+kinto
+the decision function to obtain the
+corresponding weights.
+λk|k = ζ1λ1
+k|k + ζ2λ2
+k|k + ζ3λ3
+k|k,
+μk|k = ζ1μ1
+k|k + ζ2μ2
+k|k + ζ3μ3
+k|k //Obtain the ﬁnal
+mean and Gaussian precision for the ith particle.
+λ = λ + λk|k
+Ns , μ = μ + μk|k
+Ns //Average and weight
+the inferred results of each particle into the
+current step’s mean and Gaussian precision.
+End For i = 1: Ns
+8.
+For i = 1: Ns//Calculate particle weights
+wi
+k = wi
+k−1p(Di
+k|μ, 1
+λ ),
+p(Di
+k|μ, 1
+λ ) =
+1
+√
+2π 1
+λ
+exp(−λ(Di
+k−μ)2
+2
+)
+End For i = 1: Ns
+9.
+For i = 1: Ns//system resampling.
+˜wi
+k =
+wi
+k
+Ns
+
+i
+wi
+k
+,Ci =
+i
+j=1
+˜w j, ui = u + i−1
+Ns
+End For i = 1: Ns
+For i = 1: Ns
+Identify the ﬁrst particle χi
+k|k that satisﬁes
+condition Ci ≥ui, and copy it into the new
+particle set {χi
+k|k
+’}Ns
+i=1.
+End For i = 1: Ns
+Reset the weight of each particle ˜wi
+k =
+1
+Ns
+10.
+ˆXk =
+N
+i
+˜wi
+kχi
+k obtain the predicted result
+Output:
+χk|k, ˆXk, 1
+initial, 2
+initial, 3
+initial,
+{μ1
+k|k, μ2
+k|k, μ3
+k|k}, {λ1
+k|k, λ2
+k|k, λ3
+k|k}
+SAV measurement into 1-D scalar Gaussian innovation
+measurement, enabling the ﬁlter algorithm to model the
+likelihood function more accurately. Steps 6 and 7 use the
+VB technique under multiple prior conditions to estimate
+the innovation measurement distribution parameters, which
+inherit nonstationarity, resulting in accurate parameters.
+This improves the particle weights computed in step 8 using
+the likelihood function, leading to a better representation of
+the true posterior distribution. Step 9 further reduces parti-
+cle degradation through resampling. Finally, the estimation
+results are obtained in step 10.
+15422
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 12 =====
+TABLE II
+Simulation Experimental Setup
+V.
+SIMULATION EXPERIMENTS
+This section presents several simulation experiments to
+demonstrate the effectiveness of the proposed algorithm.
+Simulation 1 validates the effectiveness of the non-Gaussian
+noise processing method introduced in Section III. Sim-
+ulation 2 demonstrates the superiority of the proposed
+VB method under multiple prior conditions compared to
+the traditional VB method. By comparing the proposed
+tracking method with other algorithms in Simulation 3, the
+robustness of the method in harsh marine environments is
+demonstrated, and a tracking scenario under heavy-tailed
+noise is simulated. Simulation 4 illustrates the impact of
+the snapshot count on the proposed algorithm.
+A.
+Simulation 1: Validation of the Non-Gaussian Noise
+Processing Method
+Section III introduces the foundational theory behind
+transforming non-Gaussian noise measurements into Gaus-
+sian noise measurements. The effectiveness of this method
+is demonstrated through simulation experiments. The ex-
+perimental setup is as follows: a 20-element standard UCA
+with a radius of 4.4 m is used to collect the target signal.
+The SNR is set to –15 dB, and the number of snapshots
+M is set to 50, resulting in a 1000-D SAV measurement
+vector. The signal, deﬁned by (3), has a frequency of
+170 Hz, amplitude α of 1, and an initial phase of 0 radians.
+The sampling frequency is 3200 Hz, and the underwater
+sound speed is set to 1500 m/s. Given the true state of
+the target ˙X = [˙θ
+0], we ﬁrst obtain the noise-free true
+array measurement ˙Z = h( ˙X) from (8) and then compute
+the predicted measurement ˆZ = h( ˆX) using (44), where ˆX
+represents the predicted state of the particle. Next, noise is
+added to the noise-free true array measurement ˙Z = h( ˙X)
+to obtain measurement ¨Z = h( ˙X) + V . The symbols used
+in this experiment are for differentiation purposes and are
+not consistent with those used in previous sections. 2 × 105
+different instances of identically distributed measurement
+noise V are added to obtain 2 × 105 samples of measure-
+ment data. The measurements constructed using (15) are
+then calculated to obtain 2 × 105 samples of measurement.
+Finally, a histogram of these data is used to ﬁt a Gaussian
+Fig. 2.
+Fitting results. (a) Gaussian distribution. (b) Student’s t
+distribution. (c) Student’s t distribution. (d) Cauchy distribution. (e)
+Laplace distribution. (f) Uniform distribution. (g) Skew Normal
+distribution.
+distribution curve. The detailed experimental setup is shown
+in Table II.
+REMARK 1 Here, “1000-D” refers to the length of each SAV
+measurement vector, which is formed by concatenating the
+outputs from 20 array elements over 50 snapshots (i.e.,
+20 elements × 50 snapshots = 1000 dimensions per mea-
+surement). The term “2 × 105 samples” mean that, in the
+simulation, we generated 2 × 105 independent arrays, each
+simultaneously receiving noise at the same time instance.
+As a result, we obtained 2 × 105 independent 1000-D mea-
+surement vectors.
+REMARK 2 The results shown in Fig. 2(c)–(e) are obtained
+after removing the outliers. In real-world scenarios, the
+passive hydrophone array elements are typically located at
+the same spatial position, and the distance between elements
+is much smaller than the distance between the array and the
+target. Therefore, under normal operating conditions, there
+should not be one or more elements with sound pressure
+data signiﬁcantly larger than the others at the same time.
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15423
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 13 =====
+TABLE III
+KS Test Results
+However, in Experiments 3–5, the noise distribution is
+heavy tailed, which can lead to extreme outliers. In such
+cases, we consider these to be sensor failures and invalid
+data, so their sound pressure data are set to zero. This
+removal process does not affect subsequent tracking due
+to the unique nature of the proposed method (which tracks
+data from NM array elements at each step). This will be
+demonstrated in the subsequent simulations.
+Fig. 2 shows the Gaussian ﬁt of noise with different
+distributions after processing. In the ﬁgure, the red line
+represents the ﬁtted Gaussian curve, while the blue bars
+represent the histogram of the data, comparing the data
+distribution with the Gaussian model. The histogram (blue
+bars) shows that the data generally follow a bell-shaped
+distribution, which is a typical characteristic of the Gaus-
+sian distribution. The data exhibit a clear central tendency,
+with most values concentrated around the peak area in the
+ﬁgure. The Gaussian curve ﬁt (red line) closely matches
+the shape of the histogram, especially at the edges of the
+data. This indicates that the data distribution is close to a
+normal distribution, suggesting that the Gaussian model is
+a very effective statistical model for this dataset, accurately
+reﬂecting the statistical properties of the data. To further
+explain the experiment, we evaluate the ﬁtting performance
+numerically by using the D statistic from the kolmogorov-
+smirnov (KS) test to assess the ﬁtting results.
+The deﬁnition of the D statistic for n samples
+X1,X2,…,Xn, to be tested, is as follows:
+DKS = max |Fn (x) −F0 (x)|
+(56)
+Fn (x) =
+⎧
+⎨
+⎩
+0x<X(1)
+k
+nX(k) ≤x<X(k+1)
+1x ≥Xn
+(57)
+where DKS represents the KS test D statistic for the sample
+under test, and Fn(x) is the empirical distribution function
+of the sample, indicating the proportion of values less than
+or equal to x in the entire observation. F0(x) refers to
+the theoretical empirical distribution function of the given
+distribution. Calculate the K-S statistic for each of the
+2 × 105 original samples in each experiment, and use the
+median value of each bin in the histogram generated by
+each experiment as data to derive Fn(x) based on the formed
+histogram. Table III is derived based on the deﬁnition of the
+DKS statistic.
+The deﬁnition of Dn,α when α = 0.05 in Table III is as
+follows:
+Dn,α = 1.36
+√n
+(58)
+whereα representsthesigniﬁcancelevel,andnisthesample
+size.
+From Table III, it can be seen that when performing the
+KS test on the original samples, the DKS values obtained
+are very small. This indicates that the distance between
+the distribution of the original sample and the theoretical
+Gaussian distribution is minimal, suggesting that all the
+original data closely follow the theoretical Gaussian dis-
+tribution. To further verify whether the noise data originate
+from this distribution, a new DKS value is obtained from
+the Bin samples. Since each set of data is different, the
+critical values vary when performing the KS test on the
+Bin samples at a given signiﬁcance level. From Table III, it
+is clear that for both the original and Bin samples, the DKS
+values obtained at a conﬁdence level of α = 0.05 are smaller
+than the corresponding critical values. This indicates that
+the null hypothesis cannot be rejected, meaning that the
+distribution of the sample’s underlying population follows
+the corresponding Gaussian distribution. This suggests that
+after the proposed method processes the non-Gaussian SAV
+measurement, the overall distribution of the innovation
+measurements follows a Gaussian distribution. In other
+words, the proposed method has largely transformed the
+multidimensional non-Gaussian SAV measurements from
+the array-domain into Gaussian innovation measurements.
+B.
+Simulation 2: Validation of the Nonstationary Noise
+Processing Method
+To validate the robustness of the proposed algorithm in
+the presence of nonstationary noise, three sets of simulation
+experiments are conducted in this section. The experimental
+setup is as follows. A circular array conﬁguration is used,
+with the same sound speed, sampling frequency, and signal
+settings as in Simulation 1. Student’s t-distribution noise
+with ten degrees of freedom is added, and the signal power
+derived from the SNR is used as the noise ampliﬁcation
+factor. The SNR deﬁnition is given by (5). The SNR is varied
+from 0 to –25 dB, with a step change of 0.2 dB/s. The noise
+is modeled as follows:
+V ∼σT (10) .
+(59)
+Here, T (10) represents a Student’s t-distribution with
+ten degrees of freedom. σ represents the noise power that is
+obtained square root by calculating the varying SNR using
+(5). Consequently, the noise power adapts dynamically with
+changes in the SNR. The generated noise serves as an
+ampliﬁcation factor to adjust the standard deviation of the
+noise accordingly. In this case, we choose a noise model
+with ten degrees of freedom rather than a heavier-tailed
+distribution,asexcessivelyheavy-tailednoisedoesnotalign
+with real-world conditions. The reasoning for this choice is
+explained in Remark 2.
+15424
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 14 =====
+Fig. 3.
+Tracking results of the three algorithms proposed in this article under different conditions. (a) CBF result. (b) Initial conditions 0°. (c) Initial
+conditions 5°. (d) Initial conditions 10°.
+Three comparison experiments are conducted with ini-
+tial errors of 0°, 5°, and 10°. The tracking duration is 5000
+s, with an observation step size of 1 s. The motion trajec-
+tory is generated recursively using (2). These experiments
+compare the proposed algorithm under three different esti-
+mators, each with varying initial conditions. The three al-
+gorithms include the sagehusa particle swarm optimization
+particle ﬁlter (SH-PSOPF), which incorporates the SH ﬁlter
+from [15], the VB-PSOPF without multiprior conditions,
+and the proposed DMVB-PSOPF.
+To facilitate a numerical analysis of the algorithm’s
+performance, the mean angle of arrival estimation error
+(ABEE) is introduced. The deﬁnition of ABEE is as follows:
+ABEE =
+ 
+!
+!
+" 1
+K
+K
+
+k=1
+ˆθk −θreal
+k
+2
+(60)
+where ˆθk represents the target angle obtained from different
+DOA estimation algorithms, θreal
+k
+is considered the true
+trajectory of the target, and K is the total observation time.
+Fig. 3(a) illustrates the target azimuth results obtained
+using the conventional beamforming (CBF) method. The
+red dots represent the target azimuth estimated at each
+time step using CBF, while the blue line shows the true
+target trajectory. As seen in the ﬁgure, each CBF esti-
+mate is independent of the previous one, and most of the
+estimates are invalid. Fig. 3(b)–(d) presents the tracking
+results obtained using three different noise estimators under
+varying initial conditions. The ﬁgure clearly demonstrates
+TABLE IV
+ABEE of Different Initial Errors
+that, under conditions of persistent measurement noise in-
+stability, traditional DOA estimation methods nearly fail.
+However, the tracking algorithm based on Bayesian ﬁltering
+still provides excellent bearing angle tracking results. Since
+all three algorithms are based on the proposed PSOPF
+tracking framework, the primary distinction lies in the noise
+estimators. Therefore, subtle differences cannot be easily
+observed from the ﬁgure alone.
+Table IV shows the ABEE values obtained by the three
+algorithms under different initial conditions. The table indi-
+cates that, for any initial error, SH-PSOPF yields the lowest
+estimation accuracy. This is because the SH estimator is
+data-driven and cannot provide stable long-term obser-
+vations in nonstationary environments to correct current
+innovation measurement distribution parameter. The track-
+ing accuracy of VB-PSOPF surpasses that of SH-PSOPF.
+This is because the VB estimator provides more precise
+statistical characteristics of distribution parameter, derived
+from rigorous mathematical reasoning, allowing for reliable
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15425
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 15 =====
+Fig. 4.
+Tracking results of different algorithms and BEE results. (a) Tracking results under Student’s t noise. (b) Tracking results under Gaussian
+noise. (c) BEE results under Student’s t noise. (d) BEE results under Gaussian noise.
+results even when measurements become uncertain, without
+relying on long-term stable estimates.
+DMVB-PSOPF offers the highest tracking accuracy
+among the three algorithms. This is due to its combina-
+tion of VB’s rigorous mathematical derivations and the
+integration of multiple prior information sources, which
+improves the estimator’s accuracy and enhances the overall
+tracking performance. When the initial error is zero, the
+tracking accuracy of VB-PSOPF and DMVB-PSOPF is
+nearly identical. However, as the initial error increases, the
+gap in tracking accuracy between the two grows. At an
+initial error of 5°, the ABEE of DMVB-PSOPF is 4.3%
+better than that of VB-PSOPF, and at an initial error of 10°,
+the ABEE improves by 9.1%. This is also due to the mul-
+tiple prior information sources, which offer the algorithm
+more possibilities and reduce its sensitivity to initial errors.
+In real-world scenarios, the algorithm’s input values also
+deviate signiﬁcantly from the true values.
+C.
+Simulation 3: Validation of the Robust DMVB-PSOPF
+Algorithm
+To further demonstrate the advantages of the proposed
+algorithm, we compared it with several existing robust
+tracking algorithms through simulations. We extended the
+SWEKF algorithm from, expanded the coprime array al-
+gorithm from [24] to a circular array, and evaluated the
+VB-EKF algorithm for robust underwater target tracking
+proposed in [16]. In addition, we compared our algorithm
+with the traditional array-based Gaussian particle ﬁlter
+(CPF) [22] and the Student’s t-particle ﬁlter (TPF) (which
+replaces the Gaussian likelihood function in [22] with a
+Student’s t likelihood function). The tracking duration is
+5000 s, with an observation step size of 1 s. The motion
+trajectory is generated recursively using (2). Sound speed,
+sampling frequency, and signal settings are identical to
+those in Simulation 1. To ensure that all algorithms can
+be compared under the same conditions, the experimental
+setup is as follows: the number of array elements in the ring
+array is set to 15, the number of snapshots is set to 15, and
+the SNR is kept constant at –15 dB. The parameter settings
+for the various tracking algorithms are provided in Table V.
+To provide a clearer comparison of the tracking results
+of each algorithm at every time step, we deﬁned the bearing
+angle estimation error (BEE)
+BEE(k) =
+ˆθk −θreal
+k
+
+(61)
+where ˆθk represents the target angle obtained from different
+DOA estimation algorithms and θreal
+k
+is considered the true
+trajectory of the target.
+Fig. 4 shows the tracking results and BEE outcomes for
+different tracking algorithms under Gaussian and Student’s
+t noise in the array domain. As shown in Table VI, except
+15426
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 16 =====
+TABLE V
+Parameter Settings for Different Tracking Algorithms
+for CPF and TPF, all tracking algorithms exhibit better
+tracking accuracy under Gaussian measurement noise than
+under Student’s t measurement noise. This is because CPF
+and TPF have corresponding likelihood functions tailored
+for different noise types. From the ﬁgure, it can be seen
+that among all algorithms, the SWEKF (based on the EKF
+framework) has the worst tracking accuracy. This is due to
+the complexity of the joint inference process, which, under
+the high-dimensional highly nonlinear array signal obser-
+vation, leads to matrix singularities during the complex
+computations, causing the tracking result to diverge, even
+in a simulated environment. Therefore, a reasonable design
+of the algorithm is essential for such a complex observation
+modelasarraysignals.Infact,simplifyingthealgorithmcan
+lead to better results. Similarly, the VB-EKF, also based on
+the EKF framework, performs well. This algorithm assumes
+Gaussian-distributed noise and jointly infers the measure-
+ment noise covariance matrix and the state, which simpliﬁes
+the inference process. The VB method can accurately infer
+themeasurementnoisecovariancematrix.InthePFtracking
+framework, the accuracy of PMPF is limited when using 15
+snapshots. This is because the algorithm’s likelihood func-
+tion is not the traditional probability density function (PDF),
+butusesthepropagatormethod(PM)pseudo-spectrumfrom
+the DOA estimation method’s PM approach as a substitute.
+Therefore, its accuracy heavily depends on the number of
+snapshots. As the number of snapshots increases, tracking
+accuracy improves; however, this comes at the cost of a
+signiﬁcant increase in computational load.
+Moreover, as shown in Table VI, when the noise is non-
+Gaussian, tracking accuracy decreases signiﬁcantly. This is
+due to the limited adaptability of DOA estimation methods
+to non-Gaussian noise. In the experimental design, 15 snap-
+shots were selected for comparison with CPF and TPF, as
+both of these algorithms use Gaussian and Student’s t PDFs
+as likelihood functions for calculating particle weights. In
+the experimental design, 15 snapshots were selected for
+comparison with CPF and TPF, as both of these algorithms
+use Gaussian and Student’s t PDF as likelihood function for
+calculating particle weights. However, when the number of
+snapshots increases, the dimensionality of the measurement
+vector grows, leading to potential issues such as precision
+overﬂow or underﬂow during computation. This can result
+in severe particle degradation, causing the tracking to di-
+verge or even interrupting the algorithm’s execution.
+In addition, due to the high dimensionality of the mea-
+surement vector, even though CPF and TPF use true noise
+parameters, the sparsity of data in high-dimensional space
+can lead to inaccurate estimation results. The three track-
+ing algorithms based on the PSOPF framework proposed
+in this article deliver the best tracking results. Even the
+SH-PSOPF, which has the lowest tracking accuracy among
+them, performs similarly to or even better than CPF and
+TPF, which use true SAV measurement noise parameters.
+In addition, due to the handling of non-Gaussian noise mea-
+surements, the computational complexity is signiﬁcantly
+lower than that of CPF and TPF. Among all the algorithms,
+VB-PSOPF and DMVB-PSOPF yield the best and most
+similar estimation results. This is because the advantages
+of DMVB-PSOPF are not fully realized when the noise is
+stable.
+Furthermore, to demonstrate the adaptability of the
+proposed algorithm to non-Gaussian nonstationary noise
+and large initial input values, a comparison is conducted
+under extreme conditions. Building on Simulation 2, the
+array-domain noise distribution is set to compare Gaussian
+noise with Student’s t noise. The added Gaussian noise has
+a mean of 0 and a variance corresponding to the noise power
+calculated for the given SNR. The initial error is set to
+30°. Under these conditions, most algorithms mentioned
+in Simulation 3 have already diverged and failed.
+Fig. 5(a) and (b) shows that the added Student’s t
+noise and Gaussian noise, when processed through the
+CBF method, exhibit similar DOA results, reﬂecting that
+the noise levels are almost identical. However, tracking
+algorithm results are inﬂuenced by noise distribution, as
+different noise distributions correspond to different like-
+lihood functions. This limitation does not apply to the
+PMPF algorithm, as it uses the pseudo-spectrum in place
+of the likelihood function. In Fig. 5(c), it is evident that
+the PMPF algorithm converges quickly, as its likelihood
+function is based on traditional DOA methods. Fig. 5(a)
+shows that with a higher initial SNR, the traditional DOA
+method performs well. However, this method cannot handle
+nonstationary noise. From Fig. 5(a)–(c), it is clear that as
+noise increases, the PMPF’s estimates exhibit signiﬁcant
+ﬂuctuations. In addition, because the likelihood function
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15427
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 17 =====
+TABLE VI
+ABEE of Different Algorithms
+Fig. 5.
+Tracking results. (a) CBF results under Gaussian noise. (b) CBF
+results under Student’s t noise. (c) Tracking results of the tracking
+algorithm. In the ﬁgure, T- and G- represent the tracking results under
+student’s t noise and Gaussian noise, respectively.
+TABLE VII
+ABEE of Various Algorithms Under Different Noise
+Conditions
+is based on traditional DOA estimation methods, its re-
+sistance to non-Gaussian noise is weakened. As shown in
+the ﬁgures, when the SAV noise is Student’s t noise, the
+tracking performance signiﬁcantly deteriorates compared
+to Gaussian noise. Although Table VII shows that PMPF’s
+ABEE outperforms VB-PSOPF in various scenarios, the
+ﬁgures demonstrate that VB-PSOPF, once the algorithm
+has converged to the true trajectory, still produces excellent
+trackingresultsevenwhennoiseundergoessuddenchanges.
+This is because VB-PSOPF not only handles the error
+between actual measurements and predictions, aligning the
+likelihood function with the measurement distribution, but
+also uses parameter estimation methods for real-time adap-
+tation to nonstationary distribution parameter.
+TABLE VIII
+Heavy-Tailed Noise Conﬁguration
+Among all the algorithms, DMVB-PSOPF yields the
+best tracking results. Furthermore, DMVB-PSOPF con-
+verges faster than VB-PSOPF, as multiple prior conditions
+make the inferred results from VB closer to the true values.
+Whether VB-PSOPF or DMVB-PSOPF, the convergence
+speed is always slower when the array-domain noise is
+Student’s t noise compared to Gaussian noise. As shown in
+Fig. 5(c), the proposed algorithms can gradually converge to
+the true trajectory, even with large initial errors, when facing
+non-Gaussian array-domain noise, and are not affected by
+nonstationary noise.
+Furthermore, consider the impact of extreme heavy-
+tailed noise on the array element data. When extreme
+heavy-tailed noise is applied to the array elements, it can
+cause the sound pressure data of one or several elements
+to be signiﬁcantly larger than that of the other elements
+at the same time. However, as stated in Remark 2, under
+normal operation, there should not be one or more array
+elements with sound pressure data signiﬁcantly larger than
+others at the same time. Therefore, we consider that when
+abnormal data occur, the element has failed, although this is
+not the situation addressed in this article. Despite this, due
+to the uniqueness of the proposed method, it can still handle
+such extreme cases. The following simulation experiment
+is conducted to demonstrate this: based on the setup in
+Simulation 2, with the SNR ﬁxed at –20 dB, simulations are
+performed under different measurement noise distributions,
+and the noise conﬁgurations are shown in Table VIII.
+The initial state for the algorithm input in the simulation
+is set to ˙X = [θreal + 10◦
+0]. The remaining settings in the
+simulation are consistent with those in Simulation 2. Only
+the MVB-PSOPF proposed in this article is validated, as all
+other methods have diverged under these conditions.
+15428
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 18 =====
+Fig. 6.
+Tracking results under different heavy-tailed noise. (a) Student’s t noise. (b) Laplace t noise. (c) Cauchy t noise. (d) Skew normal noise.
+Fig. 7.
+ABEE of tracking results under different numbers of snapshots.
+It can be seen in Fig. 6 that under extreme non-Gaussian
+noise conditions, traditional CBF methods fail almost
+completely. However, the proposed MVB-PSOPF method
+still yields good tracking results after processing the mea-
+surements with outlier data removed. This is because the
+proposed method processes non-Gaussian noise based on
+the CLT, so missing a few array element data (outliers) in
+the original measurements does not negatively impact the
+results. However, for conventional methods such as VB-
+EKF and PM-PF, as mentioned in Simulation 2, the results
+diverge regardless of whether the outliers are removed, and
+no acceptable tracking results can be obtained.
+D.
+Simulation 4: The Impact of the Number of Snap-
+shots on the Algorithm
+To demonstrate the impact of the number of snapshots
+on the proposed algorithm, simulations were conducted
+using the DMVB-PSOPF algorithm. The simulation setup
+is as follows: a ring array conﬁguration, with sound speed,
+sampling frequency, and signal settings identical to those
+in Simulation 1, and an SNR set to –20 dB. The tracking
+duration is 5000 s, with an observation step size of 1 s.
+The motion trajectory is generated recursively using (2).
+The initial inputs for X are set to the true values, with a
+velocity of 0, and the array-domain noise is modeled using
+a Student’s t distribution. The ABEE of the tracking results
+is calculated under different snapshot conditions.
+Fig. 7 shows the ABEE of the tracking results for the
+proposed algorithm under different snapshot conditions. As
+seen in the ﬁgure, the tracking accuracy improves with
+an increasing number of snapshots, stabilizing once the
+snapshot count exceeds 80.
+The aforementioned simulation results validate the ef-
+fectiveness and robustness of the proposed method and
+demonstrate the impact of the number of snapshots on
+algorithm performance. Further validation of the algorithm
+is needed using at-sea test data.
+VI.
+EXPERIMENTAL RESULTS
+In this section, we use real marine experimental data to
+validate the effectiveness and practicality of the proposed
+algorithm.
+A.
+Experimental Setup and Description
+In July 2021, acoustic experiment data collected in the
+South China Sea were used to demonstrate the advantages
+of a robust DOA tracking algorithm for underwater targets
+under non-Gaussian and nonstationary conditions. During
+the experiment, an acoustic transducer was placed 3 m be-
+low the sea surface, and a vessel equipped with an acoustic
+signal transmitter and GPS system continuously emitted
+sound waves at 170 Hz while moving, over a period of
+7500 s, with a sound intensity of 145 dB. Prior to the
+experiment, an underwater buoy system was deployed at
+a depth of 20 m, as shown in Fig. 8(a) and (b). This system
+consisted a circular hydrophone array with a radius of 1
+m, comprising of 12 elements, along with a digital signal
+collection system and GPS. The digital collection system
+sampled the array output at a frequency of 8192 Hz during
+soundemission.Aconductivity–temperature–depthproﬁler
+recorded a constant sound speed of 1544 m/s within the
+depth range of 0–20 m. The GPS system recorded the
+positions of both the acoustic signal transmitter and the
+underwater buoy system every second. Notably, the bearing
+angle of the target was measured clockwise relative to north
+and calculated using GPS data.
+As depicted in Fig. 8(c), the maximum distance between
+the target and the sonar array during tracking was 5462 m,
+and the minimum was 3113 m. Over the tracking period,
+the target moved a total distance of 3059 m, with an overall
+bearing angle change of 27.5° and an approximate constant
+angular velocity of 3.7 × 10−3 °/s. These data demonstrate
+the practicality and suitability of the robust DOA tracking
+algorithm for complex dynamic tracking issues under non-
+Gaussian and nonstationary conditions.
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15429
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 19 =====
+Fig. 8.
+Hydrophone and target diagrams. (a) Physical diagram of the hydrophone. (b) Simpliﬁed schematic. (c) Movement of the target and its
+relative position to the hydrophone [15].
+TABLE IX
+ABEE Under Varying Initial Errors for EKF, SH-EKF, VB-EKF, and SH-PSOPF
+B.
+Comparative Analysis of Experimental Results
+To assess the algorithm’s performance, comparisons
+were made with the conventional DOA estimation method,
+known as multiple signal classiﬁcation (MUSIC), and the
+previously mentioned methods: EKF, SH-EKF, VB-EKF.
+The measurement interval was set at 1 s, with a resolution
+of 1° for MUSIC bearing angle scanning.
+Except for X 0, initial parameters for EKF, SH-EKF,
+and VB-EKF were identical to those in [22]. To verify
+the adaptability of the PF to nonlinear and non-Gaussian
+measurements, different initial errors were tested. The
+initial state was set at X 0 = (θ0
+0)
+T, with θ0 set to 30° and
+33°, respectively. These settings—with initial errors of 13°
+and 16°—were used to evaluate the algorithm’s ability to
+adapt to the nonlinear and non-Gaussian tracking process.
+The particle count, Ns, was set to 100. The inertia factor c1
+was set to 1, and both the individual learning factor and the
+social learning factor c2, c3 were set at the default value of 2.
+Several factors within the marine environment can
+unpredictably alter environmental noise levels. Oceanic
+turbulence, characterized by erratic ﬂows and pressures,
+signiﬁcantly affects acoustic dynamics, leading to noise
+ﬂuctuations. Events such as cavitation, bubble bursts, and
+pressures from waves and wind further contribute to these
+variations. In addition, noise emitted by distant ships plays
+a considerable role in environmental noise, with changes in
+ship positioning, navigation states, and ﬂeet sizes affecting
+noise levels. These alterations affect the statistical proper-
+ties of environmental noise. Failure of algorithms to adjust
+to these rapid changes can compromise DOA estimation
+accuracy, potentially leading to signiﬁcant errors. To assess
+the robustness of the proposed DOA tracking algorithm
+against nonlinear, non-Gaussian, and nonstationary inﬂu-
+ences, Gaussian-distributed random noise was introduced
+into the original measurement data from 2600 to 3000 s
+based on preliminary errors. This test aimed to evaluate the
+algorithm’s performance under these conditions. Results
+are detailed in Fig. 8(a)–(d) and Table IX. The one-step
+execution time under equivalent computational conditions
+is also provided in Table IX.
+Fig. 9 shows that the tracking trajectories obtained by
+all methods exhibit ﬂuctuations around the true trajectory
+due to the nonstationary underwater environment. The MU-
+SIC method, relying solely on raw measurements without
+considering the target’s motion information, demonstrates
+the most signiﬁcant ﬂuctuations. When the SNR of the raw
+measurements is low, the bearing angle estimation results
+suffer from large errors. In the 2600–3000-s segment of
+Fig. 9, the addition of extra noise leads to a signiﬁcant
+decline in the bearing angle estimation accuracy of the
+MUSIC algorithm, resulting in divergence. In Fig. 9, it is
+evident that the EKF achieves higher accuracy than MUSIC
+when the initial error is small, as the EKF not only uses
+measurement information but also incorporates the target’s
+motion data, yielding more accurate tracking results.
+Comparing Fig. 9(a) and (c), EKF’s tracking perfor-
+mance signiﬁcantly deteriorates as the initial error in-
+creases. From Table IX, it is observed that when the initial
+error increases from 13° to 16°, its ABEE increases from
+20.5° to 21.9°. This is because the EKF handles nonlinearity
+using a ﬁrst-order Taylor expansion. As the initial error in-
+creases, this error accumulates during the iterative process,
+requiring the Kalman ﬁlter to take longer to converge, and in
+some cases, it may result in failure to converge. Moreover,
+since the measurement noise covariance matrix in the EKF
+is ﬁxed, the EKF demonstrates poor performance when
+dealing with nonstationary ﬁltering problems. Increasing
+the initial error exacerbates this issue.
+The two algorithms based on the EKF framework,
+i.e., SH-EKF and VB-EKF, which are capable of online
+noise characteristic estimation, show a decrease in tracking
+15430
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 20 =====
+Fig. 9.
+Sea trial data result. (a) and (b) Estimation trajectories and BEE charts of various estimation algorithms when the initial error is 13°. (c) and
+(d) Estimation trajectories and BEE charts of various estimation algorithms when the initial error is 16°.
+accuracy to varying degrees as the initial error changes.
+However, their performance remains within an acceptable
+range.
+This
+is
+because
+the
+dynamically
+estimated
+measurement noise covariance matrix provides more
+accurate Kalman gains than the EKF, thereby signiﬁcantly
+improving the DOA tracking accuracy. Table VIII shows
+that when the initial error is 13°, the ABEE values for the
+SH-EKF and the VB-EKF are 8.2° and 8.0°, respectively;
+when the initial error is 16°, the ABEE values are 9.5° and
+8.7°,respectively.ThetrackingperformanceoftheVB-EKF
+is clearly superior to that of the SH-EKF. This is because
+the VB-EKF is derived analytically, providing an accurate
+mathematical model for the unknown measurement noise
+covariance matrix, resulting in more precise estimation.
+As a result, the DOA tracking accuracy of the VB-EKF is
+higher than that of the SH-EKF.
+Among the PF-based algorithms, PMPF exhibits
+the worst tracking performance. This is because the
+algorithm approximates the likelihood function using the
+pseudospectrum method from the PM algorithm, with
+its tracking performance being largely dependent on the
+number of snapshots. In addition, since the algorithm does
+not impose any special constraints on the particles, its
+performance is only effective when the particle count is
+sufﬁciently large. The SH-PSOPF consistently outperforms
+EKF-based algorithms in estimation accuracy across
+different initial errors. When the initial error increases from
+13° to 16°, the tracking accuracy of PF-based algorithms
+declines less than that of the EKF. Among PF-based
+algorithms, the greatest decrease is observed in PMPF, with
+a 0.5° drop, which is smaller than the 0.7° decrease observed
+in the least affected EKF algorithm. This is because the PF
+is effective at handling nonlinear problems and avoids the
+accumulation of truncation errors. Therefore, compared
+to EKF-based algorithms, PF-based algorithms are less
+sensitive to variations in initial errors. In contrast, the
+DMVB-PSOPF provides the closest tracking trajectory to
+the true trajectory, with minimal ﬂuctuations in its tracking
+path, as shown in Fig. 8. This algorithm demonstrates
+exceptional robustness. Under various initial error condi-
+tions, as shown in Table X, the DMVB-PSOPF consistently
+outperforms the SH-PSOPF and the VB-PSOPF. This
+is because it utilizes multiple prior conditions, enabling
+VB to analytically estimate the statistical properties
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15431
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 21 =====
+TABLE X
+Duration of a Single-Step Calculation for Different Algorithms
+of time-varying measurement statistical characteristics,
+leading to better approximation solutions. Thus, compared
+to the data-driven SH-PSOPF and VB-PSOPF, which rely
+on only a single prior, the DMVB-PSOPF exhibits greater
+robustness. It can quickly adapt to sudden changes in noise,
+thereby improving the estimation accuracy of the algorithm.
+Table X presents the computation time for a single
+step of each algorithm under equivalent computational
+conditions. Since DOA tracking methods are based on
+recursive estimation frameworks, the computation time
+for all tracking algorithms is signiﬁcantly shorter than
+that of DOA estimation methods that process batch
+measurements, such as MUSIC. Furthermore, since the
+VB-EKF analytically derives the measurement noise
+covariance
+matrix,
+which
+involves
+extensive
+matrix
+operations, the tracking time increases signiﬁcantly.
+Although the VB iteration count can be adjusted empirically
+to balance computational efﬁciency and tracking accuracy,
+relying solely on experience to make this balance may have
+limitations. In cases of sudden noise changes, adjustments
+based solely on experience may not effectively or promptly
+respond to system variations, leading to degraded tracking
+performance
+or
+poor
+computational
+efﬁciency.
+The
+computation time per step for the SH-PSOPF is longer
+than that of the SH-EKF because particle ﬁltering requires
+calculating the states of numerous particles, and as the
+number of particles increases, the computational cost rises
+signiﬁcantly. With the same number of VB iterations, the
+VB-EKF increases the computational cost per step by 0.61
+ms compared to the SH-EKF, while the VB-PSOPF only
+increases the cost by 0.22 ms compared to the SH-PSOPF.
+This is because the proposed algorithms construct a new
+likelihood function, reducing the VBvariational process to a
+1-D problem, signiﬁcantly lowering the computational cost
+and improving computational efﬁciency. For the DMVB-
+PSOPF under multiple prior conditions, the time cost
+increases due to the need to perform variational inference
+for each set of priors. However, the additional 0.04 ms per
+iteration is justiﬁed by the signiﬁcantly improved tracking
+accuracy.
+VII.
+CONCLUSION
+This article proposes a robust algorithm for continuous
+estimation of underwater target DOA under non-Gaussian
+and nonstationary conditions. Unlike existing approaches,
+the proposed method leverages the high dimensionality of
+passive sonar array measurements and applies the CLT to
+approximate high-dimensional non-Gaussian measurement
+as 1-D Gaussian innovation measurement. This not only
+mitigates the effects of complex noise but also improves
+computational efﬁciency. To further address nonstationary
+noise and limited sample challenges in VB inference, a mul-
+tiprior VB technique is introduced for real-time estimation
+of innovation measurement parameter statistics, thereby
+enhancing robustness.
+In addition, PSO is integrated to overcome particle
+depletion in particle ﬁltering, further improving tracking
+reliability. Theoretical derivations and simulation results
+demonstrate that the proposed algorithm achieves accurate
+androbustDOAtrackingundernon-Gaussiannonstationary
+noise and large initial errors. Its practicality and robustness
+are validated with real sea trial data.
+It should be noted that the effectiveness of this method
+relies on the assumption of i.i.d. noise and the availability
+of sufﬁciently consistent snapshots, conditions commonly
+met in passive sonar tracking of slow-moving underwater
+targets. Future work will focus on exploiting signal sparsity
+and improving the SNR to further enhance robustness and
+accuracy.
+APPENDIX
+A.
+Proof of Gaussianity of the Innovation Measurement
+TheinnovationmeasurementDi
+k isdeﬁnedby(12)–(15),
+and the following discussion is based on these equations.
+In (12), there are two possible cases.
+1) When the ﬁlter estimation is highly accurate, the
+ﬁrst term becomes 0, so the equation reduces to
+R(k) = Rn, from which Di
+k = (v2
+11+v2
+21+···+v2
+NM )
+NM
+can be
+obtained. Here, v2
+nm denotes the squared noise on the
+nth array element at the mth snapshot.
+The following provides a proof that Di
+k follows a Gaus-
+sian distribution.
+To demonstrate that Di
+k is Gaussian under the CLT, it is
+sufﬁcient to show that v2
+nm is i.i.d. Since vnm is already i.i.d.,
+it only remains to prove that the squared transformation
+preserves the i.i.d. property. Thus, the problem is reduced
+to the following.
+Let a set of i.i.d. random variables be denoted as
+X1, X2, . . . , XN. We aim to prove that Yi = X 2
+i is also i.i.d.
+The proof is as follows.
+Proof of Independence
+Since X1, X2, . . . , XN are i.i.d., the joint probability den-
+sity function of Xi and Xj(i ̸= j) can be expressed as the
+product of their respective marginal distributions
+P(Xi ≤x, Xj ≤y) = P (Xi ≤x) P
+
+Xj ≤y
+
+.
+(A1)
+Given Yi = X 2
+i , we have
+P(Yi ≤v,Yj ≤u) = P
+
+X 2
+i ≤v, X 2
+j ≤u
+
+.
+(A2)
+15432
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 22 =====
+The squaring operation does not affect the independence
+of the variables, so
+P(Yi ≤v,Yj ≤u)
+= P
+
+X 2
+i ≤v
+
+P
+
+X 2
+j ≤u
+
+= P (Yi ≤v) P
+
+Yj ≤u
+
+.
+(A3)
+Therefore, for a set of random variables Xi, the squared
+variables Yi = X 2
+i are also independent.
+Proof of identical distribution: Let Xi have cumulative
+distribution function FX (x) and probability density function
+fX(x). The distribution function of Yi = X 2
+i is given by
+FY
+
+y
+
+= P {Y ≤y}
+= P
+
+X 2 ≤y
+
+= P
+
+−√y ≤X ≤√y
+
+= Fx
+√y
+
+−Fx
+
+−√y
+
+.
+(A4)
+Taking the derivative of FY (y) yields the probability
+density function fY(y) for Yi = X 2
+i
+fY
+
+y
+
+= fX
+√y
+
+·
+1
+2√y + fX
+
+−√y
+
+·
+1
+2√y.
+(A5)
+For each Xi, the distribution function and the probabil-
+ity density function are the same. Thus, Yi = X 2
+i also has
+the same distribution function and the probability density
+function.
+In conclusion, Yi = X 2
+i is also i.i.d. Therefore, Di
+k =
+(v2
+11+v2
+21+...+v2
+NM )
+NM
+satisﬁes the conditions of the CLT and, thus,
+follows a Gaussian distribution.
+When the ﬁlter has not fully converged or the estimation
+is inaccurate, we have
+Di
+k =
+
+v2
+11 + b1 + v2
+21 + b2 + · · · + v2
+NM + bN
+
+NM
+=
+
+v2
+11 + v2
+21 + · · · + v2
+NM
+
+NM
++ (b1 + b2 + · · · + bN )
+N
+(A6)
+where bn represents the squared difference between the pre-
+dicted and true values for the nth array element. In Assump-
+tion 1, it has already been shown that Di
+k = (v2
+11+v2
+21+···+v2
+NM )
+NM
+follows a Gaussian distribution. When the ﬁlter is accurate,
+this case is equivalent to that of Di
+k = (v2
+11+v2
+21+···+v2
+NM )
+NM
+in the
+accurate scenario with the addition of a constant. This only
+results in a shift in the mean of the distribution and does not
+affect the form of the variable’s distribution.
+B.
+Guidelines for Selecting ρ
+In the proposed algorithm, ρ is a smoothing factor
+ranging from 0 to 1, which is used to weight the histori-
+cal prior information and reﬁne the inference results. As
+shown in (33) and (34), a larger value of ρ indicates a
+stronger reliance on historical prior information and greater
+conﬁdence in the current inference. Due to the adaptive
+capability of the MVB-PSOPF algorithm in estimating the
+Fig. 10.
+Relationship curves between ρ and RMSE. (a) Strong prior. (b)
+Weak prior. (c) Multiprior.
+mean and variance, changes in ρ may affect the inference
+process, but the ﬁnal tracking performance differences are
+typically insigniﬁcant. More importantly, after reducing
+high-dimensional SAV measurements to Di
+k dimensions,
+the true mean and variance are difﬁcult to access directly,
+making it impractical to theoretically justify the selection of
+ρ using the proposed algorithm alone. To provide a clearer
+analysis of the impact of ρ on algorithm performance,
+dedicated experiments are designed for reproducibility and
+practical guidance.
+In this experiment, independent Gaussian noise samples
+with known parameters are used to validate the algorithm,
+and the standard deviation root-mean-square error (RMSE)
+as a function of ρ is plotted. By comparing the estimated
+standard deviation with the true noise parameters, the inﬂu-
+ence of ρ on the RMSE can be accurately evaluated. Specif-
+ically, the noise data are generated as stationary Gaussian
+noise with zero mean and standard deviation of 5, modeled
+as
+data = V ∼N (0, 25) .
+(A7)
+It is valid to use zero-mean Gaussian noise with a
+standard deviation of 5 to evaluate the algorithm because
+the reduced statistic Di
+k obtained by the proposed method
+itself follows a Gaussian distribution. Moreover, ρ is only
+a parameter in the noise estimation algorithm and is inde-
+pendent of the tracking process. Therefore, Gaussian noise
+can be directly simulated and then estimated to verify the
+noise estimation capability of the proposed algorithm.
+The RMSE is deﬁned as follows:
+RMSE =
+ 
+!
+!
+!
+"
+K
+k=1
+
+σ real −ˆσ
+2
+K
+(A8)
+where K is the data length, σ realis the true standard devia-
+tion, and ˆσ is the estimated standard deviation.
+Fig. 10 presents the relationship curves between the
+smoothing factor ρ and the RMSE. Speciﬁcally, Fig. 10(a)
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15433
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 23 =====
+Fig. 11.
+Results of ten runs of the proposed algorithm with the PSO module.
+shows the RMSE curve under strong prior conditions,
+Fig. 10(b) displays the results for weak priors, and Fig. 10(c)
+illustrates the curve under multiprior conditions. To ensure
+the robustness and reliability of the experimental results,
+each data point represents the average of 50 Monte Carlo
+runs. All three experiments use the same dataset and prior
+settings, allowing for direct comparability of the results.
+Comparative analysis shows that under stable noise
+conditions, when the prior information is reasonably set
+and highly reliable, the optimal value of the smoothing
+factor ρ is around 0.4, indicating the best balance between
+prior information and data-driven correction. At this value,
+the model efﬁciently integrates new observations while
+avoiding excessive dependence on historical data, thereby
+signiﬁcantly reducing the RMSE. However, when the prior
+information is weak or even misleading, the prior can ad-
+versely affect the algorithm’s performance. In particular,
+when ρ is small, the algorithm becomes overly depen-
+dent on prior information, leading to a notable increase
+in the inference error. As ρ increases, the reliance on the
+prior gradually decreases; when ρ reaches 1, the prior
+is effectively ignored, and the inference relies solely on
+the data.
+It is noteworthy that, with the adoption of the multiprior
+fusion strategy, the optimal value of ρ clearly shifts forward
+to approximately 0.58. This phenomenon is attributed to the
+ability of the multiprior approach to explore the solution
+space from multiple perspectives and to effectively mitigate
+the negative effects caused by weak priors through fusion.
+As a result, the optimal value of the smoothing factor is
+shifted.
+Therefore, in practical applications, it is recommended
+to adjust the smoothing factor ρ according to the re-
+liability of the prior information and the characteristics
+of the data in order to optimize the performance of the
+algorithm.
+C.
+PSO Discussion
+In this study, the complete PSO algorithm is not fully in-
+tegrated into the ﬁltering framework. Instead, we selectively
+incorporate the core concept of PSO to guide particle state
+adjustments and constrain their movement. This mechanism
+allows particles to converge more effectively toward the
+desired target state, especially when the initial estimation
+errorislarge,signiﬁcantlyimprovingtheconvergencespeed
+and overall stability of the algorithm.
+To objectively evaluate the effect of introducing the PSO
+concept, we compare the algorithm’s performance with and
+without PSO adjustment under identical parameter settings.
+To eliminate random effects, each scenario is independently
+run ten times, and all results are systematically analyzed and
+compared.
+In the experiment, the initial error is set to 30°, and
+the other experimental settings are the same as those in
+Simulation 2.
+A comparison of Figs. 11 and 12 shows that, without
+PSO adjustment, the algorithm converges to the true target
+trajectory in only six out of ten runs, with most convergence
+occurring after 2000 s. When PSO adjustment is applied, all
+tenrunsachieverapidconvergencetothetruetrajectory.No-
+tably, the introduction of PSO provides effective constraint
+and guidance for particle positions, signiﬁcantly enhances
+particle diversity, and suppresses particle degeneracy. As
+a result, the particle set is better able to explore the state
+space, leading to faster convergence and improved stability
+and robustness of the algorithm.
+D.
+Proof of the Signal Estimation Expression
+In practical engineering applications or when validating
+the algorithm using real measurement data, the true target
+signal is generally unavailable. Therefore, the estimated
+value is typically used as an approximation, which can be
+15434
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 24 =====
+Fig. 12.
+Results of ten runs of the proposed algorithm without the PSO module.
+obtained by the least squares method
+ˆsk
+m =
+
+AH ˆθi
+k|k
+
+A
+ˆθi
+k|k
+−1AH ˆθi
+k|k
+
+Hilbert
+
+zk
+m
+
+.
+(A9)
+The detailed solution process for the least squares esti-
+mation is given as follows:
+Objective function
+min
+s
+##zk
+m −A
+ˆθi
+k|k
+
+ˆsk
+m
+##2
+2 .
+(A10)
+Deﬁne the squared error cost function as
+J
+
+ˆsk
+m
+
+=
+###zk
+m −A
+
+ˆθi
+k|k
+
+ˆsk
+m
+###
+2
+2
+=
+
+zk
+m −A
+
+ˆθi
+k|k
+
+ˆsk
+m
+H 
+zk
+m −A
+
+ˆθi
+k|k
+
+ˆsk
+m
+
+.
+(A11)
+Expanding the cost function yields
+J
+
+ˆsk
+m
+
+=
+###zk
+m −A
+
+ˆθi
+k|k
+
+ˆsk
+m
+###
+2
+2
+=
+
+zk
+m
+Hzk
+m −
+
+A
+
+ˆθi
+k|k
+
+ˆsk
+m
+H
+zk
+m
+−
+
+zk
+m
+HA
+
+ˆθi
+k|k
+
+ˆsk
+m +
+
+A
+
+ˆθi
+k|k
+
+ˆsk
+m
+H
+A
+
+ˆθi
+k|k
+
+ˆsk
+m.
+(A12)
+Note that signal ˆsk
+m here is a complex scalar, so the
+transpose operation in Equation ˆsk
+m is equivalent to taking
+the conjugate.
+Next, the Wirtinger derivative is used to take the partial
+derivative of (ˆsk
+m)
+H
+∂J
+∂sH = −
+
+A
+ˆθi
+k|k
+Hzk
+m +
+
+A
+ˆθi
+k|k
+HA
+ˆθi
+k|k
+
+ˆsk
+m.
+(A13)
+Setting the derivative to 0 yields the optimality condition
+
+A
+ˆθi
+k|k
+Hzk
+m =
+
+A
+ˆθi
+k|k
+HA
+ˆθi
+k|k
+
+ˆsk
+m.
+(A14)
+The least squares estimation solution can, thus, be ob-
+tained as
+ˆsk
+m =
+
+AH ˆθi
+k|k
+
+A
+ˆθi
+k|k
+−1AH ˆθi
+k|k
+
+zk
+m.
+(A15)
+In (A9), the Hilbert transform is used to convert a real-
+valued signal into its analytic signal.
+REFERENCES
+[1] T. E. Tuncer and B. Friedlander, Classical and Modern Direction-
+of-Arrival Estimation. New York, NY, USA: Academic, 2009.
+[2] P. Ilyas, H. Chen, and G. Tremoulis, “Tracking of multiple moving
+speakers with multiple microphone arrays,” IEEE Trans. Speech
+Audio Process., vol. 12, no. 5, pp. 520–529, Sep. 2004.
+[3] H. Zhao, W. Luo, and W. Xu, “A robust DOA estimator based on
+maximum mixture complex correntropy for noisy input and impul-
+sive noise,” IEEE Trans. Circuits Syst. II, Exp. Briefs, vol. 71, no. 7,
+pp. 3588–3592, Jul. 2024.
+[4] S. Feintuch, J. Tabrikian, I. Bilik, and H. Permuter, “Neural-network-
+basedDOAestimationinthepresenceofnon-Gaussianinterference,”
+IEEE Trans. Aerosp. Electron. Syst., vol. 60, no. 1, pp. 119–132, Feb.
+2024.
+[5] R. O. Schmidt, “Multiple emitter location and signal parameter
+estimation,” IEEE Trans. Antennas Propag., vol. AP-34, no. 2,
+pp. 276–280, Mar. 1986.
+[6] H. Krim and M. Viberg, “Two decades of array signal processing
+research: The parametric approach,” IEEE Signal Process. Mag.,
+vol. 13, no. 4, pp. 67–94, Jul. 1996.
+[7] Y. Zhou, P. C. Yip, and H. Leung, “Tracking the direction-of-arrival
+of multiple moving target by passive arrays: Algorithm,” IEEE Trans.
+Signal Process., vol. 47, no. 10, pp. 2655–2666, Oct. 1999.
+[8] R. Cao, B. Liu, F. Gao, and X. Zhang, “A low-complex one-snapshot
+DOA estimation algorithm with massive ULA,” IEEE Commun.
+Lett., vol. 21, no. 5, pp. 1071–1074, May 2017.
+[9] M. Orton and W. Fitzgerald, “A Bayesian approach to tracking
+multiple targets using sensor arrays and particle ﬁlters,” IEEE Trans.
+Signal Process., vol. 50, no. 2, pp. 216–223, Feb. 2002.
+[10] H. Yan and H. H. Fan, “Signal-selective DOA tracking for wideband
+cyclostationary sources,” IEEE Trans. Signal Process., vol. 55, no. 5,
+pp. 2007–2015, May 2007.
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15435
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 25 =====
+[11] W. Chen, W. Zhang, Y. Wu, T. Chen, and Z. Hu, “Joint algo-
+rithm based on interference suppression and Kalman ﬁlter for
+bearing-only weak target robust tracking,” IEEE Access, vol. 7,
+pp. 131653–131662, 2019.
+[12] D. Kong and J. Chun, “A fast DOA tracking algorithm based on the
+extended Kalman ﬁlter,” in Proc. IEEE Nat. Aerosp. Electron. Conf.,
+Dayton, OH, USA, 2000, pp. 235–238.
+[13] C. Yardim, Z.-H. Michalopoulou, and P. Gerstoft, “An overview of
+sequential Bayesian ﬁltering in ocean acoustics,” IEEE J. Ocean.
+Eng., vol. 36, no. 1, pp. 71–89, Jan. 2011.
+[14] A. Masnadi-Shirazi and B. D. Rao, “A covariance-based superpo-
+sitional CPHD ﬁlter for multisource DOA tracking,” IEEE Trans.
+Signal Process., vol. 66, no. 2, pp. 309–323, Jan. 2018.
+[15] B. Zhang, X. Hou, and Y. Yang, “Robust underwater direction-of-
+arrival tracking with uncertain environmental disturbances using a
+uniform circular hydrophone array,” J. Acoust. Soc. Amer., vol. 151,
+no. 6, pp. 4101–4113, Jun. 2022.
+[16] X. Hou, Y. Qiao, B. Zhang, and Y. Yang, “Robust underwa-
+ter direction-of-arrival tracking based on variational Bayesian ex-
+tended Kalman ﬁlter,” JASA Exp. Lett., vol. 3, no. 1, Jan. 2023,
+Art. no. 014801.
+[17] B. Zhang, X. Hou, Y. Yang, L. Yang, and Y. Wang, “A fast variational
+Bayesian adaptive extended Kalman ﬁlter for robust underwater
+direction-of-arrival tracking,” IEEE Sensors J., vol. 23, no. 13,
+pp. 14709–14720, Jul. 2023.
+[18] S. K. Rao and V. S. Babu, “Unscented Kalman ﬁlter with application
+to bearings-only passive manoeuvring target tracking,” in Proc.
+Int. Conf. Signal Process., Commun. Netw., Chennai, India, 2008,
+pp. 219–224.
+[19] B. Liao, Z. G. Zhang, and S. C. Chan, “A new robust Kalman
+ﬁlter-based subspace tracking algorithm in an impulsive noise en-
+vironment,” IEEE Trans. Circuits Syst. II, Exp. Briefs, vol. 57, no. 9,
+pp. 740–744, Sep. 2010.
+[20] I. Arasaratnam and S. Haykin, “Cubature Kalman ﬁlters,” IEEE
+Trans. Autom. Control, vol. 54, no. 6, pp. 1254–1269, Jun. 2009.
+[21] B. Manavo˘glu, “Target tracking with passive sensors using CKF,”
+in Proc. IEEE 26th Signal Process. Commun. Appl. Conf., Izmir,
+Turkey, 2018, pp. 1–4.
+[22] X. Zhong, A. B. Premkumar, and A. S. Madhukumar, “Particle
+ﬁltering for 2-D direction of arrival tracking using an acoustic vector
+sensor,” in Proc. IEEE 19th Eur. Signal Process. Conf., Barcelona,
+Spain, 2011, pp. 245–249.
+[23] X. Zhong and A. B. Premkumar, “Particle ﬁltering approaches for
+multiple acoustic source detection and 2-D direction of arrival es-
+timation using a single acoustic vector sensor,” IEEE Trans. Signal
+Process., vol. 60, no. 9, pp. 4719–4733, Sep. 2012.
+[24] F. Dong, L. Xu, and X. Li, “Particle ﬁlter algorithm for DOA
+tracking using co-prime array,” IEEE Commun. Lett., vol. 24, no. 11,
+pp. 2493–2497, Nov. 2020.
+[25] T. Zhang, H. Li, L. Yang, and R. Wu, “DOA tracking for coher-
+ently distributed sources with particle ﬁlter,” Wirel. Pers. Commun.,
+vol. 121, pp. 2011–2027, 2021.
+[26] M. A. Calderon and U. States, Probability Density Analysis of Ocean
+Ambient and Ship Noise. San Diego, CA, USA: U.S. Navy Electron.
+Lab., 1964.
+[27] R. J. Urick, Ambient Noise in the Sea. Washington, DC, USA:
+Undersea Warfare Technol. Ofﬁce Naval Sea Syst. Command Dept.
+Navy, 1984.
+[28] R. Urick and W. A. Kuperman, “Ambient noise in the sea,” J. Acoust.
+Soc. Amer., vol. 86, no. 4, Oct. 1989, Art. no. 1626.
+[29] V. S. Amale, S. U. Kolhar, R. K. Shastri, and A. Das, “Non-
+Gaussianity and non-stationarity detection in underwater ambient
+noise using hypothetical tests,” in Proc. Conf. Adv. Signal Process,
+Pune, India, 2016, pp. 270–275.
+[30] V. B. Veeriayan and V. R., “Underwater ambient noise,” in Noise
+and Environment, D. Siano and A. E. González, Eds., ch. 8, Rijeka,
+Croatia: IntechOpen, 2020,.
+[31] M. Roth, E. Özkan, and F. Gustafsson, “A student’s t ﬁlter for heavy-
+tailed process and measurement noise,” in Proc. IEEE Int. Conf.
+Acoust. Speech Signal Process., 2013, pp. 5770–5774.
+[32] Y. Huang, Y. Zhang, N. Li, Z. Wu, and J. A. Chambers, “A novel ro-
+bust Student’s t-based Kalman ﬁlter,” IEEE Trans. Aerosp. Electron.
+Syst., vol. 53, no. 3, pp. 1545–1554, Jun. 2017.
+[33] Y. Huang, Y. Zhang, P. Shi, Z. Wu, J. Qian, and J. A. Chambers,
+“Robust Kalman ﬁlters based on Gaussian scale mixture distributions
+with application to target tracking,” IEEE Trans. Syst., Man, Cybern.
+Syst., vol. 49, no. 10, pp. 2082–2096, Oct. 2019.
+[34] J. He, B. Peng, Z. Feng, S. Zhong, B. He, and G. Wang, “A Gaussian
+mixture unscented Rauch–Tung–Striebel smoothing framework for
+trajectory reconstruction,” IEEE Trans. Ind. Informat., vol. 20, no. 5,
+pp. 7481–7491, May 2024.
+[35] Y. Huang, Y. Zhang, Y. Zhao, and J. A. Chambers, “A novel robust
+Gaussian–Student’stmixturedistributionbasedKalmanﬁlter,”IEEE
+Trans. Signal Process., vol. 67, no. 13, pp. 3606–3620, Jul. 2019.
+[36] O. M. Abdelrhman and S. Li, “Fractional-order maximum Versoria
+criterion algorithms for α-stable environment,” IEEE Trans. Circuits
+Syst. II, Exp. Briefs, vol. 71, no. 12, pp. 5049–5053, Dec. 2024.
+[37] Y. Huang, Y. Zhang, Z. Wu, N. Li, and J. Chambers, “A novel
+adaptive Kalman ﬁlter with inaccurate process and measurement
+noise covariance matrices,” IEEE Trans. Autom. Control, vol. 63,
+no. 2, pp. 594–601, Feb. 2018.
+[38] Y. Huang, F. Zhu, G. Jia, and Y. Zhang, “A slide window variational
+adaptive Kalman ﬁlter,” IEEE Trans. Circuits Syst. II, Exp. Briefs,
+vol. 67, no. 12, pp. 3552–3556, Dec. 2020.
+[39] F. Zhu, Y. Huang, C. Xue, L. Mihaylova, and J. Chambers, “A sliding
+window variational outlier-robust Kalman ﬁlter based on Student’s
+t-noise modeling,” IEEE Trans. Aerosp. Electron. Syst., vol. 58, no. 5,
+pp. 4835–4849, Oct. 2022.
+[40] X. R. Li and V. P. Jilkov, “Survey of maneuvering target tracking. Part
+I. Dynamic models,” IEEE Trans. Aerosp. Electron. Syst., vol. 39,
+no. 4, pp. 1333–1364, Oct. 2003.
+Xianghao Hou received the B.S. degree in de-
+tection, guidance, and control, the M.S. degree in
+guidance, navigation, and control, and the Ph.D.
+degree in aerospace engineering from North-
+western Polytechnical University (NPU), Xi’an,
+China, in 2012, 2015, and 2019, respectively.
+From 2019 to 2021, he was a Postdoctoral Fel-
+lowwithHarbinEngineeringUniversity,Harbin,
+China. He is currently an Associate Professor
+with NPU. His research interests include infor-
+mation fusion and target tracking.
+Yuxuan Chen received the B.S. degree in soft-
+ware engineering from Liaoning Technical Uni-
+versity, Fuxin, China, in 2023. He is currently
+working toward the M.S. degree in underwater
+acoustic engineering with the School of Marine
+Science and Technology, Northwestern Poly-
+technical University, Xi’an, China.
+His research interests include array signal pro-
+cessing and target tracking.
+15436
+IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS
+VOL. 61, NO. 6
+DECEMBER 2025
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 26 =====
+Weisi Hua received the B.S. degree in under-
+water acoustic engineering in 2024 from North-
+western Polytechnical University, Xi’an, China,
+where she is currently working toward the Ph.D.
+degree in underwater acoustic engineering with
+the School of Marine Science and Technology.
+Her research interests include array signal
+processing and target tracking.
+Yixin Yang (Member, IEEE) received the
+B.Eng. degree in applied electronic technology
+and the M.Eng. and Ph.D. degrees in under-
+water acoustic engineering from Northwestern
+Polytechnical University (NPU), Xi’an, China,
+in 1997, 1999, and 2002, respectively.From June
+2002 to June 2004, he was a Research Fellow
+with the School of Electrical and Electronic En-
+gineering, Nanyang Technological University,
+Singapore. Since June 2004, he has been with
+the School of Marine Science and Technology,
+NPU, where he became a professor in 2006. His research interests include
+underwater acoustics, array signal processing, signal detection and param-
+eter estimation, and target recognition.
+HOU ET AL.: ROBUST DOA TRACKING OF AN UNDERWATER TARGET IN NON-GAUSSIAN AND NONSTATIONARY
+15437
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:40:22 UTC from IEEE Xplore.  Restrictions apply. 

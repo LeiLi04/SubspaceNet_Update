@@ -1,0 +1,300 @@
+
+
+===== PAGE 1 =====
+235 
+A FAST DOA TRACKING ALGORITHM BASED ON THE 
+EXTENDED KALMAN FILTER 
+DONGKEON KONG and JOOHWAN CHUN 
+Scientific Computing Laboratory, Dept. of EECS, KAIST, 373-1 Kusong-dong, Yusong-gu, Taejon, 305-701, 
+South Korea, chun@sclab.kaist.ac.kr 
+Abstract. Many direction of arrival (DOA) tracking algorithms suffer heavy computational complexity 
+due to their dependence on the sample covariance matrix. We propose a new DOA tracking algorithm that 
+uses the extended Kalman filter (EKF). Because the proposed algorithm is based on a single snapshot, it 
+requires low computational complexity. Our simulation illustrates that the proposed algorithm performs 
+better than other methods 
+Key Words: DOA tracking, extended Kalman filter, Antenna array 
+2. PROBLEM FORMULATION 
+1. INTRODUCTION 
+There are many tracking algorithms using a 
+sensor array [?, ?I. 
+Most of the algorithms are 
+based on the covariance made with a block of 
+measurement snapshots obtained from a sensor 
+array. 
+These algorithms suffer two significant 
+drawbacks. The one is that large errors could 
+occur due to the assumption that the trajectory of 
+the DOA is fixed or linear function of time within 
+the block. The other is that the computational 
+complexity of them is very large due to the need 
+of processing a block of measurements at each 
+sampling time. 
+In this paper, we propose a new DOA track- 
+ing algorithm that overcomes these shortcomings 
+using an EKF-based algorithm. The EKF is the 
+most widely used methods for recursive nonlinear 
+estimation [?I. 
+Because it depends on a single 
+snapshot rather than the sample covariance, the 
+required computation is significantly low and the 
+adaptation to moving targets is faster than other 
+ones. 
+In section 2, the data model is presented and 
+one of the previous algorithms in [?I is explained. 
+The proposed algorithm is explained and its 
+computational complexity is given in section 3. 
+In section 4, we study the performance of the 
+proposed algorithm through simulation. Finally 
+conclusions are made in section 5. 
+Consider an array of p uniformly-spaced sensors 
+with inter-sensor distance d. We assume that q 
+targets emit narrowband LOS(Line Of Sight) sig- 
+nals. Fading effects, Doppler effects and multipath 
+signals are assumed to be negligible. Then the re- 
+ceived waveform on the array can be expressed as 
+z(t) = A(B(t))s(t) + n(t) 
+(1) 
+where z(t) = [zl(t), zz(t), . . . ,zp(t)lT denotes 
+the received complex waveform vector, s ( t )  = 
+[sl(t), s2(t), . . . , s,(t)] denotes the complex sig- 
+nal vector emitted by the targets, n(t) = 
+[ n ~  
+(t), n2(t), . . . , np(t)lT is the complex signal 
+vector of measurement noise and 
+A(6(t)) = 
+[a(&(t)),a(&(t)), . . . ,a(e,(t))] is the p x q steering 
+vector matrix. The steering vector is given by 
+a(4(t)) = [I, exp(--j2xf sin(&(t))), . . . , exp(-j2(p - 
+l)xf~in(&(t)))]~ 
+. The sampling interval is de- 
+noted by T and we get the sampled measurement 
+z(n) = z(nT). Then direction-of- arrival(D0A) 
+tracking problem is to estimate O(n) = B(nT),n = 
+1,2,. . . , using the measurement snapshots. 
+Recently, a DOA tracking algorithm based on a 
+modified beamformer has been proposed [?I. The 
+key idea of the algorithm is that the DOA B ( t )  
+within interval [to, to + MT] can be approximated 
+by a local truncated Taylor series O ( t 0 )  +B'(to)(t- 
+t o )  where M is the sliding window size. This ap- 
+proximation will be justified when the window size. 
+is sufficiently small and the higher order terms of 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 12:58:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+Taylor series of O ( t )  is negligible. Then the DOA 
+tracking problem is to estimate the state vector 
+z = ( z o , z ~ ) ~  
+where the DOA zo = @(to) and the 
+angular velocity z1 = 6 (to). The derivation is 
+based on the weighted least squares approach. The 
+result is referred to as the local polynomial approx- 
+imation (LPA)-beamformer whose cost function is 
+Ro+M 
+f(z, 
+ko) = 
+laH(zo+z1(12--o)T)~(n)12. 
+(2) 
+n=ko 
+The state vector is obtained by a two-dimensional 
+search of the maxima of the above cost function. 
+When 2 1  = 0, the LPA-beamformer is the con- 
+ventional beamformer. The major drawback of 
+the LPA-beamformer is to require heavy compu- 
+tational load and the two-dimensional searching 
+for the maximum of the cost function. The other 
+drawback is that the linear approximation of the 
+DOA cannot provide an accurate estimate when 
+the target is moving fast on a nonlinear track. 
+3. 
+THE EKF-BASED DOA TRACK- 
+ING ALGORITHM 
+Let us define the state by zi(k) = [0i(k),&(k)lT 
+for ith target. 
+We assume that the dynamics 
+of the ith target is governed by following state 
+equation. 
+where wi(k) is the process noise with covariance 
+matrix Qi. The last term Gwi(k) explains the 
+random acceleration. The linearized measurement 
+model is obtained as 
+z(k + 1) = H ( k ,  s(k))z(k) + w(k) 
+(4) 
+where 
+is the real-valued Jacobian of A(B(t))s(t) in (l), 
+the measurement noise v(k) is assumed to have the 
+known covariance matrix R = E ( ~ ( k ) v ( k ) ~ )  
+and 
+the state vector z ( k )  is the stacked column vector 
+of q targets' states [ET, 
+z:, 
+. . . ,.TI', 
+where 
+S(Q) = - sin(nb sin(8i (k))) cos(& (k))si (k) 
+c(i,b) = - cos(nbsin(Oi(k)) cos(&(k))si(k) 
+We will use the following notation in EKF alge 
+rithm. 
+&(klk - 1) = the predicted estimate of zi(k) 
+based on [z(l), . . . , z(k - l)] 
+&(klk) = the filtered estimate of zi(k) 
+The symbol si(k) in (??) can be estimated by us- 
+ing the ML (maximum likelihood) approach: 
+s^i(k) = (AH(6i(klk - l)>A(ei(klk - 
+A"(Qi(klk - l)))@) (5) 
+where 6i(klk - 1) is the first element of &(klk- 1). 
+Then our EKF-based algorithm can be summa- 
+rized as follows 
+k(O(0) = XO, P(OI0) = P(0) 
+FOR k = 1,2,3,. . . DO 
+k(klk - 1) = Fx(k - Ilk - 1) 
+P(klk - 1) = FP(k - Ilk - l)FT+ 
+R,(k) = R + H(k)P(klk - l)HT(k) 
+K(k) = P(klk - l)HT(k)R,'(k) 
+k(klk) = I2(klk - 1) + K(k)[.~(k)- 
+P(klk) = P(klk - 1) - P(klk - l)HT(k) 
+R,l(k)H(k)P(k(k - 1) 
+G Q G ~  
+h(w4k - 1),qk))l 
+END-FOR 
+In the above, we have used the notation 
+9 
+F = diag(F,. . . , F\) 
+h(k(k1k - l),B(k)) = A(B(klk - l))B(k) 
+Now we address the data association problem. 
+When the targets are well separated, &(klk) will 
+be associated to the kth target with no difficulty 
+using the above algorithm. However, when targets 
+are crossing, i.e., lei(klk - 1) - Bj(klk - 111 < 6 
+for some different i, j and some threshold 6, the 
+association will be failed owing to large error in 
+the symbol estimation in (??). If the velocities of 
+the targets are sufficiently different, however, the 
+236 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 12:58:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+Figure 1: (a) Tracking performance of the pro- 
+posed algorithm. (b) Tracking performance of the 
+LPA-beamformer 
+crossing problem can be solved using just the time- 
+update in (??). In this case, tracking algorithm 
+ignores measurements. 
+We compare the computational complexity 
+of the proposed algorithm .with the LPA- 
+beamformer. 
+Assume that q is not large. 
+Proposed algorithm requires the number of real 
+multiplications 5q3 + low2 +8p2q. Computational 
+complexity of the LPA-beamformer depends on 
+the range and searching intervals of 2 0  and 2 1  
+in (??). If we assume the range and searching 
+intervals of 20 is [-90",90°] and (YO and those 
+of 2 1  is [-3",3'] per sample and ,Bo per sample, 
+then the LPA-bemaformer requires the complex 
+multiplications of 108appM and the square root 
+1080,BM to generate the map of the cost function. 
+The required computation of maximum-search 
+operation of the LPA-beamformer is negligible 
+when q is small. Brief investigation above shows 
+that computational burden is much relieved in 
+the proposed algorithm. 
+4. SIMULATION RESULTS 
+We consider a uniform linear array of eight 
+omidirectional sensors with half wavelength 
+Figure 2: Tracking error vs. time index. (a) SNR 
+= 6dB. (b) SNR = 8dB. (c) SNR = 10dB. (d) SNR 
+= 12dB. 
+separation. 
+We assume that the targets emit 
+BPSK signals of equal power. 
+In the first simulation, we compare the pro- 
+posed algorithm with the LPA-beamformer [?]. 
+The number of targets is two and the SNR (Sig- 
+nal to Noise Ratio) is 6dB. The true initial DOA 
+is [30", -30'1. 
+We set the initial state of EKF by 
+x(0) = [31°, 0, -29", 01. The measurement noise 
+covariance matrix R is assume to be known ex- 
+actly. The process noise covariance matrix Q is set 
+by 0.21, and P(0) is 0.11 where I is the identity 
+matrix. In our simulation of LPA-beamformer the 
+size M of the sliding window is 16, and the search- 
+ing intervals are 0.5" and 0.5" per sample. We run 
+Monte-Carlo 10 laps. In Fig.1, the tracking perfor- 
+237 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 12:58:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+40- 
+10 - 
+o 
+20 
+40 
+60 
+a0 
+io0 
+120 
+140 
+160 
+iao 
+200 
+Time Index 
+Figure 3: Performance of the proposed algorithm 
+when targets are crossing 
+mances of the proposed algorithm and the LPA- 
+beamformer are illustrated. As shown in (a), the 
+proposed algorithm tracks the fast varying DOA 
+accurately. In (b) note that the LPA-beamformer 
+experiences some errors most of time. This ex- 
+ample reveals the superiority of the proposed al- 
+gorithm to the LPA-beamformer when targets are 
+moving fast with a nonlinear DOA trajectory. 
+In the second simulation, performances of the 
+proposed algorithm with different SNRs are illus- 
+trated. The simulation environment is the same 
+except that Monte Carlo simulation runs 20 laps. 
+As SNR increases, the overall tracking error of the 
+proposed algorithm is reduced gradually as shown 
+in Fig. 2. 
+In the third simulation, the tracking perfor- 
+mance of the proposed algorithm is illustrated for 
+the crossing trajectories. The sampling time is 
+changed to 0.05s, the threshold 6 is 4” and SNR is 
+6dB. As seen in Fig. 3, the crossing problem can 
+be handled well when the targets are moving with 
+different velocities. When targets are crossing, 
+proposed algorithm performs the time-update 
+only, which will give gradually increasing traking 
+error. 
+5. CONCLUSIONS 
+We present a new DOA tracking algorithm 
+based on the EKF using a single snapshot. The 
+performance of the proposed algorithm has been 
+examined through computer simulation and 
+analysis. 
+It has been shown that the proposed algorithm 
+has much less computational complexity in com- 
+parison with the previous algorithm and has good 
+performance even when targets are moving fast. 
+The initialization of the EKF may be done through 
+a conventional DOA estimation method such as 
+MUSIC. The accurate resolution of the crossing 
+problem requires further works. 
+REFERENCES 
+V. Katkovnik and A. B. Gershman, “ l e  
+cal polynomial approximation based beam- 
+forming for source localization and tracking 
+in nonstationary environments,” IEEE signal 
+processing lett., pp. 3-5, Jan. 2000. 
+C. R. RAO, C. R. Sastry and B. Zhou, “rack- 
+ing the direction of arrival of multiple mov- 
+ing targets,” IEEE tmns. on signal process- 
+ing, pp. 1133-1144, May 1994. 
+Jazwinski, A. H, Stochastzc processes and fil- 
+tering theory, Academic press, New York, 
+1970 
+238 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 12:58:42 UTC from IEEE Xplore.  Restrictions apply. 

@@ -1,0 +1,1001 @@
+
+
+===== PAGE 1 =====
+Chinese Journal of Electronics
+Vol.24, No.1, Jan. 2015
+A Sequential Bayesian Algorithm for DOA
+Tracking in Time-Varying Environments∗
+GAO Xunzhang1, LI Xiang1, Jason Filos2 and DAI Wei2
+(1. College of Electronic Science and Engineering, National University of Defense Technology, Changsha 410073, China)
+(2. Department of Electrical and Electronic Engineering, Imperial College London, London SW7 2AZ, United Kingdom)
+Abstract — This paper focuses on the Direction of ar-
+rival (DOA) tracking problem in dynamic environments
+where each source signal is modeled as a Gaussian process
+with time-varying mean and unknown covariance. In the
+presence of highly dynamic environment, benchmark algo-
+rithms usually have deteriorated performance. By treating
+the source signals as a function of the arrival angles, a
+sequential Bayesian tracking approach named Simultane-
+ous angle-source update (SASU) is proposed based on the
+Maximum a posteriori (MAP) principle. The key feature of
+the proposed approach is to simultaneously update the ar-
+rival angles and the source signals in the Kalman ﬁlter step
+by converting the update process of the state vector into a
+joint optimization problem. An iterative Newton method
+to eﬃciently solve the joint optimization problem is pro-
+posed. The accuracy and robustness of the proposed SASU
+algorithm is demonstrated via simulations.
+Key words — Time-varying, DOA tracking, Sequential
+Bayesian, Kalman ﬁltering.
+I. Introduction
+Direction of arrival (DOA) tracking using sensor arrays is
+a classical problem in array signal processing due to its wide
+applications in radar, sonar and communications.
+Two popular approaches for tracking arrival angles have
+been proposed in the past decades. The ﬁrst approach is
+characterized by a two-step procedure that ﬁrst estimates
+the arrival angles and then associates the estimated angles
+with the right targets. For DOA estimation, beamforming and
+signal-subspace techniques such as Multiple signal classiﬁca-
+tion (MUSIC)[1], Estimation of signal parameters via rota-
+tional invariance techniques (ESPRIT)[2] as well as maximum
+likelihood principle based methods[3,4] are widely used. Due
+to the need of multiple snapshots from diﬀerent time in-
+stants, these approaches are not suitable for fast moving tar-
+gets. Furthermore the extra steps of data association intro-
+duce unnecessary computational complexity and performance
+loss[5]. The other approach is marked by applying tracking
+algorithms, for example, Kalman ﬁltering (KF), directly to
+arrival angles[4]. This approach often requires more prior in-
+formation, including proper statistical modeling, knowledge
+about the number of sources, and reasonable initial estimates
+of arrival angles. Since the measurement vector is a nonlinear
+function of the arrival angles, nonlinear Kalman ﬁlters, such
+as the Extended Kalman ﬁlter (EKF)[6,7], Iterated extended
+Kalman ﬁlter (IEKF)[8], Unscented Kalman ﬁlter (UKF)[9]
+and Particle ﬁlter (PF)[10] have been proposed.
+In these approaches, two diﬀerent signal models are con-
+sidered according to diﬀerent applications: the deterministic
+model and the stochastic model[11]. The former assumes the
+tracked signals to be deterministic but unknown, and the lat-
+ter characterizes the tracked signals as a stochastic process. In
+practical applications, some signals such as the acoustic sig-
+nals from submarines and radar echoes from stealth objects
+are often assumed to be complex random process with time-
+varying mean and unknown covariance[12,13]. In the presence
+of this time-varying source environment, the aforementioned
+benchmark algorithms usually fail or have deteriorated perfor-
+mance.
+The main contribution of this paper is proposing a novel
+sequential Bayesian tracking approach named Simultaneous
+angle-source update (SASU), which focuses on the dynamic
+signal tracking problem discussed in Ref.[12] where each source
+signal is modeled as the mixture of a zero-mean Gaussian sig-
+nal and a sinusoidal component with unknown coeﬃcients and
+frequencies. For simplicity, we assume that the frequencies of
+the sinusoids and the covariance of the Gaussian noise have
+been estimated previously. Based on the Maximum a poste-
+riori (MAP) principle in Bayesian statistics, the update pro-
+cess of the state vector is converted into a joint optimization
+problem at each discrete time instant during the tracking pe-
+riod. The key feature of our proposed approach is to simul-
+taneously update the arrival angles and the source signals in
+the KF step by treating the source signals as a function of
+the arrival angles. With this treatment, the cost function of
+the joint optimization problem involves only the arrival an-
+∗Manuscript Received Mar. 2014; Accepted June 2014. This work is supported by the National Science Foundation for Distinguished
+Young Scholars (No.61025006) and the University Defence Research Center (UDRC), UK.
+c⃝2015 Chinese Institute of Electronics. DOI:10.1049/cje.2015.01.023
+
+
+===== PAGE 2 =====
+A Sequential Bayesian Algorithm for DOA Tracking in Time-Varying Environments
+141
+gles. Subsequently, we design a iterative Newton method to
+eﬃciently minimize the cost function and update the state
+estimates. Simulation results show that our proposed SASU
+approach is more robust and accurate than the UKF, EKF
+and IEKF in the context of DOA tracking of highly dynamic
+sources.
+The remainder of this paper is organized as follows. Section
+II introduces the system model and the state equation. The
+proposed method is detailed in Section III. Numerical simu-
+lations and conclusions appear in Section IV and Section V,
+respectively.
+II. System Model and State Equation
+Consider the DOA tracking problem of far-ﬁeld and
+narrow-band source signals with a Uniform linear array (ULA)
+of m isotropic antennas. At the time instant t the measurement
+vector y(t) ∈Cm is given by
+y(t) = A (θ(t)) s(t) + w(t)
+(1)
+where s(t) = [s1(t), · · · , sn(t)]T and θ(t) = [θ1(t), · · · , θn(t)]T
+denote
+n
+independent
+source
+signals
+and
+their
+corre-
+sponding arrival angles, respectively. The array direction
+matrix A(θ(t)) and the direction vector a(θn) are de-
+ﬁned as
+[a(θ1(t)), · · · , a(θn(t))] and
+[1, e−j2π(d/λ) sin θn · · ·,
+e−j2π(d/λ)(m−1) sin θn]T, respectively. w(t) ∈Cm is the com-
+plex Gaussian noise vector.
+Assume that each source signal is modeled as the mixture
+of a sinusoidal component ψ(ω, t) = [ejω1t, ejω2t, · · · , ejωJ t]T
+and a temporally zero-mean white Gaussian process ζ(t) =
+[ζ1(t), · · · , ζn(t)]T with covariance Σζ
+[12], that is
+s(t) = Cψ(ω, t) + ζ(t)
+(2)
+where C is the n × J coeﬃcient matrix of sinusoidal com-
+ponents for all sources and J is the total number of sinu-
+soidal components with diﬀerent frequencies in the received
+signals. Thus each source signal is a complex Gaussian process
+with time-varying mean, i.e., s(t) ∼N(Cψ(ω, t), Σζ).
+Further assume that each source consists of only one si-
+nusoidal signal, with its frequency derived using the method
+in Ref.[12]. By some mathematical derivations, s(t) can be
+recursively expressed as
+s(t) = Bs(t −1) + v(t)
+(3)
+where B = diag(exp(jωTs)) ∈Cn×n is a constant diagonal
+matrix and v(t) is a white Gaussian random process with co-
+variance 2Σζ.
+Let ˙θi(t) be the angular speed for the ith source signal, and
+˙θ(t) = [ ˙θ1(t), · · · , ˙θn(t)]T. For notational convenience, we use
+¯θ(t) to denote the vector [θT(t), ˙θT(t)]T. The state equation
+can be written as[14]
+¯θ(t) = F ¯θ(t −1) + u(t)
+(4)
+where F =
+"
+In
+TsIn
+0
+In
+#
+, In is the n × n identity matrix
+and Ts is the sampling interval.
+u(t) ∈R2n is assumed to
+be a Gaussian random process with zero-mean and covariance
+matrix[15,16]
+Σu = σ2
+u
+"
+T 3
+s
+3 In
+T 2
+s
+2 In
+T 2
+s
+2 In
+TsIn
+#
+(5)
+III. Proposed SASU Algorithm
+1. Bayesian method for state update
+Note that the signal vector s(t) and the measurement vec-
+tor y(t) are complex vectors. It is convenient to rewrite the
+dynamic system in terms of real vectors. Deﬁne
+¯
+B =
+"
+Re(B)
+−Im(B)
+Im(B)
+Re(B)
+#
+¯
+A(¯θ(t)) =
+"
+Re(A(¯θ(t)))
+−Im(A(¯θ(t)))
+Im(A(¯θ(t)))
+Re(A(¯θ(t)))
+#
+Then one has
+¯s(t) = ¯
+B ¯s(t −1) + ¯v(t)
+¯θ(t) = F ¯θ(t −1) + u(t)
+¯y(t) = ¯
+A(¯θ(t))¯s(t) + ¯w(t)
+(6)
+where ¯s(t), ¯v(t), ¯y(t),
+¯w(t) denote the real vectors con-
+sisting of their real part and imaginary part (e.g., ¯s(t) =
+[Re(s(t))Im(s(t))]T). We assume ¯v(t) ∼N(0, Σv) and ¯w(t) ∼
+N(0, Σw) where Σv = σ2
+vI2n and Σw = σ2
+wI2m. For simplicity,
+we assume that σ2
+v and σ2
+w have been estimated preliminary
+by the approach proposed in Ref.[12]. Note that the scalar no-
+tation of the subscript in the covariance matrices denotes that
+the covariance will not be updated with the time instant.
+The aim of DOA tracking is to estimate ˆ¯θ(t) given ¯y(t)
+with predictions ˆ¯s(t|t −1) = ¯
+Bˆ¯s(t −1), ˆ¯θ(t|t −1) = F ˆ¯θ(t −
+1). Since the source signals vary with time, they are also taken
+inside the update process together with DOAs. Subsequently
+the state vector is updated according to the MAP principle,
+i.e.,
+“
+ˆ¯s(t), ˆ¯θ(t)
+”
+= arg max
+¯s, ¯θ
+Pr
+“
+¯s, ¯θ|¯y(t), ˆ¯s(t|t −1), ˆ¯θ(t|t −1)
+”
+.
+To simplify the notations, let ¯s0 = ˆ¯s(t|t−1), ¯θ0 = ˆ¯θ(t|t−1)
+and ¯
+A
+`¯θ
+´
+= ¯
+A
+` ¯θ(t)
+´
+. For any vector x and a positive deﬁnite
+covariance matrix Σ, deﬁne ∥x∥2
+Σ−1 = xTΣ −1x. Then by the
+Gaussian assumption, one has
+−log Pr
+“
+¯s, ¯θ|¯y(t), ˆ¯s(t|t −1), ˆ¯θ(t|t −1)
+”
+= c + 1
+2
+‚‚¯y(t) −¯
+A
+`¯θ
+´
+¯s
+‚‚2
+Σ−1
+w
++1
+2
+‚‚¯θ −¯θ0‚‚2
+Σ−1
+¯
+θ(t|t−1) + 1
+2
+‚‚¯s −¯s0‚‚2
+Σ−1
+¯s(t|t−1)
+(7)
+where c is a constant independent of ¯θ and ¯s, and Σ ¯θ(t|t−1)
+and Σ ¯s(t|t−1) are the predicted estimate covariance matrices
+for ¯θ(t) and ¯s(t) by their estimates at t −1 time instant re-
+spectively. Maximizing the posteriori probability is equivalent
+to minimizing Eq.(7).
+This is a joint optimization problem with respect to ¯s and
+¯θ. The key of SASU is to treat the source signals ¯s as a func-
+tion of the arrival angles ¯θ. This is based on the observation
+that for a given ¯θ, the optimal ¯s to minimize Eq.(7) is unique:
+ 20755597, 2015, 1, Downloaded from https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/cje.2015.01.023 by Area Sistemi Dipart & Doc, Wiley Online Library on [19/02/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+
+
+===== PAGE 3 =====
+142
+Chinese Journal of Electronics
+2015
+take the partial derivative of Eq.(7) with respect to ¯s and set
+it to zero, it can be veriﬁed that the optimal ¯s is given by
+¯s
+`¯θ
+´
+= ¯s0 +
+“
+¯
+AT ` ¯θ
+´
+Σ −1
+w
+¯
+A
+`¯θ
+´
++ Σ −1
+¯s(t|t−1)
+”−1
+· ¯
+AT `¯θ
+´
+Σ −1
+w
+`¯y(t) −¯
+A
+`¯θ
+´ ¯s0´
+(8)
+where we use the notation ¯s
+`¯θ
+´
+to emphasize that the optimal
+¯s is determined by ¯θ. As a result, the cost function in Eq.(7)
+can be written as
+f
+`¯θ
+´
+=
+‚‚¯y(t) −¯
+A
+`¯θ
+´
+¯s
+`¯θ
+´‚‚2
+Σ−1
+w
++
+‚‚¯θ −¯θ0‚‚2
+Σ−1
+¯
+θ(t|t−1) +
+‚‚¯s
+`¯θ
+´
+−¯s0‚‚2
+Σ−1
+¯s(t|t−1)
+(9)
+It is worth noting that the optimization is with respect to
+the arrival angles ¯θ only and that the source signals ¯s will be
+automatically updated when ¯θ is updated.
+2. Iterative Newton method for optimization
+The focus of this subsection is to outline the eﬃcient min-
+imization process of the cost function in Eq.(9). To this end,
+we design a Newton method in which the second order deriva-
+tive of f is not exactly computed. The basic idea is sketched
+as follows. At a given point, say ¯θk, we approximate the cost
+function f by a quadratic function q. The optimal ¯θ that min-
+imizes q admits a closed form, denoted by ¯θ∗. It is clear that
+¯θ∗may not be the minimizer of f. However, q is designed so
+that ¯θ∗−¯θk always gives a descent direction of f. Hence, one
+can search along the line ¯θ (α) = ¯θk + α
+`¯θ∗−¯θk´
+to ﬁnd an
+α ∈[0, 1] such that f
+`¯θ (α)
+´
+< f
+`¯θk
+´
+. Set ¯θk+1 = ¯θ (α). Now
+one has an iterative procedure to minimize the cost function
+f. The quadratic approximation q is deﬁned as follows. For a
+given point ¯θk, deﬁne
+Gk = ∇
+“
+¯
+A
+`¯θ
+´ ¯s
+“
+¯θk””
+(10)
+where the gradient is with respect to ¯θ. Note that in the ap-
+proximation q, ¯s is ﬁxed to ¯s
+` ¯θk´
+.
+Deﬁne δk = ¯θ −¯θk and ¯yr(t) = ¯y(t)−¯
+A
+` ¯θk´ ¯s
+`¯θk´
+. Then
+at a neighborhood of ¯θk,
+¯y(t) −¯
+A
+`¯θ
+´ ¯s
+`¯θ
+´
+≈¯y(t) −¯
+A
+“
+¯θk”
+¯s
+“
+¯θk”
+−Gk “
+¯θ −¯θk”
+= ¯yr(t) −Gkδk
+and the cost function in Eq.(9) can be approximated by
+‚‚‚¯yr(t) −Gkδk‚‚‚
+2
+Σ−1
+w
++
+‚‚ ¯θ −¯θ0‚‚2
+Σ−1
+¯
+θ(t|t−1) + c
+≈
+‚‚‚¯yr(t) −Gkδk‚‚‚
+2
+Σ−1
+w
++
+‚‚‚δk + ¯θk −¯θ0‚‚‚
+2
+Σ−1
+¯
+θ(t|t−1)
+|
+{z
+}
+q
++c
+where c =
+‚‚¯s
+`¯θk´
+−¯s0‚‚
+Σ−1
+¯s(t|t−1) is a constant independent
+of ¯θ. It is clear that q is a quadratic function of δk. When
+Σ −1
+w
+and Σ ¯θ(t|t−1) are invertible, the approximation q admits
+a unique minimizer given by
+δ∗=
+“
+GkTΣ −1
+w Gk + Σ −1
+¯
+θ(t|t−1)
+”−1
+·
+“
+GkTΣ −1
+w ¯yr(t) −Σ −1
+¯
+θ(t|t−1)
+“
+¯θk −¯θ0””
+(11)
+Besides the closed form for the minimizer, another impor-
+tant property of q is the following proposition.
+Proposition
+Suppose that the vector δ∗in Eq.(11) is
+nonzero. Then there exists a strictly positive constant α > 0
+such that f
+` ¯θk + αδ∗´
+< f
+`¯θk´
+.
+Proof
+At each iteration the cost function f is approxi-
+mated by the quadratic function q around the point ¯θk. The
+vector δ∗points towards the minimum of the quadratic func-
+tion and is also the minimizer of Eq.(9) at ¯θk. In other words
+∇f(¯θk) = −δ∗or equivalently ⟨δ∗, −∇f⟩> 0. According to
+the ﬁrst order Taylor series expansion centered in ¯θk we obtain
+f
+“
+¯θk + αδ∗”
+= f
+“
+¯θk”
++ α
+`
+∇f| ¯θk
+´T δ∗+ o(αδ∗)
+(12)
+For a given ¯θk,
+‚‚¯s
+`¯θk´
+−¯s0‚‚
+Σ−1
+¯s(t|t−1) is a constant inde-
+pendent of ¯θ and by expanding Eq.(9) we obtain
+f(¯θk) =
+h
+¯y(t) −¯
+A
+“
+¯θk”
+¯s
+“
+¯θk”iT
+Σ −1
+w
+h
+¯y(t) −¯
+A
+“
+¯θk”
+¯s
+“
+¯θk”i
++
+h
+¯θk −¯θ0iT
+Σ −1
+¯θ(t|t−1)
+h
+¯θk −¯θ0i
+Since ∂¯y(t)/∂¯
+θk = 0 and from Eq.(10) we obtain
+∇f| ¯θk = −GkTΣ −1
+w
+“
+¯y(t) −¯
+A
+“
+¯θk”
+¯s
+“
+¯θk””
++Σ −1
+¯θ(t|t−1)
+“
+¯θk −¯θ0”
+For simplicity, let
+a = GkTΣ −1
+w ¯yr(t) ∈R2n×1
+b = Σ −1
+¯θ(t|t−1)
+“
+¯θk −¯θ0”
+∈R2n×1
+c = GkTΣ −1
+w Gk + Σ −1
+¯θ(t|t−1) ∈R2n×2n
+Consequently, one has
+∇f| ¯θk = −(a −b)
+δ∗= c−1(a −b)
+and by Eq.(12)
+f
+“
+¯θk + αδ∗”
+−f
+“
+¯θk”
+= −α(a −b)Tc−1(a −b)
++o(αδ∗)
+For all α that are suﬃciently small,
+it follows that
+o(aδ∗) ≪
+˛˛−α(a −b)Tc−1(a −b)
+˛˛. That is to say, there ex-
+ists a strictly positive constant α, such that
+f(¯θk + αδ∗) < f(¯θk)
+The signiﬁcance of this property is that δ∗
+k gives a descent
+direction of f. Hence, an iterative procedure to monotonically
+decrease f can be designed. The procedure used in this work
+is outlined in Algorithm 1.
+Finally, we explicitly compute the gradient Gk deﬁned in
+Eq.(10). Since
+¯
+A
+`¯θ
+´
+¯s
+`¯θk´
+∈R2m and ¯θ ∈R2n, one has
+Gk ∈R2m×2n. From the deﬁnition of A
+`¯θ
+´
+, it can be veri-
+ﬁed that the (i, ℓ)th entry of Gk, denoted by Gk
+i,ℓ, 1 ≤i ≤2m,
+1 ≤ℓ≤2n, is given by
+ 20755597, 2015, 1, Downloaded from https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/cje.2015.01.023 by Area Sistemi Dipart & Doc, Wiley Online Library on [19/02/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+
+
+===== PAGE 4 =====
+A Sequential Bayesian Algorithm for DOA Tracking in Time-Varying Environments
+143
+Algorithm 1
+An Iterative Procedure to Minimize f
+Input ¯y(t), ¯θ0 = ˆ¯θ(t|t −1), ¯s0 = ˆ¯s(t|t −1), Σ w, Σ ¯θ(t|t−1),
+Σ ¯s(t|t−1), error tolerance constants ϵ1, ϵ2 ∈R+.
+Output
+ˆ¯θ(t|t) and ˆ¯s(t|t).
+Iteratively perform the following: k = 0, 1, · · ·
+1) Compute δ∗according to Eq.(11).
+2) Find ¯θk+1 = ¯θk + αδ∗by performing the following:
+(a) If ∥δ∗∥2 < ϵ1, set ˆ¯θ(t | t) = ¯θk and ˆ¯s(t | t) = ¯s
+`¯θk´
+,
+and quit this algorithm.
+(b) Set α = 1. If f
+`¯θk + αδ∗´
+≥f
+`¯θk´
+, then decrease
+α via α = α/2 until f
+`¯θk + αδ∗´
+< f
+`¯θk´
+.
+(c) Set ¯θk+1 = ¯θk + αδ∗.
+(d) If
+˛˛f
+`¯θk+1´
+−f
+` ¯θk´˛˛ < ϵ2f
+`¯θk´
+, then set ˆ¯θ(t | t) =
+¯θk+1 and ˆ¯s(t | t) = ¯s
+`¯θk+1´
+, and quit this algo-
+rithm. Otherwise, start a new iteration.
+Gk
+i,ℓ=
+∂
+` ¯
+A
+`¯θ
+´
+¯s
+` ¯θk´´
+i
+∂¯θℓ
+=
+8
+>
+>
+>
+>
+>
+>
+<
+>
+>
+>
+>
+>
+>
+:
+2π d
+λ (i −1) cos θℓ[−sin
+`
+2π d
+λ (i −1) sin θℓ
+´
+¯sℓ
++ cos
+`
+2π d
+λ (i −1) sin θℓ
+´
+¯sm+ℓ], if i ≤m, and ℓ≤n
+2π d
+λ (i −1) cos θℓ[−cos
+`
+2π d
+λ (i −1) sin θℓ
+´
+¯sℓ
+−sin
+`
+2π d
+λ (i −1) sin θℓ
+´
+¯sm+ℓ], if i > m, and ℓ≤n
+0,
+if ℓ> n
+In Kalman ﬁltering, one needs to update both the state
+and the covariance matrix of the state. That is, estimate Σ ¯s(t)
+and Σ ¯θ(t) from Σ ¯s(t−1) and Σ ¯θ(t−1). For the purpose of co-
+variance update, we linearize the system at the point ˆ¯s (t|t)
+and ˆ¯θ (t|t) (to simplify the notations, we use ˆ¯s and ˆ¯θ hence-
+forth). With respect to ¯s, the system can be approximated by
+¯y(t) = ¯
+A
+“ˆ¯θ
+”
+¯s+ ¯w. Following from the covariance update step
+in the standard Kalman ﬁlter and Woodbury matrix inverse
+identity, one has
+Σ −1
+¯s(t|t−1) = Σ −1
+s
+−Σ −1
+s
+“
+Σ −1
+¯s(t−1) + Σ −1
+s
+”
+Σ −1
+s
+Σ −1
+¯s(t) = Σ −1
+¯s(t|t−1) + ¯
+AT “ˆ¯θ
+”
+Σ −1
+w
+¯
+A
+“ˆ¯θ
+”
+where the matrix Σ s is deﬁned at the beginning of Section
+III. With respect to ¯θ, the system can be approximated by
+¯y(t) = ¯
+A
+“ˆ¯θ
+”
+ˆ¯s +G
+“
+¯θ −ˆ¯θ
+”
++ ¯w, where G = ∇
+` ¯
+A
+`¯θ
+´ ˆ¯s
+´
+and
+the diﬀerentiation is performed at the point ¯θ = ˆ¯θ. Based on
+this linear approximation, one has
+Σ −1
+¯θ(t|t−1) = Σ −1
+θ
+−Σ −1
+θ F
+·
+“
+Σ −1
+¯θ(t−1) + F TΣ −1
+θ F
+”−1
+F TΣ −1
+θ
+Σ −1
+¯θ(t) = Σ −1
+¯θ(t|t−1) + GTΣ −1
+w G
+where the constant matrix Σ θ is deﬁned at the beginning of
+Section III. It is worth noting that instead of updating Σ ¯s(t)
+and Σ ¯θ(t) directly, we choose to update Σ −1
+¯s(t) and Σ −1
+¯θ(t). Note
+that Σ −1
+¯s(t) and Σ −1
+¯θ(t) are in fact used in the objective function
+f. This update not only reduces computational complexity but
+also improves numerical stability according to our experience
+in simulations.
+IV. Simulations
+In our simulations, a ULA with 10 antennas is assumed
+to be placed along the positive x-axis and the ﬁrst antenna
+is located at the origin of the coordinate system. The interval
+between two adjacent antennas is selected as d = λ/2. The
+simulated targets move parallel to the x-axis. The initial coor-
+dinates of the targets are (–2000m, 2000m), (3000m, 2500m),
+(1500m, 3000m) and the velocities are 500m/s, –300m/s and
+–500m/s respectively. Note that negative velocities are inter-
+preted as moving in the opposite direction to the frame of
+reference. The total tracking period is 10 seconds while the
+sampling interval is 0.1 second. 100 random experiments were
+performed using a prior designed target movement. The coef-
+ﬁcient matrix and the sinusoidal components are assumed as
+C = c0 · I3 =
+√
+2I3 and ψ (ω, t) =
+ˆ
+e−j0.4πt, ej0.3πt, ej0.5πt˜T
+respectively, where I3 represents a 3 × 3 identity matrix. The
+Peak-signal-to-noise ratio (PSNR) of the source signal is de-
+ﬁned as 10 log
+`
+c2
+0/σ2
+v
+´
+in dB. At the beginning of the tracking
+process, the initial estimates of the DOAs and the angular
+speed vector are given by ESPRIT algorithm[2] and the two-
+point interpolation method, respectively. Additionally the ini-
+tial value of σ2
+w and σ2
+v are both assumed as one.
+Fig.1 depicts the mean trajectories and Root mean square
+error (RMSE) proﬁles at PSNR = 0dB and σ2
+w = 0.2 using
+our proposed algorithm. We can clearly see that the proposed
+SASU algorithm can accurately track each target trajectory at
+this level of PSNR. As expected, the RMSE tends to become
+larger when the DOAs of two targets approach gradually.
+Fig. 1. Proposed SASU method tracking three targets. (a)
+Trajectories vs baselines; (b) RMSE
+We also numerically compare the performance of SASU
+against three benchmark UKF, EKF and IEKF implementa-
+tions at diﬀerent levels of PSNR. Here we use averaged bias
+to evaluate the performance of each algorithm. The averaged
+bias is deﬁned as
+bias =
+1
+n · T · N
+n
+X
+i=1
+T
+X
+j=1
+N
+X
+k=1
+˛˛˛
+“
+ˆθi(t) −θi(t)
+”˛˛˛
+The number n, T and N indicate the source signal number,
+the sampling number during the whole tracking period and
+the amount of random experiments performed respectively. As
+ 20755597, 2015, 1, Downloaded from https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/cje.2015.01.023 by Area Sistemi Dipart & Doc, Wiley Online Library on [19/02/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+
+
+===== PAGE 5 =====
+144
+Chinese Journal of Electronics
+2015
+shown in Fig.2, the averaged deviations from the true angles
+of 100 simulations by EKF and UKF exceed 5◦during the
+whole tracking period. This implies the intrinsic disability of
+these two methods in tracking the time-varying sources. In ad-
+dition, it can be observed from the results that the proposed
+approach performs robustly even in a low signal-to-noise envi-
+ronment while IEKF is more sensitive to the signal noise.
+Fig. 2. Averaged bias comparison at diﬀerent PSNR
+To test the robustness of SASU, we also numerically com-
+pare the performance when σ2
+w is ﬁxed and σ2
+v varies, and when
+σ2
+v is ﬁxed and σ2
+w varies. Fig.3(a) and (b) illustrate the correct
+tracking ratio varying with σ2
+w and σ2
+v, respectively, where the
+correct tracking ratio is deﬁned as the ratio of correct tracking
+against the number of experiments[16]. A correct tracking is
+declared if the angle estimated is deviated from the true an-
+gle by less than 3◦. It can be observed that both UKF and
+EKF are more sensitive to the signal noise and measurement
+noise. The results verify that SASU is much more robust than
+EKF and UKF especially when the uncertainty of the source
+signals is large.
+Fig. 3. Correct tracking ratio comparison. (a) σ2
+w is ﬁxed and
+σ2
+v varies; (b) σ2
+v is ﬁxed and σ2
+w varies
+Finally, we would like to comment on the complexity of
+the proposed algorithm. The computational cost of the SASU
+algorithm is related to two factors. The ﬁrst factor is related
+to the computation of the inverse matrix in each iteration. To
+avoid this problem, we use inverse of the covariance matrix as
+an iterative variable by the Woodbury equality as mentioned
+before. The other factor is the number of the iterations. Sim-
+ulations show that ideal results can be achieved while the it-
+erations run no more than 100 times.
+V. Conclusion
+We have presented a robust DOA tracking algorithm that
+simultaneously updates the arrival angles and the source sig-
+nals in the KF step and design a iterative Newton method
+to solve the joint optimization problem. Experimental results
+show the higher tracking accuracy and robustness of the pro-
+posed SASU approach when compared to benchmark UKF,
+EKF and IEKF algorithms in time-varying environments.
+References
+[1] R. Schmidt, “Multiple emitter location and signal parame-
+ter estimation”, IEEE Trans. Antennas Propag., Vol.34, No.3,
+pp.276–280, 1986.
+[2] R. Roy and T. Kailath, “ESPRIT-estimation of signal pa-
+rameters via rotational invariance techniques”, IEEE Trans.
+Acoust., Speech & Signal Process., Vol.37, No.7, pp.984–995,
+1989.
+[3] A. G. Jaﬀer, “Maximum likelihood direction ﬁnding of stochas-
+tic sources: A separable solution”, Proc. IEEE ICASSP, Vol.5,
+pp.2893–2896, 1988.
+[4] C. R. Rao, C. R. Sastry and B. Zhou, “Tracking the direction
+of arrival of multiple moving targets”, IEEE Trans. Signal Pro-
+cess., Vol.42, No.5, pp.1133–1144, 1994.
+[5] A. Panahi and M. Viberg, “Fast LASSO based DOA tracking”,
+Proc. IEEE CAMSAP, pp.397–400, 2011.
+[6] K. Reif and R. Unbehauen, “The extended Kalman ﬁlter as an
+exponential observer for nonlinear systems”, IEEE Trans. Sig-
+nal Process., Vol.47, No.8, pp.2324–2328, 1999.
+[7] D. Kong and J. Chun, “A fast DOA tracking algorithm based
+on the extended Kalman ﬁlter”, Proc. IEEE NAECON, pp.235–
+238, 2000.
+[8] B. M. Bell and F. W. Cathey, “The iterated kalman ﬁlter up-
+date as a gauss-newton method”, IEEE Trans. Autom. Control,
+Vol.38, No.2, pp.294–297, 1993.
+[9] C. Vijay Kumar, R. Rajagopal and R. Kiran, “An optimal inte-
+grated tracking (ITS) for passive DOA tracking using unscented
+Kalman ﬁlter”, Proc. IEEE Conf. Decision Control, pp.253–
+258, 2002.
+[10] J. Larocque, J. Reilly and W. Ng, “Particle ﬁlters for tracking
+an unknown number of sources”, IEEE Trans. Signal Process.,
+Vol.50, No.12, pp.2926–2937, 2002.
+[11] C.E. Chen, F. Lorenzelli, R.E. Hudson and K. Yao, “Stochas-
+tic maximum-likelihood doa estimation in the presence of un-
+known nonuniform noise”, IEEE Signal Process., Vol.56, No.7,
+pp.3038–3044, 2008.
+[12] T. Li and A. Nehorai, “Maximum likelihood direction-of-arrival
+estimation of underwater acoustic signals containing sinusoidal
+and random components”, IEEE Trans. Signal Process., Vol.59,
+No.11, pp.5302–5314, 2011.
+[13] J.-F. Gu, S. Chan, W.-P. Zhu and M. Swamy, “Joint DOA esti-
+mation and source signal tracking with kalman ﬁltering and reg-
+ularized QRD RLS algorithm”, IEEE Trans. Circuits Syst. II,
+Exp. Briefs, Vol.60, No.1, pp.46–50, 2013.
+[14] S.B. Park, C.S. Ryu and K.K. Lee, “Multiple target an-
+gle tracking algorithm using predicted angles”, IEEE Trans.
+Aerosp. Electron. Syst., Vol.30, No.2, pp.643–648, 1994.
+[15] Y. Bar-Shalom, X.R. Li, T. Kirubarajan and J. Wiley, Esti-
+mation with Applications to Tracking and Navigation, Wiley
+Online Library, 2001.
+[16] S.Y. Hou, H.S. Hung, S.H. Chang, J.C. Liu, et al., “Novel algo-
+rithms for tracking multiple targets”, Journal of Marine Science
+and Technology, Vol.18, No.2, pp.259–267, 2010.
+ 20755597, 2015, 1, Downloaded from https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/cje.2015.01.023 by Area Sistemi Dipart & Doc, Wiley Online Library on [19/02/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+
+
+===== PAGE 6 =====
+A Sequential Bayesian Algorithm for DOA Tracking in Time-Varying Environments
+145
+GAO
+Xunzhang
+received
+his
+Ph.D. degree in communication and sig-
+nal processing from National university of
+Defense Technology (NUDT) in Chang-
+sha, in 2004. He is currently an associate
+professor with the college of electronic sci-
+ence and engineering, NUDT. His research
+interests
+include
+radar
+signal
+process-
+ing and automatic target recognition.(E-
+mail:gaoxunzhang@nudt.edu.cn)
+LI Xiang
+received his M.S. and
+Ph.D. degrees in communication and signal
+processing from NUDT in 1995 and 1998,
+respectively. He is currently a professor in
+the college of electronic science and engi-
+neering, NUDT. His research interests in-
+clude radar system, radar signal processing
+and automatic target recognition.
+Jason Filos
+received his Ph.D. de-
+gree in digital signal processing from Im-
+perial College London (ICL) in London in
+2012. He is currently a research associate in
+the department of electrical and electronic
+engineering, ICL. His research interests in-
+clude acoustic signal processing and opti-
+mization methods.
+DAI Wei
+received his Ph.D. degree
+in electrical and computer engineering from
+the university of Colorado at Boulder in
+2007. He is currently a lecturer in the de-
+partment of electrical and electronic engi-
+neering, ICL. His research interests include
+sparse signal processing, wireless commu-
+nications, random matrix theory.
+ 20755597, 2015, 1, Downloaded from https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/cje.2015.01.023 by Area Sistemi Dipart & Doc, Wiley Online Library on [19/02/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License

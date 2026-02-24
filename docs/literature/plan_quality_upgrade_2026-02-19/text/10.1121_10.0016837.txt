@@ -1,0 +1,684 @@
+
+
+===== PAGE 1 =====
+
+View
+Online 
+Export
+Citation
+JANUARY 09 2023
+Robust underwater direction-of-arrival tracking based on
+variational Bayesian extended Kalman filter
+Xianghao Hou; Yueyi Qiao; Boxuan Zhang; Yixin Yang
+JASA Express Lett. 3, 014801 (2023)
+https://doi.org/10.1121/10.0016837
+Articles You May Be Interested In
+Robust underwater direction-of-arrival tracking with uncertain environmental disturbances using a uniform
+circular hydrophone array
+J. Acoust. Soc. Am. (June 2022)
+A modified adaptive Kalman filter algorithm for the distributed underwater multi-target passive tracking
+system
+JASA Express Lett. (January 2025)
+Underwater Doppler-bearing maneuvering target motion analysis based on joint estimated adaptive
+unscented Kalman filter
+J. Acoust. Soc. Am. (November 2023)
+ 19 February 2026 13:44:54
+
+
+===== PAGE 2 =====
+Robust underwater direction-of-arrival tracking based
+on variational Bayesian extended Kalman ﬁlter
+Xianghao Hou,a) Yueyi Qiao, Boxuan Zhang,a) and Yixin Yanga),b)
+School of Marine Science and Technology, Northwestern Polytechnical University, Xi’an, Shaanxi 710072, China
+houxianghao1990@nwpu.edu.cn; 2020302083@mail.nwpu.edu.cn; bxzhang@mail.nwpu.edu.cn, yxyang@nwpu.edu.cn
+Abstract: The variational Bayesian extended Kalman ﬁlter (VB-EKF) based robust direction-of-arrival (DOA) tracking tech-
+nique is proposed to make reliable estimations of the bearing angle of an underwater target with uncertain environment noise.
+By utilizing the VB-EKF scheme, the uncertain measurement noise caused by an unknown underwater environment along
+with the bearing angle of the target can be estimated simultaneously to provide reliable results at every tracking step. The pro-
+posed technique is demonstrated and veriﬁed by the sea trial data from the South China Sea in July 2021 and both the robust-
+ness and accuracy are proved superior to the traditional DOA estimating methods. V
+C 2023 Author(s). All article content, except
+where otherwise noted, is licensed under a Creative Commons Attribution (CC BY) license (http://creativecommons.org/licenses/by/4.0/).
+[Editor: John R. Buck]
+https://doi.org/10.1121/10.0016837
+Received: 22 September 2022
+Accepted: 21 December 2022
+Published Online: 9 January 2023
+1. Introduction
+Estimating the bearing angle of an uncooperative underwater target is an important research area in the ﬁeld of underwa-
+ter acoustic engineering.1–3 Considering the unknown underwater environment sometimes causes uncertain measurement
+noise that will degrade the estimation accuracy of the interested target’s bearing angle, a robust bearing angle estimating
+technique is necessary and has attracted several researchers’ attention.4,5 In addition, the passive bearing angle estimation
+techniques can be divided into two categories, namely, the direction-of-arrival (DOA) estimation that merely depends on
+the measurements from a certain period of time and the DOA tracking that depends on both the target’s kinematics and
+the measurements of the current tracking step. Although the DOA estimation has already made a lot of milestones in vari-
+ous bearing angle estimation missions,6,7 its ignorance of the target’s kinematics makes the DOA estimation techniques
+always have superior estimating results when the target is nearly static and the environment is stable. When the target is
+maneuvering or the measurement noise shifts since the underwater environment is uncertain, the DOA estimation meth-
+ods can hardly have satisfactory results. Also, in order to make reliable and accurate estimations of an uncooperative
+underwater target’s bearing angle, the DOA estimation techniques usually need a wide observation window, which will
+cost more on-board computational time than the recursively DOA tracking techniques.
+Considering the advantages and drawbacks of the DOA estimation methods, DOA tracking techniques have
+been proposed. Instead of merely utilizing the measurement information, the DOA tracking methods also consider the tar-
+get’s kinematic model as prior information. Based on the Bayesian estimation principle, the DOA tracking techniques can
+reach higher estimating accuracy and occupy less on-board computing or storage resources especially when the underwater
+target is maneuvering.8,9 Also, the unknown underwater environment sometimes can make the measurement uncertain,
+which will degrade the bearing angle estimation accuracy or even make the estimating procedure diverge. Under this
+circumstance, the robust DOA tracking technique is necessary to guarantee the accuracy and robustness of the whole esti-
+mation process. Among all the robust DOA tracking techniques, two categories can be divided depending on the basic
+mathematical principles, namely, the “data-inspiring” robust tracking techniques10 and the Bayesian inference techni-
+ques.11,12 As a typical example of the “data-inspiring” robust tracking technique, the Sage-Husa adaptive estimating
+method (i.e., Sage-Husa extended Kalman ﬁlter, SH-EKF) has been widely used in a number of studies to prove its efﬁ-
+ciency.13–15 The basic concept of the Sage-Husa online estimator is to utilize the good estimations from a long tracking
+period to adjust the weight of the bad measurements when the measurement noise becomes uncertain. As a result, the
+weights of the poor measurements can become very small to make the current bearing angle estimations mainly depend
+on the historically good estimations. Nevertheless, similar to many of the data-driven methods, the Sage-Husa online esti-
+mator cannot guarantee its convergence and depends heavily on good historical estimations and measurements. When the
+a)Also at: Shaanxi Key Laboratory of Underwater Information Technology, Xi’an 710072, China.
+b)Author to whom correspondence should be addressed.
+JASA Express Lett. 3 (1), 014801 (2023)
+V
+C Author(s) 2023.
+3, 014801-1
+ARTICLE
+asa.scitation.org/journal/jel
+ 19 February 2026 13:44:54
+
+
+===== PAGE 3 =====
+hyper-parameters of the data-inspiring robust DOA tracking technique (i.e., SH-EKF) are set inappropriately, the estima-
+tions usually have poor accuracy and sometimes diverge.13
+To overcome the drawbacks of the data-inspiring robust tracking techniques, the Bayesian inference techniques,
+or the so-called variational Bayesian (VB) robust tracking techniques, are proposed and have been utilized in various
+research.16–20 Unlike the data-inspiring robust tracking methods, the VB robust tracking techniques are strictly derived
+mathematically. By assuming the prior probability density functions (PDFs) of the tracking parameters and the interested
+time-varying parameters (i.e., covariance matrix of the uncertain measurements noise) along with optimizing the Kullback-
+Leibler Divergence (KLD) among the posterior PDFs, the VB technique can analytically estimate the tracking parameters
+and other interesting parameters simultaneously. Different from the data-inspiring robust tracking methods, the VB robust
+tracking techniques have strictly mathematical foundations and can guarantee convergence and accuracy if the prior PDFs
+are set properly. Under this circumstance, the VB robust tracking techniques do not need good estimations from a long
+period to output reliable results when measurements become uncertain and are more theoretically sophisticated.
+Based on the previous analysis, a variational Bayesian based extended Kalman ﬁlter (VB-EKF) is proposed to
+make robust and accurate DOA tracking of an underwater target with uncertain measurement noise. First, a uniform cir-
+cular array (UCA) that is not only free from the port and starboard ambiguity problem but also possesses a uniform aper-
+ture at all bearing angles is considered to provide measurements of the underwater target.13 Then, considering the
+unknown underwater disturbance can sometimes make the measurement noise uncertain, the VB-EKF is designed to
+simultaneously estimate the bearing angle of the underwater target and the covariance matrix of the uncertain measure-
+ment noise. Finally, based on the sea trial data from the South China Sea in July 2021, the proposed VB-EKF is veriﬁed.
+The robust and accurate estimation results proved the superior characteristics of the proposed DOA tracking method.
+2. Problem formulation
+2.1 Kinematic model of the underwater target by bearing angle
+Since the underwater target is usually performing in a constant velocity to keep invisibility and is far from the hydrophone
+arrays, the kinematic model of the target’s bearing angle can be modeled as the constant velocity (CV) model.
+Let hk denotes the bearing angle of the target (hk is the angle between the target and the positive x-axis with the
+positive counterclockwise direction) and _hk denotes the change rate of hk. Then, the CV motion kinematic model of the
+bearing angle is expressed as
+xk ¼ Fkjk1xk1 þ Gk1wk1;
+Fkjk1 ¼
+1
+T
+0
+1
+"
+#
+; Gk1 ¼
+T2=2
+T
+"
+#
+;
+8
+>
+>
+<
+>
+>
+:
+(1)
+where xk ¼ ðhk; _hkÞT is the system state at time step k, and ðÞT denotes the matrix transposition, Fkjk1 and Gk are the
+state transition matrix for CV motion and the noise driving matrix, and wk1 denotes the zero mean Gaussian process
+noise with the covariance matrix Qk1 caused by the unknown underwater environment, T is the interval between the
+adjacent time steps. Qk1 is named process noise covariance matrix (PNCM) for convenience.
+2.2 Measurement model based on the received signal of UCA
+A UCA with P elements and radius of r is used to obtain the measurement in this section. The conﬁguration of the UCA
+and the underwater target is shown in Fig. 1.
+The measurement of the UCA at time step k can be expressed as13
+zk ¼ hk xk
+ð
+Þ þ vk ¼ real A hk
+ð
+Þs k
+ð Þ
+
+
+þ vk;
+(2)
+where hkðxkÞ denotes the nonlinear measurement function, realðÞ denotes the real part, AðhkÞ is the array manifold vector
+of the UCA, and sðkÞ is the narrowband acoustic signal emitted by the target, vk is the measurement noise vector.
+The signal of the target sðkÞ is given by
+s k
+ð Þ ¼ a exp j 2pfkT þ /f0
+ð
+Þ
+ð
+Þ;
+(3)
+where f, a, /f0 denote the frequency, amplitude, and initial phase of the signal, respectively.
+The array manifold vector of the UCA AðhkÞ is given as follows:
+AðhkÞ ¼ A1ðhkÞ; A2ðhkÞ; …; APðhkÞ
+½
+T;
+Ap hk
+ð
+Þ ¼ exp j2pfr=c cos hk  2pp=P
+ð
+Þ
+ð
+Þ;
+(
+(4)
+where p is the element number and p ¼ 1; 2; …; P.
+Since the measurement noise of each element is always dependent on one another, the measurement noise vk at
+time step k is deﬁned as a zero mean Gaussian noise with P-order off diagonal covariance matrix Rk. In addition, the
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-2
+ 19 February 2026 13:44:54
+
+
+===== PAGE 4 =====
+measurement noise covariance matrix (MNCM) Rk is usually assumed to be ﬁxed in the underwater tracking problem.
+However, in the real underwater tracking scenario, the unknown underwater environment can result in uncertain measure-
+ment noise, which makes the MNCM ﬂuctuant and hard to deal with when using traditional tracking techniques. This
+problem seriously degrades tracking performance.
+3. VB-EKF for robust DOA tracking
+Noticing the measurement model with high nonlinearity depicted by Eq. (2), the extended Kalman ﬁlter (EKF) technique
+is used for DOA tracking in this section. Furthermore, considering the ﬂuctuations of the MNCM caused by the unknown
+underwater environment, the VB-EKF12 is utilized to improve the tracking performance by estimating the MNCM. Thus,
+the pseudo-code of VB-EKF for DOA tracking using the UCA at one time step is given in Algorithm 1. In order to
+improve the performance of MNCM estimation, some improvements are made to the algorithm.
+Algorithm 1: One time step of the VB-EKF-based DOA tracking using the UCA.
+Inputs: ^xk1jk1, Pk1jk1, zk, ^uk1jk1, ^U k1jk1, Qk1, q, N.
+Time update
+1.
+^xkjk1 ¼ Fkjk1^xk1jk1.
+2.
+Pkjk1 ¼ Fkjk1Pk1jk1FT
+kjk1 þ Gk1Qk1GT
+k1.
+3.
+^uk˚k1 ¼ qð^uk1jk1  n  1Þ þ n þ 1, ^U kjk1 ¼ q ^U k1jk1.
+Iteration measurement update
+4.
+Initialization: ^xð0Þ
+kjk ¼ ^xkjk1, ^R
+ð0Þ
+k
+¼ ^U kjk1=^ukjk1.
+For i ¼ 0 : N  1
+Update qðiþ1ÞðxkÞ ¼ Nðxk; xðiþ1Þ
+kjk
+; Pðiþ1Þ
+kjk
+Þ
+5.
+hð^xðiÞ
+kjkÞ is calculated by Eq. (2), HðiÞ
+k is calculated by Eq. (6).
+6.
+Kðiþ1Þ
+k
+¼ Pkjk1ðHðiÞ
+k ÞTðHðiÞ
+k Pkjk1ðHðiÞ
+k ÞT þ ^R
+ðiÞ
+k Þ1,
+7.
+^xðiþ1Þ
+kjk
+¼ ^xkjk1 þ Kðiþ1Þ
+k
+ðzk  hð^xðiÞ
+kjkÞ  HðiÞ
+k ð^xkjk1  ^xðiÞ
+kjkÞÞ,
+8.
+Pðiþ1Þ
+kjk
+¼ Pkjk1  Kðiþ1Þ
+k
+HðiÞ
+k Pkjk1.
+Update qðiþ1ÞðRkÞ ¼ IWðRk; ^uðiþ1Þ
+kjk
+; ^U
+ðiþ1Þ
+kjk
+Þ
+9.
+hð^xðiþ1Þ
+kjk
+Þ is calculated by Eq. (2), Hðiþ1Þ
+k
+is calculated by Eq. (6).
+10.
+Bðiþ1Þ
+k
+¼ ðzk  hð^xðiþ1Þ
+kjk
+ÞÞðzk  hð^xðiþ1Þ
+kjk
+ÞÞT þ Hðiþ1Þ
+k
+Pðiþ1Þ
+kjk
+ðHðiþ1Þ
+k
+ÞT,
+11.
+^U
+ðiþ1Þ
+kjk
+¼ ^U kjk1 þ Bðiþ1Þ
+k
+, ^uðiþ1Þ
+kjk
+¼ ^ukjk1 þ 1,
+12.
+^R
+ðiþ1Þ
+k
+¼ ^U
+ðiþ1Þ
+kjk
+=^uðiþ1Þ
+kjk
+.
+End for
+13.
+^xkjk ¼ ^xðNÞ
+kjk , Pkjk ¼ PðNÞ
+kjk , ^ukjk ¼ ^uðNÞ
+kjk , ^U kjk ¼ ^U
+ðNÞ
+kjk .
+Outputs: ^xkjk, Pkjk, ^ukjk, ^U kjk.
+Different from the classical VB-EKF algorithm given in Ref. 12, the proposed algorithm uses a more accurate
+approximation of the nonlinear measurement function hðxkÞ obtained by performing linearization with an intermediate
+state estimate ^xkjkðiÞ,21 i.e.,
+Fig. 1. Conﬁguration of the UCA based measurement system.
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-3
+ 19 February 2026 13:44:54
+
+
+===== PAGE 5 =====
+h xk
+ð
+Þ ¼ h ^xkjkðiÞ
+
+
+þ HðiÞ
+k
+xk  ^xkjkðiÞ
+
+
+:
+(5)
+Then, an iteratively updated Jacobian matrix of the measurement function HðiÞ
+k
+is carried out to replace the ﬁxed Jacobian
+matrix of the measurement function in the algorithm given by Ref. 12. In Algorithm 1, Nð ; l; RÞ denotes the Gaussian
+distribution with mean l and covariance matrix R. IWð ; k; WÞ denotes the inverse Wishart distribution with degree of
+freedom (dof) k and inverse scale matrix W. The iteratively updated Jacobian matrix of the measurement function HðiÞ
+k
+is
+expressed as
+HðiÞ
+k ¼
+h0
+1; h0
+2; …; h0
+p
+0; 0; …; 0
+
+T
+;
+(6)
+where h0
+p (p ¼ 1; 2; …; P) is given by13
+h0
+p ¼ 2pf r
+c sin
+^h
+ðiÞ
+kjk  2p p
+P
+
+	
+real jAp ^h
+ðiÞ
+kjk
+
+
+s k
+ð Þ
+
+
+;
+(7)
+where sðkÞ is the true target signal at the kth time step. Since the true signal of the target is unknown in engineering appli-
+cations, the estimate of the signal ^sk is utilized instead of the real one. ^sk can be obtained by using the maximum likeli-
+hood approach as22
+^sðiÞ
+k ¼
+AH hðiÞ
+kjk
+
+
+A hðiÞ
+kjk
+
+
+
+1
+AH hðiÞ
+kjk
+
+
+Hilbert z k
+ð Þ
+ð
+Þ;
+(8)
+where AðhðiÞ
+kjkÞ is the array manifold vector given by Eq. (4), ðÞH and HilbertðÞ denote the conjugate transposition and the
+Hilbert transform, respectively. It is easy to recognize that step 5 of the algorithm for calculation of hð^xðiÞ
+kjkÞ and HðiÞ
+k
+is
+unnecessary to operate after the ﬁrst iteration to reduce computing load.
+4. Experimental results
+4.1 Experimental scenario
+The data from an acoustic experiment in the South China Sea in July 2021 are used to verify the superiority of the pro-
+posed VB-EKF. An acoustic emission transducer is placed 3 m under the sea surface. A ship equipped with the acoustic
+signal emission system and GPS keeps moving when an acoustic signal at 170 Hz is emitted continuously for 7500 s with a
+source level of 145 dB.
+An underwater buoy system shown in Fig. 2(a) is placed 20 m under the sea surface before the experiment. A
+uniform circular hydrophone array with a radius of 1 m and 12 elements is ﬁxed on the underwater buoy along with a
+digital acquisition system and GPS. During the acoustic signal emitting, the digital acquisition system sampled the output
+of the array at a frequency of 8192 Hz. Before the experiment, the sound velocity is measured to be constant at 1544 m/s
+at a depth from 0 to 20 m with a CTD proﬁler. The GPSs record the locations of the acoustic signal emission system and
+the underwater buoy system every second. Considering the bearing angle of the target is measured clockwise with respect
+to the north, the bearing angle trajectory is calculated by the GPS data.
+The tracking scenario is shown in Fig. 2(b), and the longest range between the target and the sonar array
+is 5462 m and the shortest range is 3113 m. In addition, the total distance that the target moved during the tracking
+Fig. 2. (a) Photo of the underwater buoy system. (b) Tracking scenario.
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-4
+ 19 February 2026 13:44:54
+
+
+===== PAGE 6 =====
+period is 3059 m with the total bearing angle change with 27.5 degree at an approximate constant angular velocity of
+3:7  103 deg/s.
+4.2 Verification of VB-EKF for DOA tracking
+The proposed VB-EKF are tested using the experimental data of all 7,500 s. The multiple signal classiﬁcation (MUSIC),
+which is a traditional DOA estimation, the EKF, and the SH-EKF for DOA tracking13 are also tested for comparison.
+The measurement interval is set to be 1 s. The scanning bearing angle of the MUSIC varies every 1 from 0 to 360.
+The initial state estimates of the EKF, SH-EKF, and the VB-EKF are both set to ^X 0 ¼ ½^h
+0
+CBF; 0, where ^h
+0
+CBF is the bear-
+ing angle estimated by using MUSIC at k ¼ 0. In addition, we suppose the ﬁrst step DOA can be obtained by an accu-
+rate DOA estimation algorithm (i.e., MVDR or MUSIC) and the angular velocity of the target is small, Pk is initialized
+to P0 ¼ diagð½1; 105Þ to represent the initial guess errors. The covariance matrix of the process noise Qk is set as 104
+for the EKF, SH-EKF, and the VB-EKF according to the reference value given previously. The iteration number N of
+the Iteration measurement update procedure in Algorithm 1 is set as 10. The MNCM is set as IMP for the EKF. The
+estimation of the MNCM ^Rk is initialized to IMP, and the forgetting factor b is set to 0.995 for the SH-EKF. The param-
+eters ^u0, ^U 0, and q of the VB-EKF are set to 16, 16IMP, and 0.997, respectively.
+To numerically compare the bearing angle estimation precision of the previous methods, the bearing angle esti-
+mation error (BEE) and the average BEE (ABEE) are deﬁned as the performance metrics, which are given as follows:
+BEE k
+ð Þ ¼ j^hk  hGPS
+k
+j;
+(9)
+ABEE k
+ð Þ ¼
+ﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+1
+K
+X
+K
+k¼1
+^hk  hGPS
+k
+
+2
+v
+u
+u
+t
+;
+(10)
+where ^hk is the bearing angle estimate at time step k and hGPS
+k
+is the true bearing angle obtained by the GPS data.
+In addition, since the real covariance matrix of the measurement noise in the sea trial cannot be obtained accu-
+rately, the real covariance matrix of the environment noise is approximated by received data from the sonar array without
+Fig. 3. Experimental results of MUSIC, EKF, SH-EKF, and VB-EKF. (a) Trajectories obtained using raw data, (b) BEEs obtained using raw
+data, (c) Trajectories obtained using the data with added noise, (d) BEEs obtained using the data with added noise.
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-5
+ 19 February 2026 13:44:54
+
+
+===== PAGE 7 =====
+the target’s signal. The error of the estimated covariance matrix of the measurement noise and the true covariance matrix
+is deﬁned as the Euclidean distance (ED) as follows:
+ED ¼ 1
+P
+ﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+X
+P
+i¼1
+X
+P
+j¼1
+xest;ij  xreal;ij
+ð
+Þ2
+v
+u
+u
+t
+;
+(11)
+where xest;ij and xreal;ij are the opponents in the ith row and jth column of the estimated covariance matrix and real covari-
+ance matrix of the measurement noise, respectively.
+The DOA tracking trajectory obtained by the VB-EKF is shown in Fig. 3(a). The BEEs and the ABEEs are
+shown in Fig. 3(b) and Table 1, respectively. In addition, the one-step operating time for MUSCI, EKF, SH-EKF, and VB-
+EKF are shown in Table 2 to demonstrate the computational efﬁciency of the DOA tracking algorithms compared to the
+DOA estimation method. The results of the MUSIC, EKF, and the SH-EKF are also shown in Figs. 3(a) and 3(b) and
+Table 1 for comparison. Speciﬁcally, considering the complexity of the actual underwater environment, the MUSIC
+obtained bearing angles every 10 s by using measurements of 10 s for higher precision.
+In addition, there are many factors in the ocean environment can make the environmental noise varies
+uncertainly.23 For example, the turbulence in the form of irregular random ﬂow in the ocean and the pressure inside the
+turbulence produce acoustic effects. The formation and extinction of the turbulence will result in the variation of the envi-
+ronmental noise. Also, the cavitation or bursting of bubbles and the turbulent pressure caused by sea waves and winds
+generate noise. Thus, the variation of sea conditions and wind strength results in variation in environmental noise.
+Meanwhile, the radiated noise from distant ships is also an important source of environmental noise. The variation of the
+position, sailing status, and number of ships will also cause variation in environmental noise. Such variation of environ-
+mental noise results in the variation of statistical characteristics of environmental noise, which will make the covariance
+matrix of the measurement noise shift during the DOA tracking period.
+Thus, in order to further test the robustness of the proposed VB-EKF to uncertain measurement noise, a period
+of correlated Gaussian noise generated by a technique from Ref. 24 is added to the raw measurement data from 2600 to
+3000 s, and then the methods are tested again. The results are shown in Figs. 3(c), 3(d), and Table 1. Also, the Euclidean
+distance between the estimated covariance matrix and the real covariance matrix of the measurement noise by different
+DOA tracking algorithms is shown in Fig. 4.
+Figures 3(a) and 3(b) show that the trajectories obtained by all methods using raw experimental data ﬂuctuated
+around the true trajectory due to the effect of the underwater environmental noise. Since the MUSIC only depends on the
+batch measurements and does not utilize the target’s kinematic information, the trajectory obtained by MUSIC is the most
+ﬂuctuant and provided a large error when the raw measurements are in low SNR. The precision of the EKF is higher than
+that of the MUSIC since the EKF is based on the DOA tracking principle that not only utilizes the current measurement
+but also considers the kinematic model of the underwater target. The trajectory obtained by the robust DOA tracking algo-
+rithms, namely, the SH-EKF and the VB-EKF are closest to the true trajectory. The reason is that the robust DOA tracking
+algorithms provide more accurate Kalman ﬁlter gains than EKF due to the high-precision estimation of the MNCM, which
+can signiﬁcantly improve the precision of the DOA tracking. Also, it can be found that the proposed VB-EKF has higher
+DOA tracking accuracy compared to the SH-EKF since the VB-EKF is analytically derived, which makes it a precise math-
+ematical model of the unknown MNCM and makes it more accurately estimated. However, the data-inspiring SH-EKF
+outputs DOA tracking results with lower accuracy since the precision of the experimental data is not accurate enough and
+Table 1. ABEEs of MUSIC, EKF, SH-EKF, and VB-EKF.
+ABEE ()
+Data
+MUSIC
+EKF
+SH-EKF
+VB-EKF
+Raw data
+13.1
+8.2
+7.1
+6.3
+With noise
+22.2
+12.2
+7.3
+6.5
+Table 2. One-step computational time for MUSIC, EKF, SH-EKF, and VB-EKF.
+Run time (ms)
+Data
+MUSIC
+EKF
+SH-EKF
+VB-EKF
+Raw data
+1.17
+0.11
+0.13
+0.70
+With noise
+1.21
+0.11
+0.14
+0.75
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-6
+ 19 February 2026 13:44:54
+
+
+===== PAGE 8 =====
+the “good historical estimations” cannot be provided sufﬁciently to make the current DOA tracking results as accurate as
+the VB-EKF. Table 1 shows the high precision and robustness of the VB-EKF.
+The results obtained by using the data with added noise given in Figs. 3(c), 3(d), and Table 1 show a similar
+conclusion to the one mentioned previously. Under this circumstance, the MUSIC, which only relies on the measurements,
+cannot deal with the noise shifting situation due to its ignorance of the target’s kinematics as prior information. In addi-
+tion, without robust covariance matrix of the measurement matrix estimating techniques, the DOA tracking method base-
+line, namely, the EKF, has big ﬂuctuations when the measurement noise shifting occurs. Nevertheless, the SH-EKF and
+VB-EKF can still provide acceptable DOA tracking results under this circumstance. However, the data-inspiring SH-EKF
+can only provide DOA tracking results with lower accuracy since the shifts of the measurement noise and the quality of
+the measurements cannot guarantee a sufﬁcient tracking window of good historical estimations. On the contrary, the ana-
+lytically derived VB-EKF can output more reliable tracking results as shown in Table 1. Also, as noted in Table 2, since
+the DOA tracking methods are based on the recursive estimation frame, the computational time of the EKF, SH-EKF, and
+VB-EKF costs much less computational time compared to the DOA estimation method (MUSIC), which only deals with
+batch measurements. In addition, the computational load of the VB-EKF is heavier than the EKF and SH-EKF since the
+VB-EKF has an iteration process. In the real tracking scenario, the tracking accuracy and computational efﬁciency can be
+balanced by engineering experience.
+The estimation results of the covariance matrix of the measurement noise are shown in Fig. 4 by ED described
+by Eq. (11). During the measurement noise shifting period, both the SH-EKF and VB-EKF have the ability to make esti-
+mations of the covariance matrix of the measurement noise when compared to the EKF, which has a ﬁxed one. By esti-
+mating the covariance matrix of the measurement noise, the SH-EKF and VB-EKF can make more reliable Kalman gain
+that can then deal with the shifting measurement noise. In addition, since the SH-EKF mainly depends on historically
+good estimations to output the current DOA tracking result, it can make faster covariance matrix estimations at the begin-
+ning of the shifting of the measurement noise. However, when the measurement noise becomes normal, affected by the
+historical estimations, the SH-EKF has ﬂuctuations and ﬁnally leads to a lower estimation accuracy than the VB-EKF. On
+the contrary, since the VB-EKF is based on the analytical VB derivations, it has a slower covariance matrix estimating
+speed during the whole measurement noise shifting period. However, when the measurement noise becomes normal, the
+VB-EKF can still provide reliable estimations that ﬁnally make the VB-EKF have the highest DOA tracking accuracy.
+5. Conclusion
+A VB-EKF robust DOA tracking method is proposed and veriﬁed. The theoretical derivations have been given comprehen-
+sively and the performance has been proven by the real sea trial data. The experiment results show the proposed VB-EKF
+has more accurate estimation results and is also robust to uncertain underwater disturbance.
+Future work should focus on enhancing the computational efﬁciency of the proposed VB-EKF since the parame-
+ter iteration steps during the VB procedure have a huge computational load, especially when the measurements are highly
+nonlinear. As a result, to make the proposed robust DOA tracking algorithm suitable for real time on-board utilization,
+enhancing its efﬁciency is necessary.
+Also, the proposed VB-EKF still assumes the uncertain measurement noise to be Gaussian. However, non-
+Gaussian measurement noise is more common in real DOA tracking scenarios. To make the robust DOA tracking tech-
+nique more accurate, nonlinear and non-Gaussian tracking schemes should be considered to work with the VB technique.
+Fig. 4. ED between the estimated covariance matrix and real covariance matrix of the measurement noise.
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-7
+ 19 February 2026 13:44:54
+
+
+===== PAGE 9 =====
+Acknowledgment
+This work was supported by the National Natural Science Foundation of China under Grant No. 12104113 and the foundation
+of the State Key Laboratory of AFDL under Grant No. 6142210200103.
+References and links
+1B. P. Rideout, S. E. Dosso, and D. E. Hannay, “Underwater passive acoustic localization of Paciﬁc walruses in the northeastern
+Chukchi Sea,” J. Acoust. Soc. Am. 134(3), 2534–2545 (2013).
+2X. Zhu and J. R. Buck, “Designing nonuniform linear arrays to maximize mutual information for bearing estimation,” J. Acoust. Soc.
+Am. 128(5), 2926–2939 (2010).
+3C. Yardim, Z.-H. Michalopoulou, and P. Gerstoft, “An overview of sequential Bayesian ﬁltering in ocean acoustics,” IEEE J. Oceanic
+Eng. 36(1), 71–89 (2011).
+4W. Zeng, H. C. So, and L. Huang, “l-MUSIC: Robust direction-of-arrival estimator for impulsive noise environments,” IEEE T. Signal
+Process. 61(17), 4296–4308 (2013).
+5B. Wang, Y. D. Zhang, and W. Wang, “Robust DOA estimation in the presence of miscalibrated sensors,” IEEE Signal Process. Lett.
+24(7), 1073–1077 (2017).
+6T. Li and A. Nehorai, “Direction-of-arrival estimation of hydroacoustic signals from marine vessels containing random and sinusoidal
+components,” IEEE Signal Process. Lett. 19(8), 503–506 (2012).
+7Z. Zheng and C. Yang, “Direction-of-arrival estimation of coherent signals under direction-dependent mutual coupling,” IEEE
+Commun. Lett. 25(1), 147–151 (2021).
+8J. Zhao, R. Gui, X. Dong, and S. Wu, “Time-varying DOA tracking algorithm based on generalized labeled multi-Bernoulli,” IEEE
+Access 9, 5943–5950 (2021).
+9A. Saucan, T. Chonavel, C. Sintes, and J. L. Caillec, “Marked poisson point process PHD ﬁlter for DOA tracking,” in Proceedings of the
+23rd Signal Processing Conference (EUSIPCO), Nice, France (August 31–September 4, 2015), pp. 2621–2625.
+10R. Mehra, “Approaches to adaptive ﬁltering,” IEEE Trans. Automat. Control 17(5), 693–698 (1972).
+11S. Sarkka and A. Nummenmaa, “Recursive noise adaptive Kalman ﬁltering by variational Bayesian approximations,” IEEE Trans.
+Automat. Contr. 54(3), 596–600 (2009).
+12S. Sarkka and J. Hartikainen, “Variational Bayesian adaptation of noise covariances in non-linear Kalman ﬁltering,” arXiv:1302.0681
+(2013).
+13B. Zhang, X. Hou, and Y. Yang, “Robust underwater direction-of-arrival tracking with uncertain environmental disturbances using a
+uniform circular hydrophone array,” J. Acoust. Soc. Am. 151(6), 4101–4113 (2022).
+14X. Hou, J. Zhou, Y. Yang, and G. Qiao, “Adaptive two-step bearing-only underwater uncooperative target tracking with uncertain
+underwater disturbances,” Entropy 23(7), 907 (2021).
+15G. Zhai, C. Wu, and Y. Wang, “Millimeter wave radar target tracking based on adaptive Kalman ﬁlter,” in Proceedings of the 2018 IEEE
+Intelligent Vehicles Symposium, Suzhou, China (June 26–30, 2018). pp. 453-458.
+16Y. Huang, Y. Zhang, Z. Wu, N. Li, and J. Chambers, “A novel adaptive Kalman ﬁlter with inaccurate process and measurement noise
+covariance matrices,” IEEE Trans. Automat. Control 63(2), 594–601 (2018).
+17Y. Huang, Y. Zhang, P. Shi, and J. Chambers, “Variational adaptive Kalman ﬁlter with Gaussian-inverse-wishart mixture distribution,”
+IEEE Trans. Automat. Control 66(4), 1786–1793 (2021).
+18Y. Huang, M. Bai, Y. Li, Y. Zhang, and J. Chambers, “An improved variational adaptive Kalman ﬁlter for cooperative localization,”
+IEEE Sens. J. 21(9), 10775–10786 (2021).
+19J. Wang, T. Zhang, X. Xu, and Y. Li, “A variational Bayesian based strong tracking interpolatory cubature Kalman ﬁlter for maneuver-
+ing target tracking,” IEEE Access 6, 52544–52560 (2018).
+20H. Lan, S. Sun, Z. Wang, Q. Pan, and Z. Zhang, “Joint target detection and tracking in multipath environment: A variational Bayesian
+approach,” IEEE Trans. Aerosp. Electr. Syst. 56(3), 2136–2156 (2020).
+21Y. Huang, Y. Zhang, B. Xu, Z. Wu, and J. A. Chambers, “A new adaptive extended Kalman ﬁlter for cooperative localization,” IEEE
+Trans. Aerosp. Electron. Syst. 54(1), 353–368 (2018).
+22Y. Zhou, P. C. Yip, and H. Leung, “Tracking the direction-of-arrival of multiple moving targets by passive arrays: Algorithm,” IEEE
+Trans. Signal Process. 47(10), 2655–2666 (1999).
+23G. M. Wenz, “Review of underwater acoustics research: Noise,” J. Acoust. Soc. Am. 51, 1010–1024 (1972).
+24L. Yang, Y. Yang, and Y. Zhang, “Subspace-based direction of arrival estimation in colored ambient noise environments,” Digital
+Signal Process. 99, 102650 (2020).
+ARTICLE
+asa.scitation.org/journal/jel
+JASA Express Lett. 3 (1), 014801 (2023)
+3, 014801-8
+ 19 February 2026 13:44:54

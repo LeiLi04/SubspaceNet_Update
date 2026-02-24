@@ -1,0 +1,5731 @@
+
+
+===== PAGE 1 =====
+ 
+ 
+ 
+ 
+Remote Sens. 2023, 15, 420. https://doi.org/10.3390/rs15020420 
+www.mdpi.com/journal/remotesensing 
+Article 
+Robust Underwater Direction-of-Arrival Tracking Based on  
+AI-Aided Variational Bayesian Extended Kalman Filter 
+Xianghao Hou 1,2, Yueyi Qiao 1, Boxuan Zhang 1,2 and Yixin Yang 1,2,* 
+1 School of Marine Science and Technology, Northwestern Polytechnical University, Xi’an 710072, China 
+2 Shaanxi Key Laboratory of Underwater Information Technology, Xi’an 710072, China 
+* Correspondence: yxyang@nwpu.edu.cn 
+Abstract: The AI-aided variational Bayesian extended Kalman filter (AI-VBEKF)-based robust di-
+rection-of-arrival (DOA) technique is proposed to make reliable estimations of the bearing angle of 
+an uncooperative underwater target with uncertain environment noise. Considering that the large 
+error of the guess of the initial mean square error matrix (MSEM) will lead to inaccurate DOA track-
+ing results, an attention-based deep convolutional neural network is first proposed to make reliable 
+estimations of the initial MSEM. Then, by utilizing the AI-VBEKF estimating scheme, the uncertain 
+measurement noise caused by the unknown underwater environment along with the bearing angle 
+of the target can be estimated simultaneously to provide reliable results at every DOA tracking step. 
+The proposed technique is demonstrated and verified by both of the simulations and the real sea 
+trial data from the South China Sea in July 2021, and both the robustness and accuracy are proven 
+superior to the traditional DOA-estimating methods. 
+Keywords: extended Kalman filter; robust tracking; underwater direction-of-arrival tracking;  
+variational Bayesian; attention-based neural network 
+ 
+1. Introduction 
+Estimating the bearing angle of an uncooperative underwater target is vitally im-
+portant in underwater acoustic engineering [1–4]. Considering that the unknown under-
+water environment sometimes causes uncertain measurement noise that will degrade the 
+estimation accuracy of the interested target’s bearing angle, the robust bearing angle esti-
+mating technique is necessary and has attracted a number of researchers’ attention [5–8]. 
+In addition, the techniques of passive bearing angle estimation can be based on two dif-
+ferent ways, namely the DOA estimation and the DOA tracking methods. The DOA esti-
+mation merely depends on the measurements from a certain period. Besides the measure-
+ments, the DOA tracking techniques also utilize the prior motion information of an inter-
+ested target. Although the DOA estimation has already made many milestones in various 
+bearing angle estimation missions [9–11], its ignorance of the target’s kinematics makes 
+the DOA estimation techniques always have superior estimating results when the target 
+is nearly static and the environment is stable. When the target is maneuvering or the meas-
+urement noise shifts because the underwater environment is uncertain, the DOA estima-
+tion methods can hardly have satisfied results. In addition, in order to make reliable and 
+accurate estimations of an uncooperative underwater target’s bearing angle, the DOA es-
+timation techniques usually need a wide observation window, which will lead to heavy 
+on-board computational load and which will occupy a lot of on-board limited storage. 
+Considering the advantages and drawbacks of the DOA estimation methods, DOA 
+tracking techniques have been proposed. Instead of merely utilizing the measurement in-
+formation, DOA tracking methods take both the target’s motion model and the current 
+measurements into consideration. Based on the Bayesian estimation principle, the DOA 
+tracking techniques can reach higher estimating accuracy and can occupy less on-board 
+Citation: Hou, X.; Qiao, Y.;  
+Zhang, B.; Yang, Y. Robust  
+Underwater Direction-of-Arrival 
+Tracking Based on AI-Aided  
+Variational Bayesian Extended  
+Kalman Filter. Remote Sens. 2023, 15, 
+420. https://doi.org/ 
+10.3390/rs15020420 
+Academic Editor: Andrzej Stateczny 
+Received: 7 December 2022 
+Revised: 4 January 2023 
+Accepted: 5 January 2023 
+Published: 10 January 2023 
+ 
+Copyright: © 2023 by the authors. Li-
+censee MDPI, Basel, Switzerland. 
+This article is an open access article 
+distributed under the terms and con-
+ditions of the Creative Commons At-
+tribution (CC BY) license (https://cre-
+ativecommons.org/licenses/by/4.0/). 
+
+
+===== PAGE 2 =====
+Remote Sens. 2023, 15, 420 
+2 of 27 
+ 
+ 
+computing or storage resources, especially when the underwater target is maneuvering 
+[12–15]. In addition, the unpredicted moving objects or environmental changes in the 
+ocean can sometimes make the measurements uncertain, which will degrade the bearing 
+angle estimation accuracy or even make the estimating procedure diverge. Under this cir-
+cumstance, the robust DOA tracking technique is necessary to guarantee the precision of 
+the whole estimation process. Among all the robust DOA tracking techniques, two cate-
+gories can be divided depending on the basic mathematical principles, namely the data-
+inspiring robust tracking techniques [16] and the Bayesian inferring techniques [17,18]. 
+These two categories of robust DOA tracking techniques are both derived based on the 
+widely used Kalman filter technique [19–21]. The former one utilizes good estimations 
+from a long tracking period to adjust the weight of the bad measurements when the meas-
+urement noise becomes uncertain. As a result, the weights of the poor measurements can 
+become very small to make the current bearing angle estimations mainly depend on the 
+historical good estimations. These kinds of data-inspiring robust DOA tracking tech-
+niques have proven their efficiency in a number of research studies [22–26] nevertheless, 
+their convergence is still an open question. When the hyper-parameters of the inspired 
+robust DOA tracking are set inappropriately, the estimations usually have poor accuracy 
+and sometimes diverge. 
+To overcome the drawbacks of the data-inspiring robust tracking techniques, the 
+Bayesian inferring techniques, or the so-called variational Bayesian (VB) robust tracking 
+techniques, are proposed and have been utilized in a various of research studies [27–29]. 
+Unlike the data-inspiring robust tracking methods, the VB robust tracking techniques are 
+strictly derived mathematically. By assuming the prior probability density functions 
+(PDFs) of the tracking parameters and the interested time-varying parameters (i.e., covar-
+iance matrix of the uncertain measurements noise) along with optimizing the Kullback–
+Leibler Divergence (KLD) among the posterior PDFs, the VB technique can analytically 
+estimate the tracking parameters and other interested parameters simultaneously. Differ-
+ent from the data-inspiring robust tracking methods, the VB robust tracking techniques 
+have strict mathematical foundations and can guarantee convergence and accuracy if the 
+prior PDFs are set properly. Under this circumstance, the VB robust tracking techniques 
+do not need good estimations from a long period to output reliable results when meas-
+urements become uncertain, and they are more theoretically complete.  
+In addition, the error between the guess of the initial state and its real value will in-
+fluence the final DOA tracking accuracy since the DOA tracking system has high nonlin-
+earities. If the error is large enough, the tracking results will even be diverged [30]. Under 
+this circumstance, before operating a DOA tracking algorithm, the initial MSEM should 
+be set properly. However, in the real DOA tracking scenario, it is almost impossible to 
+obtain an accurate error covariance matrix since the real initial states cannot be accurately 
+obtained. In addition, the uncertain underwater environment always affects the state es-
+timating results and makes the initial MSEM much harder to accurately predetermine. To 
+deal with this problem, some researchers suggested utilizing a large guess of the initial 
+MSEM to make the tracking system have fast converging speed and to deal with the large 
+error between the initial guesses of the states and their real values. However, since the 
+underwater target DOA tracking system has high nonlinearities, setting a large guess of 
+the initial MSEM sometimes makes the whole tracking procedure become unstable or 
+even diverge. As a consequence, how to set a proper guess of the initial MSEM with re-
+spect to the error of the initial guess of the state and its real value is still an open question. 
+Usually, the initial MSEM is set by engineering experience, which is similar to an expert 
+system that tries to have common solutions. Although some adaptive tracking techniques 
+have been designed to weaken the influences by the initial error [31], the unproperly set 
+initial MSEM still affects the overall tracking performance. Under these circumstances, a 
+robust and accurate technique for properly setting the guess of the initial MSEM is neces-
+sary. Usually, the traditional Bayesian estimating techniques rely heavily on the mathe-
+matical model of the systems or parameters to be estimated, but the guess of the initial 
+
+
+===== PAGE 3 =====
+Remote Sens. 2023, 15, 420 
+3 of 27 
+ 
+ 
+MSEM does not have a determined and accurate mathematical model with respect to the 
+system state, which makes the traditional methods fail. However, the value of the guess 
+of the initial MSEM has a relationship with the theoretical measurements calculated by 
+the state by the measurement model, initial guess of the state, and its real value. Under 
+this circumstance, the data characteristics other than the mathematical characteristics of 
+the guess of the initial MSEM can be analyzed and utilized. As a result, although the tra-
+ditional techniques have few general solutions for the problem of properly setting the 
+guess of the initial MSEM, the latest data-driven AI techniques allow the problem dis-
+cussed above to be solved. 
+Except for depending heavily on the mathematical derivations, the AI techniques can 
+only rely on the statistical characteristics to infer the inner nonlinear relationship between 
+the inputs and the outputs from a certain system. As a result, the AI techniques are more 
+suitable for the problems that are hard to be mathematically or analytically depicted but 
+have plenty of data resources. After the back propagated (BP) training method was pro-
+posed by Rumelhart et al. [32] and after the deep learning scheme that brought the deep 
+artificial neural network (DANN) into light by Hinton et al. [33], the DANN has shown 
+its powerful abilities in many fields, such as automation, parameter estimation, target 
+tracking, etc. Among all of the DANNs, the deep convolutional neural networks (DCNNs) 
+and the variations of the DCNNs (i.e., Resnet [34], Senet [35]) are the most notable ones, 
+with robust and accurate performances, especially for regression and classification prob-
+lems that are hard to be analytically modeled. By adopting the convolutional and pooling 
+ideas into one DANN, the DCNN can be modeled much deeper and can easily be trained. 
+Based on the DCNN technique, Lecun et al. [36] proposed a DCNN named Lennet-5 to 
+deal with the digital image classification task. Ref. [37] considered the training efficiency 
+and the gradient vanishing problem caused by the DCNNs and proposed the shortcut 
+concept to make the DCNNs have a much deeper structure so that the DCNNs can deal 
+with more complicated classification and regression issues. Ref. [38] considered that the 
+different features may have different weights during the training process of the designed 
+DCNNs and proposed an attention-based scheme to make the designed DCNNs more 
+robust and accurate. Besides the principle developments of the DCNNs, the applications 
+of them have also attracted a number of researchers from various fields, especially from 
+the field of underwater target localization, detection, classification, and tracking [37–43]. 
+Niu et al. [37–40] have published a series of research studies to make the underwater tar-
+get localization task more accurate and robust to the uncertain underwater environment. 
+Wang et al. [41,42] utilized the DCNNs technique in estimating the unknown parameters 
+in the underwater acoustical channel. Based on the DCNNs technique, Ref. [40] developed 
+intelligent target classification algorithms that can obtain higher accuracy and classifica-
+tion speed than the traditional methods. Ref. [43] proposed a DCNN-based seabed param-
+eters inversion method. However, to the best of the authors’ knowledge, very few research 
+studies have considered using the advanced DCNN technique for the underwater target 
+DOA tracking problem. As a result, the potential and strength of the DCNNs in the un-
+derwater target DOA tracking scenario, especially in dealing with the proper setting of 
+the guess of the initial MSEM, have not been proven yet. 
+Based on the above analysis, an AI-aided variational Bayesian extended Kalman filter 
+(AI-VBEKF)-based robust direction-of-arrival (DOA) technique is proposed to make reli-
+able estimations of the bearing angle of an uncooperative underwater target with uncer-
+tain environment noise. The main contributions of this study are summarized as follows. 
+Firstly, a uniform circular array (UCA) is considered to provide measurements of the 
+underwater target. By adopting the UCA as the measurement system, the port and star-
+board ambiguity problem is overcome. In addition, the uniform aperture at all bearing 
+angles is processed. 
+Secondly, considering the effects caused by the unproperly set guess of the initial 
+MSEM, an attention-based DCNN is designed to make reliable initial guesses of it and to 
+make the later DOA tracking process steady and accurate. 
+
+
+===== PAGE 4 =====
+Remote Sens. 2023, 15, 420 
+4 of 27 
+ 
+ 
+Thirdly, considering that the unknown underwater disturbance can sometimes make 
+the measurement noise uncertain, the AI-VBEKF is designed to robustly estimate the bear-
+ing angle of the underwater target with a shifting covariance matrix of the uncertain meas-
+urement noise. 
+Finally, based on the sea trail data from the South China Sea in July 2021, the pro-
+posed AI-VBEKF is verified. The robust and accurate estimation results proved the supe-
+rior characteristics of the proposed DOA tracking method. 
+The remainder of this paper is organized as follows: Section 2 shows the kinematic 
+model and the measurement model of the DOA tracking problem. In Section 3, the VB-
+EKF using a UCA is derived first. In addition, the attention-based DCNN is proposed to 
+make a good estimation of the guess of the initial MSEM. Then, based on the VB-KEF and 
+proposed DCNN, the whole frame of the AI-VBKEF is proposed. In Section 4, the simula-
+tion and experiment verification results are shown. Finally, the conclusions are drawn in 
+Section 5. 
+2. Problem Formulation 
+2.1. Kinematic Model of the DOA Tracking Process 
+Since the underwater target is usually performing at a constant velocity to keep in-
+visibility and is far from the hydrophone arrays, the motion model of the target’s bearing 
+angle can be modeled as the constant velocity (CV) model. 
+Let 
+k
+
+ denote the bearing angle of the target (
+k
+
+ is the angle between the target 
+and the positive x-axis with the positive counterclockwise direction) and 
+k
+ denote the 
+change rate of 
+k
+
+. Then, the CV can be expressed as: 
+|
+1
+1
+1
+1
+k
+k k
+k
+k
+k
+w
+
+
+
+
+
+
+x
+F
+x
+G
+ 
+(1)
+where
+
+
+T
+,
+k
+k
+k
+
+
+x
+
+ is the system state at time step k, 
+T
+ denotes the matrix transposi-
+tion, and 
+1
+k
+w
+ denotes the zero mean Gaussian process noise with the covariance matrix 
+1
+k
+Q
+ caused by the unknown underwater environment. 
+1
+k
+Q
+ is named the process noise 
+covariance matrix (PNCM). 
+|
+1
+k k 
+F
+ and 
+k
+G  are the state transition matrix for CV motion 
+and the noise driving matrix at time step k, which are given by: 
+|
+1
+1
+0
+1
+k k
+T
+
+
+
+
+
+
+
+F
+ 
+(2)
+2
+1
+/ 2
+=
+k
+T
+T
+
+
+
+
+
+
+
+G
+ 
+(3)
+where T is the tracking interval. 
+2.2. Measurement Model Based on the Received Signal of UCA 
+Considering that the bearing angle of the target varies in a wide range in long-time 
+tracking, the UCA is used since it is free from the port and starboard ambiguity problem. 
+The configuration of the UCA and the underwater target is shown in Figure 1. 
+
+
+===== PAGE 5 =====
+Remote Sens. 2023, 15, 420 
+5 of 27 
+ 
+ 
+Target
+x
+y
+UCA
+Hydrophone
+k
+
+ 
+Figure 1. Configuration of the UCA-based measurement system. 
+Consider a narrowband acoustic signal is emitted by a target. The frequency, ampli-
+tude and the initial phase are f, a, and 
+0
+. Then, we express the target signal at time step 
+k as: 
+
+
+
+
+
+0
+exp
+2
+s k
+j
+fkT
+
+
+
+
+  
+(4)
+The emitted signal given by Equation (4) is received by the UCA with P elements at 
+time step k. The P elements are uniformly placed around the circle with the radius r and 
+the center at the origin of the cartesian coordinates. It is assumed that the range of the 
+target satisfies the far-field condition to regard the arrived signal as a plane wave, and the 
+sound velocity is c. Then, the time delay of the signal relative to the center of the UCA at 
+the p-th element (
+1,2,...,
+p
+P
+
+) is cos(
+2
+)
+k
+p P r c
+
+
+
+. In addition, considering the signal 
+given by Equation (4), the shift of the signal caused by the time delay at the p-th element 
+is expressed as:  
+Consider that a P-element UCA with radius of r received the emitted signal at time 
+step k. The arrived signal is assumed to be the plane wave, and the sound velocity is de-
+noted by c. Then, the array manifold at the p-th element is expressed as: 
+
+
+exp
+2
+cos
+2
+p
+k
+k
+r
+p
+A
+j
+f c
+P
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+(5)
+Thus, the received signal at the p-th element is expressed as: 
+
+
+
+
+
+real
+p
+p
+k
+k
+z
+k
+A
+s k
+v
+
+
+
+ 
+(6)
+where real( ) denotes taking real part of a complex number, 
+k
+
+ denotes the bearing an-
+gle of the target at time step k, and 
+k
+v  denotes the zero mean Gaussian measurement 
+noise with the variance 
+2
+,r k
+
+ at time step k from the measurement system and the un-
+known ocean environment. 
+We define the received signal vector of the UCA as 
+T
+1
+2
+[
+( ),
+( ),...,
+( )]
+k
+P
+z
+k
+z
+k
+z
+k
+
+z
+, the 
+output of the UCA at time step k is: 
+
+
+
+
+real
+k
+k
+k
+s k
+
+
+
+z
+A
+v  
+(7)
+where 
+(
+)
+k
+
+A
+ denotes the array manifold vector, which is given by 
+
+
+T
+1
+2
+( )
+( ),
+( ),...,
+( )
+k
+k
+k
+P
+k
+A
+A
+A
+
+
+
+
+
+A
+ 
+(8)
+M snapshots of the received signal are taken in a measurement. The snapshots are 
+taken from a small period within every tracking interval T to guarantee that the target 
+remains stationary. Then, we can express the measurement vector at tracking step k as: 
+
+
+===== PAGE 6 =====
+Remote Sens. 2023, 15, 420 
+6 of 27 
+ 
+ 
+We take M snapshots of the received signal from a small period within every tracking 
+interval T in one measurement to guarantee that the target remains stationary. Then, the 
+measurement vector at time step k is given as follows: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+real
+real
+2
+real
+2
+1
+real
+1
+k
+k
+k
+k
+k
+k
+k
+k
+k
+s k
+k
+s k
+k
+k
+h
+s k
+k
+M
+s k
+M
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A
+z
+A
+z
+Z
+z
+X
+V
+A
+V
+z
+A
+
+
+ 
+(9)
+where τ denotes the interval between adjacent snapshots, M
+T
+, 
+(
+)
+k
+k
+h x
+ denotes the 
+nonlinear measurement function, and 
+k
+V  denotes the measurement noise.  
+The measurement noise of each element is assumed to be independent and identi-
+cally distributed. Then, 
+k
+V  at time step k is defined as a zero mean Gaussian noise with 
+covariance matrix 
+2
+,
+=
+k
+M P
+r k
+
+R
+I
+, where 
+2
+,r k
+
+ is the variance of the measurement noise of 
+each element given in Equation (6), and 
+MP
+I
+ is the MP-order identity matrix. The meas-
+urement noise covariance matrix (MNCM) 
+k
+R  is usually assumed to be fixed in the un-
+derwater tracking problem. However, in the real scenario of underwater tracking, the un-
+known ocean environment can result in uncertain measurement noise, which makes the 
+MNCM become fluctuant and hard to deal with by using traditional tracking methods. 
+This problem seriously degrades the tracking performance. 
+3. Methods 
+3.1. EKF for DOA Tracking 
+Since the measurement model depicted by Equation (9) has high nonlinearities, the 
+extended Kalman filter (EKF) scheme is used to derived a DOA tracking algorithm in this 
+section. 
+From Equation (1), the one-step prediction of the state estimate 
+|
+1
+ˆ k k 
+x
+ is depicted as: 
+|
+1
+|
+1
+1
+ˆ
+ˆ
+k k
+k k
+k
+
+
+
+
+x
+F
+x
+ 
+(10)
+where 
+|
+1
+k k 
+F
+ is the state transition matrix given by Equation (2), and 
+1
+ˆ k 
+x
+ is the state es-
+timate at tracking step k-1. The one-step prediction of the MSEM 
+|
+1
+k k 
+P
+ is expressed as: 
+|
+1
+|
+1
+1
+|
+1
+T
+T
+k k
+k k
+k
+k k
+k
+k
+k
+
+
+
+
+
+
+F
+G Q
+P
+P
+F
+G
+ 
+(11)
+where 
+1
+k 
+P
+ is the MSEM at step k-1, 
+k
+G  is the noise driving matrix given by Equation 
+(3), and 
+k
+Q  is the covariance matrix of the process noise. 
+Then, considering the UCA-based measurement model given in Equation (9), the 
+Kalman filter gain 
+k
+K  is expressed as: 
+
+
+1
+| -1
+|
+1
+T
+T
+k
+k k
+k
+k
+k k
+k
+k
+
+
+
+
+K
+P
+Η
+Η P
+Η
+R
+ 
+(12)
+where 
+k
+Η  is the first order Taylor expansion of the nonlinear measurement model. 
+k
+R  
+is the MNCM. According to Equation (9), 
+k
+Η  can be calculated as: 
+1,1
+2,1
+,1
+1,2
+2,2
+,2
+1,
+2,
+,
+0
+0
+0
+0
+0
+0
+0
+0
+0
+T
+P
+P
+M
+M
+P M
+k
+h
+h
+h
+h
+h
+h
+h
+h
+h
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Η
+
+
+
+
+
+
+
+
+ 
+(13)
+The elements of the matrix 
+,
+p m
+h 
+(
+1,2,...,
+p
+P
+
+, 
+1,2,...,
+m
+M
+
+) are given by [44]: 
+
+
+===== PAGE 7 =====
+Remote Sens. 2023, 15, 420 
+7 of 27 
+ 
+ 
+
+
+
+
+
+
+
+
+,
+|
+1
+|
+1
+ˆ
+ˆ
+ˆ
+2
+sin
+2
+real
+1
+p m
+k k
+p
+k k
+r
+p
+h
+f
+jA
+s k
+m
+c
+P
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+(14)
+where 
+
+
+
+
+ˆ
+1
+s k
+m
+
+
+
+ denotes the estimate of the target signal, which is given by [45]: 
+
+
+
+
+
+
+
+
+
+
+( )
+(
+(
+1
+H
+H
+)
+)
+( )
+ˆ
+ˆ
+ˆ
+ˆ
+( )
+Hilbert
+i
+i
+i
+i
+k k
+k k
+k k
+k k
+s
+k
+k
+
+
+
+
+
+A
+A
+A
+z
+|
+|
+|
+|
+ 
+(15)
+where 
+( )ˆi
+k k
+|  is the predicted bearing angle, i.e., the first term of 
+1
+ˆk k 
+x |
+, 
+
+
+( )
+ˆ i
+k k
+
+A
+|
+ is obtained 
+by using Equations Equations (5) and (8) 
+H
+
+ and 
+
+Hilbert  denote the conjugate 
+transposition and the Hilbert transform, respectively. 
+The state estimate ˆ k
+x  at tracking step k is expressed as: 
+
+
+
+
+|
+1
+|
+1
+ˆ
+ˆ
+ˆ
++
+k
+k k
+k
+k
+k k
+h
+
+
+
+
+x
+x
+K
+Z
+x
+ 
+(16)
+where 
+k
+Z  is the measurement of the UCA at step k. The one-step prediction of MSEM 
+|
+1
+k k 
+P
+ is modified by 
+k
+K , i.e.,  
+
+
+|
+1
+k
+k
+k
+k k 
+
+
+P
+I
+K H
+P
+ 
+(17)
+where 
+k
+P  denotes the MSEM at tracking step k. From Equations (10)–(17), the current 
+bearing angle estimation can be calculated by the inputs of 
+0ˆx  and 
+0
+P . 
+From the above analysis, the DOA tracking process not only depends on the meas-
+urements but also utilizes the target’s prior motion information. Therefore, the DOA 
+tracking techniques can be robust to the target’s motion; especially, the kinematic model 
+of the target is accurate. However, from Equation (12), it is obvious that the measurement 
+noise 
+k
+R  will affect the Kalman gain, which will hugely influence the final tracking pre-
+cision. In addition, from Equation (10), it is obvious that the initial values of the state and 
+MSEM will influence the final tracking accuracy. As a result, in the scenario of accurate 
+and robust underwater DOA tracking, both the uncertain measurement noise and proper 
+setting of the 
+0ˆx  and 
+0
+P  need to be considered. 
+3.2. VB-EKF for Robust DOA Tracking 
+Regarding the measurement model with high nonlinearity depicted by Equation (7), 
+the extended Kalman filter (EKF) technique is used for DOA tracking in this section. Fur-
+thermore, considering the fluctuations of the MNCM caused by the unknown underwater 
+environment, the variational Bayesian approach is utilized to improve the tracking per-
+formance by estimating the MNCM. Thus, the VB-EKF for DOA tracking using the UCA 
+is proposed, and the details are given as follows.  
+3.2.1. Choice of Prior Distribution 
+In the framework of the standard EKF [5], the one-step predicted probability density 
+distribution (PDF) 
+1:
+1
+(
+)
+|
+k
+k
+p
+
+x
+z
+ and the likelihood PDF 
+(
+)
+k
+k
+p z
+x
+|
+ are assumed to be sub-
+ject to Gaussian distributions as follows: 
+
+
+
+
+1:
+1
+1
+1
+1
+,
+N
+ˆ
+;
+,
+k
+k
+k
+k k
+k k
+k k
+p
+
+
+
+
+
+x z
+P
+x x
+P
+|
+|
+|
+|
+ 
+(18)
+
+
+
+
+
+
+,
+N
+;
+,
+k
+k
+k
+k
+k
+k
+p
+
+z x R
+z h x
+R
+|
+ 
+(19)
+where N(  ;
+,
+)
+
+
+Σ  denotes the PDF of the Gaussian distribution with mean μ and covar-
+iance matrix Σ, and 
+(
+)
+k
+h x
+ is the nonlinear measurement function given by Equation (7). 
+
+
+===== PAGE 8 =====
+Remote Sens. 2023, 15, 420 
+8 of 27 
+ 
+ 
+1
+ˆk k 
+x |
+ and 
+1
+k k 
+P |
+ denote the one-step prediction of state and MSEM, respectively, which 
+are given by Equations (10) and (11). 
+In order to infer 
+k
+x  along with 
+k
+R , a conjugate prior distribution needs to be se-
+lected for the fluctuant MNCM 
+k
+R  since a conjugate distribution can guarantee the same 
+functional forms of the prior distribution and the posterior distribution. In the Bayesian 
+theory, inverse Wishart distribution is usually used as the conjugate prior to the covari-
+ance matrix of a Gaussian distribution with known mean [6]. Since 
+k
+R  is the covariance 
+matrix of Gaussian distribution, the prior distribution 
+1:
+1
+(
+)
+k
+k
+p
+
+R
+z
+|
+ is selected as an in-
+verse Wishart distribution given by: 
+
+
+
+
+1:
+1
+|
+1
+|
+1
+IW
+;
+ˆ
+,
+ˆ
+k
+k
+k
+k k
+k k
+p
+u
+
+
+
+
+R z
+R
+U
+|
+ 
+(20)
+where IW(  ; ,
+)
+
+
+Ψ  denotes the PDF of the inverse Wishart distribution with degree of 
+freedom (dof) λ and inverse scale matrix Ψ [3], 
+|
+1
+ˆk k
+u
+ and 
+| 1
+ˆ
+kk
+U
+ are the dof and the in-
+verse scale matrix of 
+1:
+1
+(
+)
+k
+k
+p
+
+R
+z
+|
+, respectively. 
+The posterior distribution 
+1
+1:
+1
+(
+)
+k
+k
+p
+
+
+R
+z
+|
+ is also subject to an inverse Wishart distri-
+bution as follows: 
+
+
+
+
+1
+1:
+1
+1
+1|
+1
+1|
+1
+IW
+;
+, ˆ
+ˆ
+k
+k
+k
+k
+k
+k
+k
+p
+u
+
+
+
+
+
+
+
+
+R
+z
+R
+U
+|
+ 
+(21)
+To guarantee that 
+1:
+1
+(
+)
+k
+k
+p
+
+R
+z
+|
+ is the inverse Wishart distribution given by Equation 
+Error! Reference source not found., the previous approximate posteriors is spread 
+through a forgetting factor 
+
+
+0,1
+
+, which indicates the extent of the time-fluctuations of 
+the MNCM. Then, the prior dof 
+|
+1
+ˆk k
+u
+ and the prior inverse scale matrix 
+| 1
+ˆ
+kk
+U
+ are given 
+as follows: 
+
+
+1
+1
+1
+1
+1
+ˆ
+ˆ
+k k
+k
+k
+u
+u
+n
+n
+
+
+
+
+
+
+
+∣
+∣
+ 
+(22)
+1
+1
+1
+ˆ
+ˆ
+k k
+k
+k
+
+
+
+
+
+U
+U
+∣
+∣
+ 
+(23)
+where n denotes the order of the MNCM 
+k
+R . 
+3.2.2. Variational Approximations of Posterior PDFs 
+According to the variational Bayesian approximation, the joint posterior PDF of the 
+state 
+k
+x  and the MNCM 
+k
+R  is approximated to 
+
+
+
+
+
+1:
+,
+k
+k
+k
+k
+k
+p
+q
+q
+
+x
+R
+z
+x
+R
+∣
+ 
+(24)
+where 
+(
+)
+k
+q x
+ and 
+(
+)
+k
+q R
+ are the approximate posterior PDF of 
+k
+x  and
+k
+R , respec-
+tively. The variational Bayesian approximation is formed by minimizing the Kullback–
+Leibler divergence (KLD) between the true joint distribution 
+1:
+(
+,
+)
+k
+k
+k
+p x
+R
+z
+∣
+ and the ap-
+proximate distribution 
+(
+) (
+)
+k
+k
+q
+q
+x
+R
+, i.e., 
+
+
+
+
+
+
+
+
+
+
+
+
+
+1:
+,
+argminKLD
+,
+k
+k
+k
+k
+k
+k
+k
+q
+q
+q
+q
+p
+
+x
+R
+x
+R
+x R z
+
+∣
+ 
+(25)
+where KLD( ( )
+( ))
+q x
+p x
+
+ denotes the KLD between 
+( )
+q x  and 
+( )
+p x , and 
+
+
+
+
+( )
+KLD
+( ) log
+( )
+q x
+q x
+p x
+q x
+dx
+p x
+
+
+ 
+(26)
+
+
+===== PAGE 9 =====
+Remote Sens. 2023, 15, 420 
+9 of 27 
+ 
+ 
+The optimal solution of Equation Error! Reference source not found. satisfies the 
+following Equations [4]: 
+
+
+1:
+log (
+)
+E
+log
+,
+,
+k
+k
+k
+k
+k
+q
+p
+c
+
+
+
+
+
+
+R
+x
+x
+x R z
+ 
+(27)
+
+
+1:
+log (
+)
+E
+log
+,
+,
+k
+k
+k
+k
+k
+q
+p
+c
+
+
+
+
+
+
+x
+R
+R
+x R z
+ 
+(28)
+where E
+[ ]
+k 
+x
+ and E
+[ ]
+k 
+R
+ denote the expectation with regard to 
+k
+x  and 
+k
+R , respec-
+tively, and c x  and c R  denote the constants with respect to 
+k
+x  and 
+k
+R , respectively. 
+Since the variational parameters of 
+(
+)
+k
+q x
+ and 
+(
+)
+k
+q R
+ are coupled, a fix-point iteration 
+process is applied to solve Equations (27) and (28), i.e., the approximate posterior PFD 
+(
+)
+k
+q
+x
+ is updated to 
+
+
+1 (
+)
+i
+k
+q
+
+x
+ at the 
+1
+i 
+-th iteration using the posterior PDF 
+(
+)
+i
+k
+q
+R
+, and 
+(
+)
+k
+q
+R
+ is updated to 
+
+
+1 (
+)
+i
+k
+q
+
+R
+ using the posterior 
+(
+)
+i
+k
+q
+x
+. 
+According to Equations (18)–(20), the joint PDF is expressed as 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1:
+1:
+1
+1:
+1
+1:
+1
+|
+1
+|
+1
+1:
+1
+1
+1
+,
+,
+,
+N
+;
+,
+N
+;
+,
+IW
+;
+, ˆ
+ˆ
+ˆ
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k
+k k
+k k
+k
+k k
+k k
+p
+p
+p
+p
+p
+h
+u
+p
+
+
+
+
+
+
+
+
+
+
+
+x R z
+z x R
+x z
+R z
+z
+z
+x
+R
+x
+x
+P
+R
+U
+z
+|
+|
+|
+|
+|
+ 
+(29)
+(1) Update of 
+k
+x  
+The posterior 
+(
+1)
+1:
+1
+(
+|
+)
+i
+k
+k
+q
+
+
+x
+z
+ is updated according to Equations (12), (16) and (17) 
+as: 
+
+
+
+
+( 1)
+( 1)
+( 1)
+1:
+1
+|
+|ˆ
+ˆ
+N
+;
+,
+|
+i
+i
+i
+k
+k
+k
+k k
+k k
+q 
+
+
+
+
+x
+z
+x x
+P
+ 
+(30)
+where the mean vector 
+(
+1 )
+|
+ˆ
+i
+k k
+
+x
+ and the covariance matrix 
+( 1)
+|ˆ i
+kk
+
+P
+ are given as follows: 
+
+
+
+
+
+
+( )
+( )
+(
+1
+T
+T
+(
+1
+)
+)
+( )
+1
+1
+ˆ
+i
+i
+i
+i
+k
+k
+k
+k
+k
+k
+k k
+i
+k
+
+
+
+
+
+
+K
+P
+H
+H P
+H
+R
+|
+|
+ 
+(31)
+
+
+
+
+(
+1)
+(
+1)
+1
+1
+ˆ
+ˆ
+ˆ
+i
+i
+k
+k
+k k
+k k
+k k
+z
+h
+
+
+
+
+
+
+
+x
+x
+K
+x
+|
+|
+|
+ 
+(32)
+(
+1 )
+(
+1)
+1
+( )
+1
+i
+i
+i
+k
+k
+k k
+k k
+k k
+
+
+
+
+
+
+P
+P
+K
+H
+P
+|
+|
+|
+ 
+(33)
+where 
+(
+)
+i
+k
+H
+ denotes the Jacobian matrix of the measurement function. 
+(
+)
+i
+k
+H
+ is obtained 
+by substituting 
+(
+)
+ˆ
+i
+k
+k
+x
+|
+ into 
+k
+H  given by Equation (33). 
+Based on the new estimated state 
+(
+)
+|
+ˆ
+i
+k
+k
+x
+ and MSEM 
+(
+)
+|
+i
+k
+k
+P
+, a more accurate approx-
+imation of 
+(
+)
+k
+h
+x
+ can be obtain by performing linearization with 
+(
+)
+|
+ˆ
+i
+k
+k
+x
+ [6], i.e., 
+
+
+
+
+
+
+( )
+( )
+( )
+|
+|
+ˆ
+ˆ
+i
+i
+i
+k
+k k
+k
+k
+k k
+
+
+
+h x
+h x
+H
+x
+x
+ 
+(34)
+The estimate of the signal 
+( )
+ˆ
+(
+)
+i
+k
+k
+s
+k
+|
+ is also used instead of the real one to calculate the 
+measurement function 
+( )
+(
+)
+ˆ
+i
+k k
+h
+x
+|
+ by using Equation (7). Thus, Equation (32) is upgraded to 
+
+
+
+
+
+
+( 1)
+(
+1)
+( )
+( )
+1
+( )
+1
+ˆ
+ˆ
+ˆ
+ˆ
+ˆ
+i
+i
+i
+i
+k
+k
+k
+k k
+k k
+k k
+k k
+k k
+i
+z
+h
+
+
+
+
+
+
+
+
+
+x
+x
+K
+x
+H
+x
+x
+|
+|
+|
+|
+|
+ 
+(35)
+(2) Update of 
+k
+R  
+According to Equations (18)–(20), 
+
+lo g
+(
+)
+i
+k
+q
+R
+ is given by 
+
+
+===== PAGE 10 =====
+Remote Sens. 2023, 15, 420 
+10 of 27 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(
+1)
+T
+1
+1
+1
+1
+( )
+1
+1
+1
+ log
+0.5
+2 log
+0.5tr
+0.5
+ˆ
+0.5
+2 log
+0.5t
+ˆ
+ˆ
+r
+ˆ
+i
+k
+k
+k
+k
+k
+k
+k
+k
+k k
+k k
+i
+k
+k
+k
+k k
+k k
+u
+c
+c
+q
+n
+n
+u
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+R
+R
+R
+R
+U
+R
+z
+h x
+R
+z
+h x
+R
+B
+U
+R
+|
+|
+|
+|
+ 
+(36)
+where 
+
+
+
+
+
+
+
+
+
+T
+( )
+E
+i
+k
+k
+k
+k
+k
+i 
+
+
+
+
+
+
+B
+z
+h x
+z
+h x
+ 
+(37)
+Similar to Equation (34), 
+
+
+k
+h
+x
+ is linearized as 
+
+
+
+
+
+
+( 1)
+( 1)
+( 1)
+|
+|
+ˆ
+ˆ
+i
+i
+i
+k
+kk
+k
+k
+k k
+
+
+
+
+
+
+h x
+h x
+H
+x
+x
+ 
+(38)
+where 
+(
+1 )
+i
+k
+
+H
+ denotes the Jacobian matrix of the measurement function 
+(
+)
+k
+h
+x
+ at 
+(
+1 )
+|
+ˆ
+i
+k k
+
+x
+, and
+(
+1 )
+i
+k
+
+H
+ is obtained by substituting 
+(
+1 )
+|
+ˆ
+i
+k k
+
+x
+ into Equation (13). Substituting Equation 
+(38) into Equation (37), we obtain: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+( )
+T
+T
+( )
+( )
+( )
+( )
+( )
+( )
+|
+|
+|
+|
+T
+T
+( )
+( )
+( )
+( )
+( )
+T
+|
+|
+|
+|
+T
+( )
+( )
+( )
+( )
+|
+|
+|
+E
+ˆ
+ˆ
+ˆ
+ˆ
+ˆ
+ˆ
+ 
+E
+ˆ
+E
+ˆ
+ˆ
+ˆ
+i
+k
+k
+k
+k
+k
+i
+i
+i
+i
+i
+i
+k
+k k
+k
+k
+k k
+k
+k k
+k
+k
+k k
+i
+i
+i
+i
+i
+k
+k
+k
+i
+i
+k
+k
+k k
+k
+k
+k k
+k
+k k
+k
+i
+i
+i
+i
+k
+k k
+i
+k
+k k
+k
+k k
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+B
+z
+h x
+z
+h x
+z
+h x
+H
+x
+x
+z
+h x
+H
+x
+x
+z
+h x
+z
+h x
+H
+x
+x
+x
+x
+H
+z
+h x
+z
+h x
+H
+P
+H T
+ 
+(39)
+From Equation (36), 
+(
+1 ) (
+)
+i
+k
+q
+
+R
+ is updated as 
+
+
+
+
+(
+1)
+(
+1)
+(
+1)
+IW
+;
+, ˆ
+ˆ
+i
+i
+i
+k
+k
+k
+k
+q
+u
+
+
+
+
+R
+R
+U
+ 
+(40)
+where the dof 
+(
+1 )
+ˆ
+i
+k
+u
+
+ and the inverse scale matrix 
+(
+1 )
+ˆ
+i
+k
+
+U
+ are given as follows: 
+(
+1)
+1
+1
+ˆ
+ˆ
+i
+k
+k
+k
+u
+u
+
+
+
+
+∣
+ 
+(41)
+(
+1 )
+(
+)
+1
+ˆ
+ˆ
+i
+i
+k
+k
+k
+k
+
+
+
+
+U
+B
+U
+∣
+ 
+(42)
+Then, according to Equation (29), 
+
+lo g
+(
+)
+i
+k
+q
+x
+ is given by: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+T
+(
+1)
+(
+1)
+1
+T
+1
+|
+1
+|
+1
+|
+1
+ log
+0.5
+E
+ 
+ˆ
+ˆ
+ 
+0.5
+i
+i
+k
+k
+k
+k
+k
+k
+k
+k k
+k k
+k
+k k
+q
+c
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+x
+x
+z
+h x
+R
+z
+h x
+x
+x
+P
+x
+x
+ 
+(43)
+where 
+(
+1)
+1
+[
+]
+E
+i
+k
+
+
+R
+ is given by: 
+
+
+
+1
+(
+1)
+1
+(
+1)
+(
+1)
+E
+1
+ˆ
+ˆ
+i
+i
+i
+k
+k
+k
+u
+m
+
+
+
+
+
+
+
+
+
+
+
+R
+U
+ 
+(44)
+The modified one step predicted PDF 
+
+
+(
+1)
+|
+i
+k
+k
+p
+
+z
+x
+ at the I + 1th iteration is defined 
+as: 
+
+
+
+
+( 1)
+( 1)
+N
+;
+, ˆ
+|
+i
+i
+k
+k
+k
+k
+k
+k
+p 
+
+
+z
+x
+z H x R
+ 
+(45)
+where the modified MNCM 
+(
+1 )
+ˆ
+i
+k
+
+R
+ are formulated as: 
+
+
+===== PAGE 11 =====
+Remote Sens. 2023, 15, 420 
+11 of 27 
+ 
+ 
+
+
+
+
+1
+(
+1)
+(
+1)
+1
+(
+1)
+(
+1)
+ˆ
+1
+E
+ˆ
+ˆ
+i
+i
+i
+i
+k
+k
+k
+ku
+m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+R
+R
+U
+ 
+(46)
+Finally, after N fixed-point iterations, the variational approximations of the posterior 
+PDFs are given as follows: 
+
+
+
+
+
+
+
+
+( )
+( )
+( )
+N
+;
+,
+N
+ˆ;
+,
+ˆ
+N
+N
+N
+k
+k
+k
+k
+k k
+k k
+k k
+k k
+q
+q
+
+
+
+x
+x
+x x
+P
+x x
+P
+|
+|
+|
+|
+ 
+(47)
+
+
+
+
+
+
+
+
+( )
+( )
+( )
+IW
+;
+,
+I
+ˆ
+W
+;
+, ˆ
+ˆ
+ˆ
+N
+N
+N
+k
+k
+k
+k
+k
+k
+k k
+k k
+q
+q
+u
+u
+
+
+
+R
+R
+R
+U
+R
+U
+∣
+∣
+ 
+(48)
+Combining the EKF depicted by Equations (10)–(17) and the VB estimating technique, 
+the state can be robustly estimated under uncertain measurement noise.  
+3.3. AI-VBEKF for Robust DOA Tracking 
+Considering the high nonlinearities of the measurement model by Equation (7), the 
+initial values will affect the tracking results. Since the EKF is based on the Taylor series 
+expansion to linearize the nonlinear system model, the truncation error will become un-
+acceptable if the error between the initial guess of the state and its real value is quite large. 
+In addition, if the initial MSEM cannot be set properly, the DOA tracking results will be 
+in low accuracy or even diverged. In the real underwater DOA tracking scenario, the ini-
+tial DOA of the target can be obtained by traditional DOA estimation methods (i.e., CBF, 
+MVDR, MUSIC, et.al.), but the initial MSEM cannot be determined since the initial error 
+between the real state and the estimated one is unknown. If the initial MSEM is set too 
+small, the DOA tracking algorithm will converge very slowly or cannot converge at all. 
+On the contrary, if the initial MSEM is set too large, the DOA tracking process will be soon 
+diverged since the Kalman gain will become uncontrolled during the measurement up-
+date steps for nonlinear tracking systems. As a result, a proper preset initial MSEM not 
+only affects the final DOA tracking accuracy but also determines the convergence of the 
+total tracking procedure. However, in the real DOA tracking scenario, the initial MSEM 
+can only be set by engineering experience. To solve this problem and deal with the uncer-
+tain measurement noise, an AI-aided robust DOA tracking algorithm is proposed in this 
+subsection. 
+In order to minimalize the final DOA tracking error caused by the inaccurate initial 
+guess of the MSEM, an AI-aided robust DOA tracking algorithm is proposed by this sub-
+section. Firstly, considering that the different initial state guesses will lead to different 
+theoretical measurement calculations by the measurement model, the error between the 
+real measurements and the theoretical ones contains the information of the error of the 
+initial guess of the MSEM between its true value. Thus, based on the difference between 
+the theoretical measurement calculations and the real measurements, the initial MSEM 
+can be estimated via deep learning techniques. By utilizing the covariance matrix of the 
+difference between the theoretical measurement calculations and the real measurements 
+from all bearing angles with different initial errors as inputs, an attention-based deep con-
+volutional neural network is proposed by this subsection to output reliable initial MSEM. 
+Then, utilizing the estimated MSEM as the input of the VB-EKF, the AI-VBEKF for a robust 
+DOA tracking algorithm is finally carried out in this subsection. 
+3.3.1. Input Data Processing 
+Supposing the initial state is selected as: 
+
+
+T
+0
+0
+0
+,
+
+
+
+x
+ 
+(49)
+Using the measurement model depicted by Equation (9), the error between the theo-
+retical measurement and the real measurement can be presented as:  
+
+
+===== PAGE 12 =====
+Remote Sens. 2023, 15, 420 
+12 of 27 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+0
+0
+0
+0
+real
+0
+0
+real
+2
+real
+2
+1
+real
+1
+k
+k
+s
+s
+s
+M
+s
+M
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+0
+0
+A
+z
+A
+z
+Z
+Z
+h
+x
+z
+A
+z
+A
+ 
+(50)
+Using Equation (50), the quadratic form of the error between the theoretical meas-
+urement and the real measurement can be presented as: 
+k
+T
+k
+
+Ve
+ZZ
+ 
+(51)
+where 
+Ve  is a matrix with the dimension of MP
+MP
+
+. 
+From Equation (7), it can be found that the real measurement has a strong relation-
+ship with the real DOA angle of the target and its angular velocity. When the value of the 
+real state changes, the measurement will also change. In addition, the estimated state in-
+fluences the value of the theoretical measurement computed by the measurement model. 
+Thus, the computed 
+Ve  has the information of the difference of the real values of the state 
+and its estimated values. From the view of data-driven techniques, 
+Ve  can be utilized to 
+output this error and can make good estimation of the guess of the initial MSEM. 
+In addition, from Equation (51), it is obvious that the size of 
+Ve  depends on the num-
+ber of the snapshots in one measurement time interval. In order to make reliable DOA 
+estimations and DOA tracking, the value of M is usually set high during one measurement 
+updating step (i.e., the same as the sampling rate of the sonar system). As a result, the size 
+of 
+Ve  is usually large, and the nonlinear relationship between the real guess of the initial 
+MSEM and its real values is hard to be dug out by shallow BP neural networks. In order 
+to make sufficient utilization of the data resources obtained by the sonar system and make 
+reliable estimations of the guess of the initial MSEM, an attention-based DCNN is pro-
+posed in the following subsection. 
+3.3.2. Attention-Based Deep Convolutional Neural Network 
+As mentioned in Section 3.3.1, since the traditional BP neural networks have limited 
+ability in dealing with a large matrix and the computed 
+Ve  has the form of a symmetric 
+matrix such as an image, an attention-based DCNN is proposed by this subsection. 
+Among the latest DCNNs, the attention-based DCNN is the most popular one and has 
+been utilized in a number of target classification, localization, and tracking missions. Un-
+like the basic DCNN that cannot be developed very deep and the Resnet that cannot give 
+different features different weights, which make the overall performance degrade, the at-
+tention-based DCNN not only utilizes the advantages of the Resnet to make the DCNN 
+much deeper than the traditional ones, but also develops the attention scheme that values 
+different features with different weights to make the DCNN have better tracking perfor-
+mance. The basic structure of the attention-based DCNN is shown in Figure 2 [35]. 
+
+
+===== PAGE 13 =====
+Remote Sens. 2023, 15, 420 
+13 of 27 
+ 
+ 
+ 
+Figure 2. The basic structure of the attention-based DCNN [35]. 
+From Figure 2 [35], the main difference between the attention-based DCNN and the 
+other DCNNs is the “squeeze and excitation” block. For any given data with the dimen-
+sion 
+'
+'
+'
+C
+W
+H
+
+
+, firstly a transformation mapping 
+trF is operated to generate the fea-
+ture maps U, which can be depicted as: 
+:
+,
+,
+H W C
+H W C
+tr
+
+
+
+
+
+
+
+
+F X
+U X
+U
+
+
+ 
+(52)
+From Equation (52), it is obvious that the 
+trFoperation has no difference with other 
+DCNNS (i.e., 
+trFis the traditional DCNN or Resnet). As a result, the attention-based 
+DCNNs can be fitted into any existing DCNNs to enhance their performance.  
+After the 
+trFmapping operation, the “squeeze and excitation” block can operate. 
+Firstly, the feature maps U is operated via a squeeze process that aims to compress the 
+information of the feature maps into a one-dimensional vector. By operating in this way, 
+the compressed feature of every channel of the feature maps U is generated. The squeeze 
+operation can be depicted as the following equation: 
+
+
+1
+1
+1
+( , )
+j
+i
+sq
+c
+c
+H W u i j
+H
+W
+
+
+
+
+
+
+cz
+F
+u
+ 
+(53)
+where 
+cu  is the c-th channel of the feature maps U, and 
+sqF is the squeeze operation. 
+From Equation (53), it can be found that the squeeze operation operates on every 
+feature map with the dimension of H
+W
+
+. After the squeeze operation, every feature 
+map of U turns to a real number so that the information is maximally compressed. Then, 
+the excitation operation is processed to calculate the weights of every feature map. The 
+excitation operation aims to fully capture the channel-wise dependencies of the input fea-
+ture maps U. By utilizing full connection layers and the ReLU activation function, the 
+nonlinear mapping process made by the excitation operation can be depicted as: 
+
+
+
+
+2
+1
+( ,
+)
+( ( ,
+))
+ex
+g
+
+
+
+
+
+
+c
+c
+c
+s F z W
+z W
+W
+Wz
+ 
+(54)
+where s is the output of the excitation operation, 
+exF is the excitation operation, 
+1
+W  
+is the first fully connected (FC) layer that can be regarded as a nonlinear operation to 
+extract the inner information of the input 
+cz , 
+
+ is the ReLU activating function, 
+2
+W  is the second FC layer, and 
+
+ is a typical activating function that can be se-
+lected as a sigmoid function in general. 
+From Equation (54), after the excitation operation, the inner relationships between 
+every feature map in U can be represented by s. Thus, s is the core of the attention-
+based DCNN, for it depicts the weights of every feature inside the whole feature maps U 
+
+
+===== PAGE 14 =====
+Remote Sens. 2023, 15, 420 
+14 of 27 
+ 
+ 
+shown by Equation (52). As long as s is obtained, the weights vector of every feature 
+map is known. As a result, the final output of the attention-based DCNN can be repre-
+sented as: 
+
+
+scale
+,
+c
+c
+c
+c
+c
+s
+s
+
+
+
+x
+F
+u
+u
+
+ 
+(55)
+where 
+scale
+F
+is the final scaling operation that refers to the channel-wise multiplication 
+between the c-th element of the output of the excitation operation and the c-th feature 
+map of U. It is obvious from Equation (52) and Equation (55) that the original feature maps 
+U is weighted by the “squeeze and excitation” block. This weighting mechanism is similar 
+to paying attention to different features such that the whole deep learning technique is 
+called the attention-based DCNN. 
+From Equation (52) and the above statements, the first mapping operation trFcan be 
+any type of DCNN technique. As the Resnet has proven its superior performance in un-
+derwater target localization missions [38], the 
+trFis selected as the residual model [38] and 
+the attention-based DCNN blocks combined with the residual model can be shown as the 
+following block as shown in Figure 3: 
+ 
+Figure 3. The structure of the attention-based DCNN blocks combined with the residual model [35] 
+Equations (52)–(55) represent the whole theoretical derivations of the attention-based 
+DCNN. In addition, since this DCNN is mainly based on the “squeeze and excitation” 
+block, the mentioned attention-based DCNN is also called the Senet. Here, substitute 
+Equation (51) into Equation (52), and change the initial input X  to 
+Ve . The Senet can 
+then be directly utilized to analyze the inner nonlinear relationship between the real val-
+ues of the state and its estimated values. 
+ 
+ 
+
+
+===== PAGE 15 =====
+Remote Sens. 2023, 15, 420 
+15 of 27 
+ 
+ 
+3.3.3. Design of the AI-VBEKF 
+From Equation (9), if the measurement noise varies for the same initial error between 
+the initial guess of the state and its real value, 
+Ve  computed by Equation (51) will change 
+by different 
+k
+R . Supposing the number of varying covariance matrix of 
+k
+R is 
+'
+H
+ and 
+the measurement 
+kZ has snapshots with the number of M, 
+Ve will have the dimensions 
+of 
+'
+H
+M
+M
+
+
+. Then, substituting Equation (51) into Equation (52) and changing the 
+initial input X  to 
+Ve  with 
+'
+H
+covariance matrix of the measurement noise and M 
+snapshots, Equation (52) can be represented as: 
+:
+,
+,
+H M M
+H W C
+tr
+
+
+
+
+
+V
+V
+F e
+Ue
+U
+
+
+ 
+(56)
+In addition, if the transformation mapping 
+trF is chosen as the residual model, and 
+the following steps are the same as the aforementioned ones (Equations (53)–(55)), the 
+attention-based DCNN combined with the residual model can be proposed. By using 
+Ve
+with different 
+k
+R  as inputs and the differences between the initial guess of the state and 
+its real value as outputs, the attention-based DCNN for the initial guess of the error of the 
+covariance matrix of the states can be proposed as in Table 1. 
+Table 1. The attention-based DCNN for estimation of the guess of the initial MSEM. 
+Layer Name 
+[Kernel Size, Filters] No. of Blocks 
+SE-Comv1 
+[5
+5,64] 1
+
+
+ 
+SE-Conv2 
+
+
+1 1
+64
+3 3
+64
+3
+1 1
+256
+16,256
+full connection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+SE-Conv3 
+
+
+1 1
+128
+3 3
+128
+4
+1 1
+512
+32,512
+full connection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+SE-Conv4 
+
+
+1 1
+256
+3 3
+256
+6
+1 1
+1024
+64,1024
+full connection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+SE-Conv5 
+
+
+1 1
+512
+3 3
+512
+3
+1 1
+2048
+128,2048
+full connection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+SE-Global 
+Global average pool, fully-connected layer with ReLU 
+Then, by combining the proposed attention-based DCNN, the EKF DOA tracking 
+scheme and the VB robust estimating technique, the AI-VBEKF, which has the abilities of 
+
+
+===== PAGE 16 =====
+Remote Sens. 2023, 15, 420 
+16 of 27 
+ 
+ 
+estimating the guess of the initial MSEM and performing robust DOA tracking, can be 
+depicted as Algorithm 1. 
+ 
+3.3.4. Performance Metrics 
+In the underwater target DOA tracking scenario, the angular velocity of the target is 
+quite small, for the target usually moves at a relatively far distance from the observer. To 
+obtain the accurate initial MNCM of the target, only the difference between the real initial 
+angle and its estimation will be determined by the attention-based DCNN. According to 
+the goal of the estimation of the initial guess of the error of the covariance matrix of the 
+states, the metrics for quantifying the performance of the proposed attention-based 
+DCNN can be described as: 
+0
+0
+,
+1
+0
+1
+N
+acc
+i
+E
+N
+
+
+
+
+
+
+
+
+ 
+(57)
+where 
+0
+ is the estimated initial guess of the DOA angle, and 
+0 is the real initial val-
+ues of the DOA angle and its angular velocity. N  is the total number of the training 
+data. 
+ 
+ 
+Algorithm 1: AI-VBEKF 
+Input 
+0
+x . 
+Calculate 
+kZ as Equation (50). 
+Calculate 
+Ve  as Equation (51). 
+Initial MSEM 
+0
+P  estimation by attention-based DCNN.  
+Inputs: 
+1
+1
+ˆ k
+k
+
+
+x
+|
+, 
+1
+1
+k
+k
+
+
+P
+|
+, 
+kz
+, 
+1
+1
+ˆk
+k
+u 
+
+|
+, 
+1
+1
+ˆ
+k
+k
+
+
+U
+|
+, 
+1
+k
+Q
+, ρ, N. 
+Time update 
+|
+1
+1
+1
+1
+ˆ
+ˆ
+k k
+k k
+k
+k
+
+
+
+
+
+x
+F
+x
+|
+|
+. 
+T
+T
+|
+1
+|
+1
+|
+1
+1
+1
+1
+1
+1
+k k
+k k
+k k
+k
+k
+k
+k
+k
+
+
+
+
+
+
+
+
+
+
+P
+F
+P
+F
+G
+Q
+G
+|
+. 
+1
+1
+1
+(
+1)
+1
+ˆ
+ˆ
+k
+k
+k
+k
+u
+u
+n
+n
+
+
+
+
+
+
+
+
+
+∣
+|
+,
+|
+1
+1|
+1
+ˆ
+ˆ
+k k
+k
+k
+
+
+
+
+
+U
+U
+. 
+Iteration measurement update 
+Initialization: 
+(0 )
+1
+ˆ
+ˆ
+k k
+k k 
+
+x
+x
+|
+|
+, 
+( 0 )
+|
+1
+|
+1
+ˆ
+ˆ
+/
+ˆ
+k
+k k
+k k
+u
+
+
+
+R
+U
+. 
+For 
+0:
+1
+i
+N
+
+ 
+Update 
+(
+1)
+(
+1)
+(
+1)
+N(
+;
+,
+)
+(
+)
+i
+i
+i
+k
+k
+k k
+k k
+q
+
+
+
+
+x
+x
+x
+P
+|
+|
+ 
+( )
+(
+)
+ˆ i
+k k
+h x |
+ is calculated by Equation (7), 
+( )
+k
+i
+H
+ is calculated by Equation (13). 
+(
+1)
+T
+T
+( )
+1
+(
+( )
+1
+)
+( )
+1
+ˆ
+(
+)
+(
+)
+(
+)
+i
+i
+i
+i
+i
+k
+k
+k
+k
+k
+k k
+k k
+
+
+
+
+
+
+K
+P
+H
+H
+P
+H
+R
+|
+|
+, 
+(
+1)
+(
+1)
+( )
+( )
+1
+1
+( )
+ˆ
+ˆ
+ˆ
+ˆ
+ˆ
+(
+(
+))
+(
+)
+i
+i
+i
+i
+k
+k
+k
+k k
+k k
+k k
+k k
+i
+k k
+z
+h
+
+
+
+
+
+
+
+
+
+x
+x
+K
+x
+H
+x
+x
+|
+|
+|
+|
+|
+, 
+(
+1)
+(
+1)
+1
+( )
+1
+i
+i
+i
+k
+k
+k k
+k k
+k k
+
+
+
+
+
+
+P
+P
+K
+H
+P
+|
+|
+|
+. 
+Update 
+(
+1)
+(
+1)
+(
+1)
+|
+|
+IW (
+;
+,
+)
+ˆ
+ˆ
+(
+)
+i
+i
+i
+k
+k
+k k
+k k
+q
+u
+
+
+
+
+R
+R
+U
+ 
+(
+1)
+(
+)
+ˆ
+i
+k k
+h
+
+x |
+ is calculated by Equation (7), 
+(
+1)
+k
+i 
+H
+ is calculated by Equation (13). 
+(
+1)
+(
+1)
+(
+1)
+T
+(
+1)
+(
+1)
+T
+(
+1)
+(
+)(
+ˆ
+ˆ
+(
+)
+(
+)
+)
+)
+(
+i
+i
+i
+i
+k
+k
+k
+k
+k
+k k
+k k
+k k
+i
+i
+h
+z
+z
+h
+
+
+
+
+
+
+
+
+
+
+B
+x
+x
+H
+P
+H
+|
+|
+|
+, 
+(
+1)
+(
+1)
+1
+ˆ
+ˆ
+i
+i
+k
+k k
+k k
+
+
+
+
+
+U
+U
+B
+|
+|
+, 
+(
+1)
+|
+|
+1
+1
+ˆ
+ˆ
+i
+k k
+k k
+u
+u
+
+
+
+
+, 
+(
+1)
+(
+1)
+(
+1)
+ˆ
+ˆ
+ˆ
+/
+i
+i
+i
+k
+k k
+k k
+u
+
+
+
+
+R
+U
+|
+|
+. 
+End for 
+(
+)
+|
+|
+ˆ
+ˆ
+N
+k k
+k k
+
+x
+x
+, 
+(
+)
+|
+|
+N
+k k
+k k
+
+P
+P
+, 
+(
+)
+|
+|
+ˆ
+ˆ
+N
+k k
+k k
+u
+u
+
+, 
+(
+)
+|
+|
+ˆ
+ˆ
+N
+k k
+k k
+
+U
+U
+. 
+Outputs: 
+|ˆk k
+x
+, 
+|k k
+P , 
+|ˆk k
+u
+, 
+|
+ˆ
+k k
+U
+. 
+
+
+===== PAGE 17 =====
+Remote Sens. 2023, 15, 420 
+17 of 27 
+ 
+ 
+4. Results and Discussions 
+4.1. Simulations 
+4.1.1. Simulation Scenario and Data Set Generation of the Attention-Based DCNN 
+An underwater target is assumed to perform in CV motion mode. The initial state 
+0
+x  is set to [270, −0.03], and process noise covariance matrix 
+1
+k 
+Q
+ is set to 
+4
+2
+2
+10
+s
+
+
+
+. 
+The total simulation time is 5000 s with a 1 s interval. The frequency f, amplitude a and 
+the initial phase 
+0
+ of the target signal are set to 170 Hz, 1 and 0 rad, respectively. The 
+underwater sound velocity c is assumed to be 1500 m/s. A UCA with 12 elements is used 
+to obtain the measurements. The sample frequency of the array signal is 1000 Hz. 
+The MNCM 
+k
+R  is set to 
+2
+MP
+r
+
+I
+, where 
+2
+r
+ is set as 20 to simulate a low SNR track-
+ing scenario. The uncertainties of the MNCM appear from 3600 to 4000 s to test the ro-
+bustness of the VB-EKF to the uncertain measurement noise caused by the unknown un-
+derwater environment. Then, 
+k
+R  is expressed as: 
+2
+2
+       0
+3600,4000
+5000
+10
+   3600
+4000
+MP
+r
+k
+MP
+r
+k
+k
+k
+
+
+
+
+
+
+
+
+
+
+
+
+I
+R
+I
+ 
+(58)
+The proposed AI-VBEKF for DOA tracking given by Algorithm 1 is tested by the 
+simulated measurement data. The EKF, the SH-EKF for DOA tracking [44] are also tested 
+for comparison. In addition, to illustrate the superior performance of the proposed AI-
+VBEKF, 
+k
+P
+ is initialized to different initial guesses as
+
+
+5
+0
+d iag [ 2 5,1 0
+]
+
+
+P
+, 
+
+
+5
+0
+d iag [5 0 ,1 0
+]
+
+
+P
+, and 
+
+
+5
+0
+diag [100,10
+]
+
+
+P
+. The process noise covariance matrix 
+k
+Q  
+for EKF, SH-EKF and VB-EKF is set to the true value. The MNCM of EKF is set to a con-
+stant 
+MP
+I
+. The initial estimate of the MNCM and the forgetting factor b are set to 
+MP
+I
+ and 
+0.9 for the SH-EKF. The dof 
+0ˆu , the inverse scale matrix 
+0
+ˆU  of the inverse Wishart dis-
+tribution and the forgetting factor ρ for VB-EKF are set to 16, 16
+MP
+I
+, and 0.9995, respec-
+tively. 
+To numerically compare the tracking precision of the above methods, the bearing 
+angle estimation error (BEE) is defined as a performance metrics, which is given as fol-
+lows: 
+
+ˆ
+k
+k
+BEE k
+
+
+
+
+ 
+(59)
+where 
+ˆ
+k
+
+ is the bearing angle estimate at step k, and 
+k
+
+ is the real bearing angle. 
+Furthermore, 500 Monte Carlo simulations are performed to statistically evaluate the 
+performance of the VB-EKF. The root mean square error (RMSE) for DOA tracking results 
+at time step k is defined as 
+
+
+2
+,
+1
+1
+ˆ
+RMSE
+N
+k n
+k
+n
+N
+
+
+
+
+
+
+
+ 
+(60)
+where N is the number of the Monte Carlo trials, 
+,ˆ
+k n
+
+ is the estimate of bearing angle in 
+the n-th trail. The average RMSE of the bearing angle estimate in total time is defined as: 
+
+
+2
+_________
+,
+1
+1
+1
+ˆ
+K
+N
+k n
+k
+k
+n
+RMSE
+KN
+
+
+
+
+
+
+
+
+ 
+(61)
+where K is the total number of tracking steps. A smaller RMSE represents a higher preci-
+sion of the DOA tracking. 
+ 
+ 
+
+
+===== PAGE 18 =====
+Remote Sens. 2023, 15, 420 
+18 of 27 
+ 
+ 
+4.1.2. Data Set Generation and Training of the Attention-Based DCNN 
+The training data for the attention-based DCNN for initial MSEM estimations are 
+generated as the following steps: 
+Firstly, 
+0 of the initial state 
+0x  is set as 
+
+
+0
+0360
+，
+deg with intervals of 1 deg.  
+In addition, the offset of the initial guess of 
+0 is set as: 
+
+
+0
+0 20
+
+
+，
+ deg with 
+the interval of 0.1 deg. 
+Then, the MNCM 
+k
+R  is set as:
+2
+,
+=
+k
+M P
+r k
+
+
+R
+I
+, where the parameter  is set as 
+
+
+1,2
+
+ with the interval of 0.1 to generate different measurement noise. 
+Finally, assuming that a UCA has 12 elements and the number of snapshots in one 
+measurement is set as 12, by utilizing the different generated 
+0along with 
+k
+R  and us-
+ing Equations (4)–(9), (50) and (51), the data set for training and testing can be generated. 
+From the above data-generating methods, the dimension of every input data of the 
+attention-based DCNN is 144 144
+
+, and the total number of data are 1,440,000. 
+By utilizing the generated training data and the proposed attention-based DCNN 
+depicted by Table 1, the proposed attention-based DCNN can be properly trained, and 
+the averaged cross entropy loss for the training process is shown in Figure 4. 
+ 
+Figure 4. The cross-entropy loss of the attention-based DCNN on generated data sets. 
+4.1.3. Simulation Results 
+The DOA tracking results of the EKF, SH-EKF and AI-VBEKF are shown in Figure 5, 
+and Table 1 shows the average RMSEs. Since the CBF is only a DOA estimation technique, 
+we merely compared different DOA tracking algorithms in the simulation section to show 
+the robustness and accuracy of the proposed AI-VBEKF. When the initial MSEM is set 
+properly (
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+), all of the DOA tracking techniques can output acceptable 
+DOA tracking results. The trajectory obtained by the EKF, SH-EKF, and AI-VBEKF fluc-
+tuated in the beginning. After about 1000 s, the algorithms converged, and then, the track-
+ing stabilized. The reason is that the error in the initial state estimate and MSEM affect the 
+performance at the beginning of the tracking. The error was gradually eliminated by the 
+correction of the new measurements after a certain period. When the uncertainties of the 
+measurement noise appear, the DOA estimation accuracy of the EKF degrades. However, 
+by utilizing the prior information of the kinematics model of the underwater target, the 
+DOA tracking results by the EKF are still within a certain threshold (see in Figure 5b).  
+
+
+===== PAGE 19 =====
+Remote Sens. 2023, 15, 420 
+19 of 27 
+ 
+ 
+Since the SH-EKF estimates the MNCM in real time by using the Sage–Husa algo-
+rithm to provide accurate Kalman filter gain, the precision of SH-EKF is higher than EKF. 
+By giving the prior distribution of MNCM, the AI-VBEKF uses the VB iteration method to 
+jointly estimate the MNCM and the target state, which provides a more accurate estima-
+tion of the MNCM. Thus, the AI-VBEKF provides the most high-precision tracking trajec-
+tory. Therefore, by utilizing the online measurement noise covariance estimating tech-
+niques, the SH-EKF and AI-VBEKF can achieve much higher DOA tracking accuracy.  
+From the RMSE results (
+
+
+5
+0
+d iag [ 2 5,1 0
+]
+
+
+P
+) shown by Table 2, similar to the conclu-
+sion above, the EKF, SH-EKF and AI-VBEKF converged after a period, and SH-EKF and 
+AI-VBEKF can provide high-precision tracking even with the uncertain measurement 
+noise. The AI-VBEKF can achieve the highest DOA tracking results so that the superior 
+performance of the proposed AI-VBEKF is verified again. 
+ 
+ 
+(a) 
+(b) 
+ 
+ 
+(c) 
+(d) 
+ 
+ 
+(e) 
+(f) 
+0
+90
+180
+270
+360
+Bearing angle (°)
+0
+1000
+2000
+3000
+4000
+5000
+Truth
+EKF
+SH-EKF
+AI-VBEKF
+0
+1000
+2000
+3000
+4000
+5000
+Times (s)
+0
+5
+10
+15
+20
+EKF
+SH-EKF
+AI-VBEKF
+0
+90
+180
+270
+360
+Bearing angle (°)
+0
+1000
+2000
+3000
+4000
+5000
+Truth
+EKF
+SH-EKF
+AI-VBEKF
+0
+1000
+2000
+3000
+4000
+5000
+Times (s)
+0
+5
+10
+15
+20
+25
+30
+35
+EKF
+SH-EKF
+AI-VBEKF
+0
+90
+180
+270
+360
+Bearing angle (°)
+0
+1000
+2000
+3000
+4000
+5000
+Truth
+EKF
+SH-EKF
+AI-VBEKF
+0
+1000
+2000
+3000
+4000
+5000
+Times (s)
+0
+50
+100
+150
+200
+EKF
+SH-EKF
+AI-VBEKF
+
+
+===== PAGE 20 =====
+Remote Sens. 2023, 15, 420 
+20 of 27 
+ 
+ 
+Figure 5. Simulation results of EKF, SH-EKF and AI-VBEKF. (a) Trajectories tracking results under 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+, (b) BEEs obtained under 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+, (c) trajectories tracking re-
+sults under 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+, (d) BEEs obtained under 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+, (e) trajectories 
+tracking results under 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+, and (f) BEEs obtained under 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+ 
+Table 2. The average RMSEs of EKF, SH-EKF and VB-EKF. 
+ 
+0
+P  
+EKF 
+SH-EKF 
+VB-AEKF 
+R M SE  (°) 
+
+
+5
+0
+d iag [ 2 5,1 0
+]
+
+
+P
+ 
+7.4 
+2.8 
+2.7 
+
+
+5
+0
+d iag [5 0 ,1 0
+]
+
+
+P
+ 
+13.2 
+7.4 
+2.7 
+
+
+5
+0
+diag [100,10
+]
+
+
+P
+ 
+61.7 
+7.3 
+2.7 
+Figure 5c,f and Table 2 (
+
+
+5
+0
+d iag [5 0 ,1 0
+]
+
+
+P
+,
+
+
+5
+0
+diag [100,10
+]
+
+
+P
+) give the DOA track-
+ing results under different initial MSEMs. From the DOA tracking results, it is obvious 
+that the properly set initial MSEM can strongly affect the overall DOA tracking results. By 
+utilizing the attention-based DCNN to estimate the initial MSEM before operating the 
+DOA tracking procedure, the AI-VBEKF can achieve good tracking accuracy and robust-
+ness. However, without properly setting the initial MSEM, the DOA tracking results of 
+the SH-EKF and EKF degrade, especially for the case that the initial MSEM is largely de-
+viated from its proper values (
+
+
+5
+0
+diag [100,10
+]
+
+
+P
+). 
+4.2. Experimental Scenario 
+4.2.1. Experimental Scenario 
+We used the data from an acoustic experiment in the South China Sea in July 2021 to 
+verify the performance of the proposed method. A ship with an acoustic signal emission 
+system kept moving and emitting an acoustic signal at 170 Hz for 7500 s with a source 
+level of 145 dB during the experimental procedure. 
+Figure 6a shows the underwater buoy system used in the experiment, which was 
+placed 20 m under the sea surface. A 12-element uniform circular hydrophone array with 
+a radius of 1 m was fixed on this underwater buoy along with a digital acquisition system. 
+As shown in Figure 6b, a compass system (the rectangle) was fixed on the underwater buoy 
+in order to measure the bearing of hydrophone 1 to offset the rotation angle of the buoy φ 
+(measured clockwise wrt north). The digital acquisition system sampled the array signal 
+at a frequency of 8192 Hz during the acoustic signal emission. A CTD profiler was used 
+to measure the sound velocity to be constant at 1544 m/s at a depth from 0 to 20 m. 
+ 
+Compass 
+system
+North
+East
+#1 Hydrophone
+#2 
+#3 
+#4 
+#5 
+#6 
+#7 
+#8 
+#9 
+#10 
+#11 
+#12 
+φ
+ 
+(a) 
+(b) 
+Figure 6. Configuration of the underwater buoy system: (a) photo of the underwater buoy system; 
+(b) configuration of the UCA and the compass system. 
+
+
+===== PAGE 21 =====
+Remote Sens. 2023, 15, 420 
+21 of 27 
+ 
+ 
+In order to provide the true bearing angle of the target with regard to the circular 
+hydrophone array for reference, the GPSs are used to record the locations of the acoustic 
+signal emission system and the underwater buoy system. Then, the bearing angle trajec-
+tory of the target was calculated clockwise with regard to north by using the GPS data. 
+4.2.2. Verification of the AI-VBEKF for DOA Tracking 
+The CBF-based DOA estimation [46], the EKF, SH-EKF [44] and the proposed AI-
+VBEKF are tested by using the experimental data. The interval of adjacent steps was set 
+to 1 s. The bearing angle of the CBF-based DOA estimation scans from 0° to 360° every 1°. 
+The initial state estimates of the EKF, SH-EKF and the AI-VBEKF are both set to 
+0
+0
+ˆ
+ˆ
+[
+, 0]
+C BF
+
+
+X
+, where 
+0ˆ
+C B F
+
+ is the estimate of bearing angle obtained by using CBF-based 
+DOA estimation at k = 0. In addition, to illustrate the superior performance of the proposed 
+AI-VBEKF, 
+k
+P
+ is initialized to different initial guesses as
+
+
+5
+0
+d iag [ 2 5,1 0
+]
+
+
+P
+, 
+
+
+5
+0
+d iag [5 0 ,1 0
+]
+
+
+P
+, and 
+
+
+5
+0
+diag [100,10
+]
+
+
+P
+. The covariance matrix of the process noise 
+k
+Q  is set as 
+4
+10. The MNCM was set as 
+MP
+I
+ for the EKF. The estimation of the MNCM 
+ˆ
+k
+R  is initialized to 
+MP
+I
+, and the forgetting factor b is set to 0.995 for the SH-EKF. The 
+parameters 
+0ˆu , 
+0
+ˆU  and ρ of the AI-VBEKF are set to 16, 16
+MP
+I
+ and 0.997, respectively.  
+To numerically compare the tracking precision of the above methods, the bearing 
+angle estimation error (BEE) and the average BEE (ABEE) are defined as the performance 
+metrics, which are given as follows: 
+
+ˆ
+GPS
+k
+k
+BEE k
+
+
+
+
+ 
+(62)
+
+
+
+2
+1
+1
+ˆ
+K
+GPS
+k
+k
+k
+ABEE k
+K
+
+
+
+
+
+
+ 
+(63)
+where 
+ˆ
+k
+
+ is the bearing angle estimate at step k, and 
+GPS
+k
+
+ is the true bearing angle ob-
+tained by the GPS data. 
+The trajectories obtained by the AI-VBEKF under different 
+0
+P  are shown in Figure 
+7 and Table 3, which show the BEEs and the ABEEs, respectively. Figure 7 and Table 3 
+also show the results of the CBF, EKF and the SH-EKF for comparison. Specifically, con-
+sidering the complicated actual underwater environment, the CBF used 10 measurements 
+to obtain bearing angles every 10 s for a higher precision. In order to further test the ro-
+bustness of the proposed AI-VBEKF to uncertain measurement noise, a period of Gauss-
+ian noise with the covariance of 2
+MP
+I
+ was added to the raw measurement data from 2600 
+to 3000 s, and then the methods were tested again. The results are shown in Figure 7 and 
+Table 3. 
+Table 3. ABEEs of different DOA tracking methods under different initial MSEMs. 
+Data 
+ 
+ABEE (°) 
+CBF 
+EKF 
+SH-EKF 
+AI-VBEKF 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+ 
+Raw data 
+13.2 
+8.2 
+7.1 
+6.3 
+With noise 
+20.1 
+12.2 
+7.3 
+6.5 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+ 
+Raw data 
+13.2 
+11.3 
+11.6 
+6.8 
+With noise 
+20.1 
+12.9 
+11.8 
+7.2 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+ 
+Raw data 
+13.2 
+18.3 
+14.2 
+6.4 
+With noise 
+20.1 
+18.5 
+14.9 
+6.6 
+
+
+===== PAGE 22 =====
+Remote Sens. 2023, 15, 420 
+22 of 27 
+ 
+ 
+ 
+ 
+(a) 
+(b) 
+ 
+ 
+(c) 
+(d) 
+ 
+ 
+(e) 
+(f) 
+Figure 7. Experimental results of CBF-based DOA estimation, EKF, SH-EKF and AI-VBEKF on raw 
+data. (a) Trajectories obtained using the raw data under 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+, (b) BEEs obtained 
+using the raw data under 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+, (c) trajectories obtained using the raw data under 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+, (d) BEEs obtained using the raw data under 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+, (e) tra-
+jectories obtained using the raw data under 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+, and (f) BEEs obtained using the 
+raw data under 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+. 
+Time (s)
+Error (°)
+Time (s)
+Error (°)
+Time (s)
+Error (°)
+
+
+===== PAGE 23 =====
+Remote Sens. 2023, 15, 420 
+23 of 27 
+ 
+ 
+Figure 7 shows that the trajectories of all methods fluctuated around the true trajec-
+tory under the effect of the underwater environmental noise. Figure 7 shows that the tra-
+jectories obtained by all methods using raw experimental data fluctuated around the true 
+trajectory due to the effect of the underwater environmental noise. In addition, it can be 
+found that the initial guess of 
+0
+P  influences the final tracking accuracy. From Figure 7a,b, 
+when 
+0
+P  is properly set, all the DOA tracking and DOA estimation methods can output 
+reliable results. The trajectory obtained by the CBF-based DOA estimation is the most 
+fluctuant and provided a large error. The precision of the EKF is higher than that of the 
+CBF-based DOA estimation since the EKF considers the kinematic model of the underwa-
+ter target.  
+The trajectory obtained by the robust DOA tracking algorithms, namely the SH-EKF 
+and the AI-VBEKF, are closest to the true trajectory. The reason is that the robust DOA 
+tracking algorithms provide more accurate Kalman filter gains than EKF due to the high-
+precision estimation of the MNCM, which can significantly improve the precision of DOA 
+tracking. In addition, it can be found that the proposed AI-VBEKF has higher DOA track-
+ing accuracy compared the SH-EKF since the VB technique is more analytical, such that it 
+makes a precise mathematical model of the unknown MNCM and makes it more accu-
+rately estimated. In addition, the AI-VBEKF utilizes the attention-based DCNN to esti-
+mate the initial MSEM, which makes the whole DOA tracking process more stable and 
+accurate. However, the data-inspiring SH-EKF outputs the DOA tracking results with 
+lower accuracy since the precision of the experimental data is not accurate enough such 
+that the tracking window of good estimations is not sufficient. Table 3 shows the high 
+precision and robustness of the AI-VBEKF. 
+Figure 7c–f and Table 3 illustrate the DOA tracking results under different 
+0
+P . It can 
+be found that the tracking results of the EKF and SH-EKF degrade when 
+0
+P is not set 
+properly. As analyzed in Section 3.3, the high nonlinearities and complexed underwater 
+environment make the unproperly set 
+0
+P  seriously influence the DOA tracking result. 
+However, since the proposed AI-VBEKF does not rely on the preset 
+0
+P , its DOA tracking 
+accuracy only has slight changes with different initial MSEMs. As a result, the proposed 
+AI-VBEKF is robust to the initial MSEMs and has the highest tracking accuracy. 
+Figure 8a–f and Table 3 give the results obtained by using the data with added noise. 
+Similar conclusions can be made as the above. Furthermore, the AI-VBEKF kept robust 
+tracking even during the existence of the added noise under different initial MSEMs, while 
+the performance of the SH-EKF, EKF and the CBF-based DOA estimation obviously de-
+graded when the noise was added or the initial MSEMs were not properly set. 
+ 
+ 
+
+
+===== PAGE 24 =====
+Remote Sens. 2023, 15, 420 
+24 of 27 
+ 
+ 
+ 
+ 
+(a) 
+(b) 
+ 
+ 
+(c) 
+(d) 
+ 
+ 
+(e) 
+(f) 
+Figure 8. Experimental results of CBF-based DOA estimation, EKF, SH-EKF and AI-VBEKF on data 
+with noise. (a) Trajectories obtained using the data with added noise under 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+, 
+(b) BEEs obtained using the data with added noise under 
+
+
+5
+0
+diag [25,10 ]
+
+
+P
+, (c) trajectories ob-
+tained using the data with added noise under 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+, (d) BEEs obtained using the 
+data with added noise under 
+
+
+5
+0
+diag [50,10 ]
+
+
+P
+, (e) trajectories obtained using the data with 
+added noise under 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+, and (f) BEEs obtained using the data with added noise 
+under 
+
+
+5
+0
+diag [100,10 ]
+
+
+P
+. 
+ 
+ 
+Time (s)
+Error (°)
+Time (s)
+Error (°)
+Time (s)
+Error (°)
+
+
+===== PAGE 25 =====
+Remote Sens. 2023, 15, 420 
+25 of 27 
+ 
+ 
+5. Conclusions 
+An AI-VBEKF robust DOA tracking method was proposed and verified. The theoret-
+ical derivations were comprehensively given, and the performances were proven by sim-
+ulations and the real sea trial data. It can be found in the experiment results that the pro-
+posed attention-based DCNN can make good estimation of the initial MSEM after being 
+well trained by the training data with different initial angles, initial errors, and covariance 
+matrix of the measurement noise. Based on the experimental results, the proposed AI-
+VBEKF can not only have more accurate estimation results, but it is also robust to the 
+uncertain underwater disturbance and the initial guesses of the MSEMs. From the overall 
+consideration of accuracy and robustness, the proposed AI-VBEKF can be considered as 
+an alternative underwater DOA tracking algorithm, especially when the underwater en-
+vironment is uncertain and the initial MSEM cannot be determined properly. 
+Author Contributions: Conceptualization, X.H. and B.Z.; Methodology, B.Z.; Software, X.H. and 
+Y.Q.; Validation, Y.Q.; Writing—original draft, X.H. and Y.Q.; Supervision, Y.Y. All authors have 
+read and agreed to the published version of the manuscript. 
+Funding: This work was supported by the National Natural Science Foundation of China (grant no. 
+12104113), the foundation of Central University Operating Expenses Project (grant no. 
+G2022KY05102), and the fundamental research funding for characteristic disciplines (grant no. 
+G2022WD0235). 
+Institutional Review Board Statement: Not applicable. 
+Informed Consent Statement: Not applicable. 
+Data Availability Statement: No new data were created and data is unavailable. 
+Conflicts of Interest: The authors declare no conflict of interest. 
+References 
+1. 
+Rideout, B.P.; Dosso, S.E.; Hannay, D.E. Underwater passive acoustic localization of Pacific walruses in the northeastern Chuk-
+chi Sea. J. Acoust. Soc. Am. 2013, 134, 2534–2545. 
+2. 
+Zhu, X.; Buck, J.R. Designing nonuniform linear arrays to maximize mutual information for bearing estimation. J. Acoust. Soc. 
+Am. 2010, 128, 2926–2939. 
+3. 
+Miller, B.; Dawson, S. A large-aperture low-cost hydrophone array for tracking whales from small boats. J. Acoust. Soc. Am. 2009, 
+126, 2248–2256. 
+4. 
+Rooney, I.M.; Buck, J.R. Spatial power spectral density estimation using a Welch coprime sensor array processor. J. Acoust. Soc. 
+Am. 2019, 145, 2350–2362. 
+5. 
+Zeng, W.-J.; So, H.C.; Huang, L. ℓp-MUSIC: Robust Direction-of-Arrival Estimator for Impulsive Noise Environments. IEEE 
+Trans. Signal Process. 2013, 61, 4296–4308. https://doi.org/10.1109/tsp.2013.2263502. 
+6. 
+Wang, B.; Zhang, Y.D.; Wang, W. Robust DOA Estimation in the Presence of Miscalibrated Sensors. IEEE Signal Process. Lett. 
+2017, 24, 1073–1077. https://doi.org/10.1109/lsp.2017.2708659. 
+7. 
+Mao, Y.; Zhang, G.; Leung, H. Harmonic Retrieval Joint Multiple Regression: Robust DOA Estimation for FMCW Radar in the 
+Presence 
+of 
+Unknown 
+Spatially 
+Colored 
+Noise. 
+IEEE 
+Commun. 
+Lett. 
+2021, 
+25, 
+2240–2244. 
+https://doi.org/10.1109/lcomm.2021.3074890. 
+8. 
+Hu, R.; Fu, Y.; Chen, Z.; Xu, J.; Tang, J. Robust DOA Estimation via Sparse Signal Reconstruction with Impulsive Noise. IEEE 
+Commun. Lett. 2017, 21, 1333–1336. https://doi.org/10.1109/lcomm.2017.2675407. 
+9. 
+Li, T.; Nehorai, A. Direction-of-Arrival Estimation of Hydroacoustic Signals from Marine Vessels Containing Random and Si-
+nusoidal Components. IEEE Signal Process. Lett. 2012, 19, 503–506. https://doi.org/10.1109/lsp.2012.2204434. 
+10. 
+Zheng, Z.; Yang, C. Direction-of-Arrival Estimation of Coherent Signals Under Direction-Dependent Mutual Coupling. IEEE 
+Commun. Lett. 2021, 25, 147–151. https://doi.org/10.1109/lcomm.2020.3020897. 
+11. 
+Zheng, G. DOA Estimation in MIMO Radar With Non-Perfectly Orthogonal Waveforms. IEEE Commun. Lett. 2016, 21, 414–417. 
+https://doi.org/10.1109/lcomm.2016.2622691. 
+12. 
+Zhao, J.; Gui, R.; Dong, X.; Wu, S. Time-Varying DOA Tracking Algorithm Based on Generalized Labeled Multi-Bernoulli. IEEE 
+Access 2021, 9, 5943–5950. https://doi.org/10.1109/access.2020.3048952. 
+13. 
+Saucan, A.-A.; Chonavel, T.; Sintes, C.; Le Caillec, J.-M. Marked poisson point process PHD filter for DOA tracking. In Proceed-
+ings of the 2015 23rd European Signal Processing Conference (EUSIPCO), Nice, France, 31 August–4 September 2015; pp. 2621–
+2625. https://doi.org/10.1109/eusipco.2015.7362859. 
+
+
+===== PAGE 26 =====
+Remote Sens. 2023, 15, 420 
+26 of 27 
+ 
+ 
+14. 
+Saucan, A.-A.; Chonavel, T.; Sintes, C.; Le Caillec, J.-M. CPHD-DOA Tracking of Multiple Extended Sonar Targets in Impulsive 
+Environments. IEEE Trans. Signal Process. 2015, 64, 1147–1160. https://doi.org/10.1109/tsp.2015.2504349. 
+15. 
+Zhai, Y.; Yeary, M. A New Particle Filter Tracking Algorithm for DOA Sensor Systems. In Proceedings of the 2007 IEEE Instru-
+mentation 
+& 
+Measurement 
+Technology 
+Conference 
+IMTC, 
+Warsaw, 
+Poland, 
+1–3 
+May 
+2007; 
+pp. 
+1–4. 
+https://doi.org/10.1109/imtc.2007.379413. 
+16. 
+Mehra, R.K. Approaches to adaptive filtering. In Proceedings of the Adaptive Processes (9th) Decision and Control, 1970 IEEE 
+Symposium on IEEE, Austin, TX, USA, 7–9 December 1970; IEEE: Piscataway, NJ, USA, 2010. 
+17. 
+Sarkka, S.; Nummenmaa, A. Recursive Noise Adaptive Kalman Filtering by Variational Bayesian Approximations. IEEE Trans. 
+Autom. Control 2009, 54, 596–600. https://doi.org/10.1109/tac.2008.2008348. 
+18. 
+Hartikainen, S.S.J. Variational Bayesian adaptation of noise covariances in non-linear Kalman filtering. arXiv 2013, 
+arXiv:1302.0681. 
+19. 
+Mohinder, S.G. Kalman Filtering: Theory and Practice Using Matlab; Angus, P.A., Ed.; John Wiley & Sons, Inc.: Hoboken, NJ, USA, 
+2001; pp. 133–144. 
+20. 
+Zhao, Y.; Zhang, J.; Hu, G.; Zhong, Y. Set-membership based hybrid Kalman filter for nonlinear state estimation under system 
+uncertainty. Sensors 2020, 20, 627. 
+21. 
+Pesce, V.; Silvestrini, S.; Lavagna, M. Radial basis function neural network aided adaptive extended Kalman filter for spacecraft 
+relative navigation. Aerosp. Sci. Technol. 2019, 96, 105527. https://doi.org/10.1016/j.ast.2019.105527. 
+22. 
+Huang, Y.; Zhang, Y.; Wu, Z.; Li, N.; Chambers, J. A novel adaptive Kalman filter with inaccurate process and measure-ment 
+noise covariance matrices. IEEE Trans. Autom. Control 2017, 63, 594–601. 
+23. 
+Huang, Y.; Zhang, Y.; Shi, P.; Chambers, J. Variational Adaptive Kalman Filter with Gaussian-Inverse-Wishart Mixture Distri-
+bution. IEEE Trans. Autom. Control 2020, 66, 1786–1793. https://doi.org/10.1109/tac.2020.2995674. 
+24. 
+Huang, Y.; Bai, M.; Li, Y.; Zhang, Y.; Chambers, J. An Improved Variational Adaptive Kalman Filter for Cooperative Localiza-
+tion. IEEE Sens. J. 2021, 21, 10775–10786. https://doi.org/10.1109/jsen.2021.3056207. 
+25. 
+Xu, G.; Huang, Y.; Gao, Z.; Zhang, Y. A Computationally Efficient Variational Adaptive Kalman Filter for Transfer Alignment. 
+IEEE Sens. J. 2020, 20, 13682–13693. https://doi.org/10.1109/jsen.2020.3004621. 
+26. 
+Hu, G.; Gao, S.; Zhong, Y.; Gao, B.; Subic, A. Modified strong tracking unscented Kalman filter for nonlinear state estimation 
+with process model uncertainty. Int. J. Adapt. Control. Signal Process. 2016, 29, 1561–1577. 
+27. 
+Wang, J.; Zhang, T.; Xu, X.; Li, Y. A Variational Bayesian Based Strong Tracking Interpolatory Cubature Kalman Filter for Ma-
+neuvering Target Tracking. IEEE Access 2018, 6, 52544–52560. https://doi.org/10.1109/access.2018.2869020. 
+28. 
+Lan, H.; Sun, S.; Wang, Z.; Pan, Q.; Zhang, Z. Joint Target Detection and Tracking in Multipath Environment: A Variational 
+Bayesian Approach. IEEE Trans. Aerosp. Electron. Syst. 2019, 56, 2136–2156. https://doi.org/10.1109/taes.2019.2942706. 
+29. 
+Ban, Y.; Alameda-Pineda, X.; Girin, L.; Horaud, R. Variational Bayesian Inference for Audio-Visual Tracking of Multiple Speak-
+ers. IEEE Trans. Pattern Anal. Mach. Intell. 2019, 43, 1761–1776. https://doi.org/10.1109/tpami.2019.2953020. 
+30. 
+Hou, X.; Yuan, J.; Ma, C.; Sun, C. Parameter estimations of uncooperative space targets using novel mixed artificial neural net-
+work. Neurocomputing 2019, 339, 232–244. 
+31. 
+Wenhui, W.; Shesheng, G.; Yongmin, Z.; Gu, C.; Hu, G. Adaptive Square-Root Unscented Particle Filtering Algorithm for Dy-
+namic Nav-igation. Sensors 2018, 18, 2337. 
+32. 
+Rumelhart, D.E.; Hinton, G.E.; Williams, R.J. Learning Internal Representations by Error Propagation. Read. Cogn. Sci. 1988, 323, 
+399–421. 
+33. 
+Hinton, G.E.; Osindero, S.; Teh, Y.W. A Fast Learning Algorithm for Deep Belief Nets; MIT Press: Cambridge, MA, USA, 2006. 
+34. 
+He, K.; Zhang, X.; Ren, S.; Sun, J. Deep Residual Learning for Image Recognition. In Proceedings of the 2016 IEEE Conference 
+on Computer Vision and Pattern Recognition (CVPR), Honolulu, HI, USA, 27–30 June 2016; IEEE: Piscataway, NJ, USA, 2016. 
+35. 
+Hu, 
+J.; 
+Shen, 
+L.; 
+Sun, 
+G. 
+Squeeze-and-excitation 
+networks. 
+arXiv 
+2017, 
+arXiv:1709.01507. 
+https://doi.org/10.1109/TPAMI.2019.2913372 
+36. 
+Lecun, Y.; Bottou, L.; Bengio, Y.; Haffner, P. Gradient-based learning applied to document recognition. Proc. IEEE 1998, 86, 
+2278–2324. 
+37. 
+Niu, H.; Reeves, E.; Gerstoft, P. Source localization in an ocean waveguide using supervised machine learning. J. Acoust. Soc. 
+Am. 2017, 142, 1176–1188. https://doi.org/10.1121/1.5000165. 
+38. 
+Niu, H.; Gong, Z.; Ozanich, E.; Gerstoft, P.; Wang, H.; Li, Z. Deep-learning source localization using multi-frequency magnitude-
+only data. J. Acoust. Soc. Am. 2019, 146, 211–222. https://doi.org/10.1121/1.5116016. 
+39. 
+Liu, Y.; Niu, H.; Li, Z. A multi-task learning convolutional neural network for source localization in deep ocean. J. Acoust. Soc. 
+Am. 2020, 148, 873–883. 
+40. 
+Ozanich, E.; Gerstoft, P.; Niu, H.A feedforward neural network for direction-of-arrival estimation. J. Acoust. Soc. Am. 2020, 147, 
+2035–2048. 
+41. 
+Huang, Z.; Xu, J.; Gong, Z.; Wang, H.; Yan, Y. A Deep Neural Network Based Method of Source Localization in a Shallow Water 
+Environment. In Proceedings of the 2018 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), 
+Calgary, AB, Canada, 15–20 April 2018; pp. 3499–3503. 
+42. 
+Huang, Z.; Xu, J.; Gong, Z.; Wang, H.; Yan, Y. Multiple Source Localization in a Shallow Water Waveguide Exploiting Subarray 
+Beamforming and Deep Neural Networks. Sensors 2019, 19, 4768. https://doi.org/10.3390/s19214768. 
+
+
+===== PAGE 27 =====
+Remote Sens. 2023, 15, 420 
+27 of 27 
+ 
+ 
+43. 
+Benson, J.; Chapman, N.; Antoniou, A. Geoacoustic model inversion with artificial neural networks. In Proceedings of the 1998 
+IEEE Symposium on Advances in Digital Filtering and Signal Processing. Symposium Proceedings (Cat. No.98EX185), Victoria, 
+BC, Canada, 5–6 June 2002; pp. 121–125. https://doi.org/10.1109/adfsp.1998.685708. 
+44. 
+Zhang, B.; Hou, X.; Yang, Y. Robust underwater direction-of-arrival tracking with uncertain environmental disturbances using 
+a uniform circular hydrophone array. J. Acoust. Soc. Am. 2022, 151, 4101–4113. https://doi.org/10.1121/10.0011730. 
+45. 
+Kong, D.; Chun, J. A fast DOA tracking algorithm based on the extended Kalman filter. In Proceedings of the IEEE 2000 National 
+Aerospace and Electronics Conference (NAECON), Dayton, OH, USA, 12 October 2000; pp. 235–238. 
+46. 
+Van Veen, B.; Buckley, K. Beamforming: A versatile approach to spatial filtering. IEEE ASSP Mag. 1988, 5, 4–24. 
+https://doi.org/10.1109/53.665. 
+Disclaimer/Publisher’s Note: The statements, opinions and data contained in all publications are solely those of the individual au-
+thor(s) and contributor(s) and not of MDPI and/or the editor(s). MDPI and/or the editor(s) disclaim responsibility for any injury to 
+people or property resulting from any ideas, methods, instructions or products referred to in the content. 

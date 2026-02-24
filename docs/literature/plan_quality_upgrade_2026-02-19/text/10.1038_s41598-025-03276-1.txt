@@ -1,0 +1,1204 @@
+
+
+===== PAGE 1 =====
+MIMO radar DOA element position 
+error correction method based on 
+overlapping reference element 
+matrix reconstruction
+Feng Tian1,2,3, Tianyu Wei1,3, Weibo Fu1 & Siyuan Wang1,3
+Aiming at the problem of the degradation of angle estimation performance of the MUSIC algorithm 
+due to the position error of the array element, this paper proposes a MIMO radar DOA array element 
+position error correction method based on overlapping reference array element matrix reconstruction. 
+This method uses overlapping virtual array elements as references, corrects the array element position 
+error by phase difference, and constructs an error compensation matrix to eliminate the virtual 
+array position error. At the same time, the nuclear norm optimization is introduced to reconstruct 
+the Toeplitz structure to reduce the influence of system noise and array element disturbance on 
+angle estimation, and the MUSIC algorithm is used to achieve accurate angle estimation. Simulation 
+results show that the angle estimation error of this method is 0.2◦ under a signal-to-noise ratio of 
+20 dB. The actual traffic scene verification shows that this method effectively improves the angle 
+resolution capability of the MUSIC algorithm and meets the requirements of radar accuracy for traffic 
+applications.
+Keywords  Time Division Multiplexing Multi-Input-Multiple-Output (TDM-MIMO) radar, Overlapping 
+array elements, Array element position error, Toeplitz matrix
+The road traffic environment is becoming increasingly complex, and the requirements for urban traffic systems 
+are also increasing accordingly. Traffic radar1, as the main monitoring means for urban traffic, needs more 
+accurate and efficient monitoring performance to meet the needs of urban traffic. Time Division Multiplexing 
+Multi-Input-Multiple-Output (TDM-MIMO) system2 millimeter-wave(mmW) radar is widely used in traffic 
+monitoring scenarios due to its advantages of high resolution, strong anti-interference and low cost. However, in 
+the process of practical application, due to the limitations of antenna assembly and engineering manufacturing 
+level, thus introducing the array element position error3, which affects the radar array vector and leads to the 
+reduction of radar direction measurement accuracy4,5. Therefore, conducting research on array element position 
+error correction methods is of great significance to improving radar direction finding accuracy.
+In order to solve the problem of array error correction, array error correction mainly adopts discrete 
+measurement, interpolation method and storage method. Most of these traditional methods rely on pre-
+calculation or storage of array manifold matrix, which not only increases the complexity of the measurement 
+process, but also significantly increases the implementation cost and time overhead, and the correction accuracy 
+also has certain limitations. With the continuous deepening of research on array error correction technology, 
+related methods have been gradually improved. According to whether it relies on external auxiliary signal 
+sources, the current mainstream error correction algorithms can be divided into two categories: one is the active 
+correction method with the help of known signal sources, and the other is the self-correction method without 
+additional calibration sources.
+Active correction is to use an external correction source to correct the array. In early studies, scholars 
+introduced a calibration signal source with a known position and used the maximum likelihood estimation 
+algorithm to model and estimate the array errors caused by factors such as phase error, amplitude inconsistency, 
+mutual coupling effect, and array element position deviation, thereby improving the direction finding accuracy 
+and resolution to a certain extent. However, in practical applications, the computational complexity of the 
+method using a correction source with a known position is relatively high. In response to this challenge, Bechter 
+1Communication and Information Technology, Xi’an University of Science and Technology, 710054 Xi’an, China. 
+2Xi’an Key Laboratory of Network Convergence Communication, 710054 Xi’an, China. 3Feng Tian, Tianyu Wei, and 
+Siyuan Wang: These authors contributed equally to this work. email: wty990404@163.com
+OPEN
+Scientific Reports |        (2025) 15:18557 
+1
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports
+
+
+===== PAGE 2 =====
+J et al.6 proposed a method of improving discrete Fourier transform (DFT) to compensate for the array element 
+phase error without relying on virtual array elements, simplifying the algorithm implementation and effectively 
+improving the stability of angle estimation. Dai Z et al.7proposed a joint gain-phase error correction method by 
+introducing two independent calibration sources and utilizing the MUSIC for offline estimation. Lin Y et al.8 
+extracted the phase difference introduced by the target motion by processing the received signals of the reference 
+array elements, and then compensated the array for the motion. Although the active correction method can 
+effectively compensate for array errors to a certain extent, in practical applications, due to the difficulty in 
+obtaining external calibration sources and the complexity of deployment, its engineering implementation has 
+certain limitations and it is difficult to meet practical needs in complex environments.
+In order to make up for the shortcomings of active correction methods, researchers use self-correction 
+methods to correct array errors. Self-correction methods can be divided into two categories: one is based on the 
+least squares criterion, by constructing an iterative function, cyclically optimizing the array error parameters 
+and the direction of the incoming wave until the function converges to the optimal solution, thereby obtaining 
+the corresponding azimuth and error estimation results; the other is based on maximum likelihood estimation 
+or subspace fitting theory, constructing a likelihood function and performing a joint multi-dimensional search 
+for the target direction and error parameters. Häfner S, Lee H et al.9,10 used the maximum likelihood estimation 
+compensation method to address the phase error and Doppler ambiguity problems caused by motion. They 
+reduced the error while improving the angle estimation accuracy. However, errors still exist at high signal-to-
+noise ratios, and MLE requires multi-dimensional non-convex optimization, which increases the amount of 
+calculation and is not suitable for real-time systems or resource-constrained applications. Tian F, Baral A B et 
+al.11,12 adjusted the MIMO array arrangement to form overlapping array elements, used the phase difference 
+of overlapping array elements, and combined the iteration and construction cost function methods to achieve 
+array element phase error compensation. However, the problem of outliers in computational complexity and low 
+signal-to-noise ratio environments remains a significant challenge. Zhang X et al.13 performed singular value 
+decomposition on the radar snapshots and transformed the phase error problem into a least squares problem to 
+achieve array phase error correction. However, the estimation accuracy of this method depends on the amount 
+of snapshot data. When the amount of data is small, the estimation result may be inaccurate. Maślikowski Ł 
+et al.14 used two calibration methods, normalization and average value, and singular value decomposition, to 
+calibrate the phase offset of the antenna array, but the accuracy was low under low signal-to-noise ratio. Zhao 
+Z et al.15 proposed a method for error estimation and compensation of broadband radar arrays under multi-
+target conditions. They used the solution (LS) to estimate the inter-channel error and then combined it with a 
+genetic algorithm to correct the array position error. However, the introduction of the genetic algorithm greatly 
+increased the amount of calculation. Hu CN et al.16 proposed a self-correction algorithm for millimeter-wave 
+MIMO array errors and applied genetic algorithms to large-scale MIMO arrays to improve the calibration 
+efficiency. However, due to the large amount of computation required by genetic algorithms, their application 
+to large-scale MIMO arrays cannot meet the real-time requirements of the system. Barthelme A et al.17 applied 
+machine learning technology to array signal processing and used a neural network to extract samples from sub-
+arrays to reconstruct the entire covariance matrix. They achieved high estimation accuracy even under small 
+sample conditions. The neural network method relies on a large number of training samples. In actual traffic 
+scenarios, if the training data does not completely match the test environment, the generalization ability and 
+robustness of the neural network method will decrease.
+Due to the specific Toeplitz property of the covariance matrix in the MUSIC angle estimation algorithm, 
+many scholars have done a lot of research around this feature. Yang J et al.18 proposed an iterative Toeplitz 
+algorithm, which corrects the array position error by performing Toeplitz preprocessing on the covariance matrix 
+of the received data, and combines it with the eigenvalue reconstruction method for joint iterative calculation 
+to improve the angular resolution of multi-target signals. However, the iterative processing greatly increases 
+the amount of calculation. Liu J et al.19 combined the gain phase error matrix estimation and the fast smoothed 
+sparse signal reconstruction method to eliminate the problem of angle estimation degradation caused by gain 
+phase error in the partially calibrated array. However, it relies on the information of some calibrated sensors, 
+especially when the signal noise is large or the sensor calibration information is insufficient, which has certain 
+limitations. Aoun Allah N. et al.20 used two Toeplitz matrix reconstruction methods to deal with the angle 
+estimation problem in the coherent source scenario. They constructed a Toeplitz matrix, used the new Toeplitz 
+matrix for eigenvalue decomposition, and calculated the cross-correlation vector between the first array element 
+and the received signals of other array elements. Based on this, they constructed a Toeplitz matrix to remove the 
+coherence between the signals, thereby improving the angle estimation accuracy. Wagner M et al.21 introduced 
+the concepts of Vanderdoes matrices and irregular Toeplitz matrices to solve the DOA estimation method for 
+non-uniform linear arrays and extended it to the Root-MUSIC algorithm to enable it to be used in the case 
+of irregular sampling for efficient DOA estimation. Qi B et al.22 combined the Toeplitz matrix reconstruction 
+method with quadratic spatial smoothing processing to improve the DOA estimation accuracy at low signal-to-
+noise ratio.
+In summary, the research on array error correction has been continuously invested and deeply explored 
+by many researchers at home and abroad. Although existing methods have made some progress in alleviating 
+array element position errors, signal processing faces higher complexity due to the presence of a large number 
+of moving targets in complex traffic environments. In addition, the inevitable noise interference and array 
+structure disturbances in actual system operation also affect the accuracy of angle estimation, resulting in certain 
+limitations of radar in high-precision traffic detection tasks. Therefore, improving the accuracy of multi-target 
+angle estimation is of great significance to enhancing the practicality and reliability of millimeter-wave radar in 
+the field of traffic monitoring.
+Scientific Reports |        (2025) 15:18557 
+2
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 3 =====
+To address the existing problems, we use the MIMO radar receiving and transmitting characteristics to form 
+overlapping virtual array elements by reconstructing the antenna array arrangement, and realize the element 
+position error correction based on the reference element compensation method; at the same time, we use 
+the Toeplitz property of the array covariance matrix and adopt the matrix reconstruction method to reduce 
+the influence of system noise and array element disturbance on angle estimation. Finally, we use the MUSIC 
+algorithm to perform angle estimation, realize the element position error correction, and improve the angle 
+estimation accuracy of the target vehicle.
+MIMO array signal modeling
+According to the principle of MIMO virtual array extension, the formation of overlapping virtual elements must 
+satisfy the following conditions: 
+	1.	 The transmitting array is a uniform linear array.
+	2.	 The receiving array consists of two uniform linear arrays, and the total number of antennas is even.
+	3.	 The number of overlapping arrays is less than half of the number of receiving arrays.
+We assume a transmitting array with M elements, arranged as a uniform linear array with element spacing 
+dt = dN/2. The receiving array has N elements, split into left and right sides: elements 1 ∼N/2 on the left and 
+N/2 + 1 ∼N on the right. Both sides have element spacing d1 = d, while the spacing between receiving array 
+elements at N/2 and N/2 + 1 is d2 = [(M −1)N/2 −1]d.Each antenna element is isotropic, unaffected by 
+channel inconsistency or mutual coupling. Using a virtual array expansion, an equivalent virtual receiving array 
+is formed as a uniform linear array with N virtual elements and spacing d = λ/2( where λ is the wavelength). 
+For example, in a 4-transmit, 4-receive MIMO array, the equivalent virtual receiving array configuration is 
+shown in Fig. 1.The equivalent virtual array includes two pairs of overlapping array elements. In the first pair, the 
+1st transmitting array element transmits to the (N/2 + 1)th receiving array element, and the Mth transmitting 
+array element transmits to the (N/2 −1)th receiving array element. This forms the first overlapping pair.In the 
+second pair, the 1st transmitting array element transmits to the (N/2 + 2)th receiving array element, while the 
+Mth transmitting array element transmits to the (N/2 −2)th receiving array element. These overlapping pairs 
+have coincident phase centers.The MIMO array’s transmit antennas operate sequentially as TX1, TXM, TX2, 
+..., TXM-1. The period from the start of TX1 to the end of TXM-1 transmission constitutes one MIMO cycle23.
+According to the TDM transmission method, the sawtooth wave transmission signal ST  in the kth frequency 
+modulation (FM) cycle is expressed as:
+	 ST (t) = A exp
+{
+j2πf0 (t −(k −1)T) + µ
+2 (t −(k −1)T)2 + φ0
+}
++ n(t),
+t ∈[(k −1)T, T + (k −1)T]
+(1)
+where A is the amplitude of the transmitted signal, f0 is the initial frequency, φ0 is the initial phase, n(t) is the 
+noise contained in the echo signal, and µ is the FM slope expressed as:
+	
+µ = B
+T 
+(2)
+where T is the linear FM modulation period and B is the FM bandwidth.
+In order to obtain the target distance, speed, and angle information, it is necessary to extract the echo 
+signal. The echo signal is mixed with the transmission signal and filtered through a low-pass filter to obtain an 
+intermediate frequency signal. The intermediate frequency signal received by the n-th virtual array element is 
+expressed as:
+	
+SIF (t) = ST (t) × S∗
+T (t)
+≈An exp [j2π (µ∆trt + f0∆tv)] exp [j2πf0∆fk] + n(t)
+(3)
+
+
+TX
+RX
+Virtual Array
+
+
+
+dT
+1
+d
+R
+2
+d
+R
+
+
+
+
+
+
+
+
+
+
+
+     
+'
+7,7
+'
+8,8
+d
+Fig. 1.  Overlapping MIMO antenna array (4TX-4RX).
+ 
+Scientific Reports |        (2025) 15:18557 
+3
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 4 =====
+where An represents the amplitude of the echo signal, ∆tr is the time delay caused by the radial distance of the 
+target relative to the radar, ∆tv is the time delay caused by the radial speed of the target relative to the radar, and 
+∆tant is the time delay caused by the antenna array spacing.
+The mixed signal is low-pass filtered to remove the high-frequency signal. The simplified intermediate 
+frequency signal can be expressed as:
+	
+SIF (t, n) = SIF (t) exp [−jφn] + n(t),
+(4)
+where φn denotes the phase information of the n-th virtual array element.
+We use a 4-transmit 4-receive antenna array, that is M = 4, N = 4. Assuming that the signal amplitude of 
+each cycle is equal, φq of the q-th virtual array element is expressed as:
+	
+φq =
+
+
+
+(q −1)φd,
+q = 1, 2, 7, 8
+(q −1)φd + φv,
+q = 7′, 8′, 13, 14
+(q −1)φd + 2φv,
+q = 3, 4, 9, 10
+(q −1)φd + 3φv,
+q = 5, 6, 11, 12
+
+(5)
+where φq = 2πf0∆tant = 2πd sin θ/λ represents the phase difference corresponding to the propagation 
+path of electromagnetic waves between adjacent array elements; φr = 2πfdT represents the phase difference 
+introduced by the target motion between adjacent array elements, and fd = 2v/λ is the Doppler frequency of 
+the target motion.
+In Eq. (5), overlapping array elements are formed at the positions of the 7th and 8th array elements, and the 
+total number of virtual array elements is Q = M × N −2.
+MIMO radar angle estimation error analysis
+In this section, we analyze the effect of array position error on angle estimation, including its impact on the array 
+phase and covariance matrix.
+We assume P narrowband signals are incident on the antenna array of the overlapping array structure, with 
+the coordinate system set as in Fig. 2. The virtual arrays are positioned along the x-axis, and the array element at 
+position (xq, 0) has spacing d, where q = 0, 1, 2, . . . , Q −1. The signal arrives in the xOy-plane, with the angle 
+between the i-th signal’s direction and the y-axis as θi, so the incident angles are θ1, θ2, . . . , θP . The incident 
+signal is a far-field incoherent narrowband signal. The signal vector received by the array from P sources at a 
+given time is of the form:
+	
+X(t) = A(θ)S(t) + n(t),
+(6)
+where S(t) is the P × 1-dimensional spatial signal vector; n(t) is the Q × 1-dimensional noise data vector; 
+A(θ) is the Q × P-dimensional array manifold matrix; and A(θ) = [a(θ1), a(θ2), . . . , a(θP )] is the Q × 1
+-dimensional steering vector, defined as:
+	
+a(θp) = [exp(−jφ1p), exp(−jφ2p), . . . , exp(−jφQp)]T ,
+(7)
+When there are overlapping elements in the virtual array, a(θp) can be expressed as:
+	
+a(θp) =
+
+1, ejφ2p, ejφ3p, ejφ4p, ejφ5p, ejφ6p, ejφ7p, ejφ8p
+
+
+, ejφ9p, ejφ10p, ejφ11p, ejφ12p, ejφ13p, ejφ14p
+T
+
+(8)
+Performing covariance calculation on Eq. (6), the covariance matrix of the MIMO array is expressed as:
+	
+RX = E [
+X(t)X(t)H]
+= E [
+(AS(t) + N(t)) (AS(t) + N(t))H]
+= ARSAH + RN,
+
+(9)
+y
+x
+
+d
+c
+(0,0)
+1
+( ,0)
+x
+(
+,0)
+qx
+Fig. 2.  Signal reception model.
+ 
+Scientific Reports |        (2025) 15:18557 
+4
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 5 =====
+where RS is the signal autocorrelation matrix and RN is the noise autocorrelation matrix. Assume that the 
+noise is Gaussian white noise and the power is σ2. That is to say RN = σ2I, and I is a Q × Q dimensional unit 
+matrix. RX can be expressed as:
+	
+Rx = ARsAH + σ2I
+=
+
+
+∑P
+p=1 rsp
+∑P
+p=1 rspe−jω0(τ1p−τ2p)
+· · ·
+∑P
+p=1 rspe−jω0(τ1p−τQp)
+∑P
+p=1 rspe−jω0(τ2p−τ1p)
+∑P
+p=1 rsp
+· · ·
+∑P
+p=1 rspe−jω0(τ2p−τQp)
+...
+...
+...
+...
+∑P
+p=1 rspe−jω0(τQp−τ1p)
+∑P
+p=1 rspe−jω0(τQp−τ2p)
+· · ·
+∑P
+p=1 rsp
+
++ σ2I (10)
+where rsp = E {
+Sp(t)SH
+p (t)}
+; Sp(t) is the p-th element of the P × 1 dimensional spatial signal vector S(t).
+Due to unavoidable manufacturing and assembly errors, there exists a discrepancy between the actual and 
+theoretical positions of the array elements. From Eq.  (10), we can see that the properties of R are determined 
+only by the difference in the wavelength delay of the exponential term. Taking the origin as the reference point, 
+τgp represents the time delay caused by the path difference of the q-th array element relative to the reference 
+element. Based on the geometric relationship in Fig. 2, τqp can be expressed as:
+	
+τqp = 1
+c (xq sin θp)
+(11)
+When there is an array position error, the position errors of the n-th array element in the X-axis and Y -axis 
+directions are respectively recorded as ∆xq and ∆yq. Then the actual position of the array element can be 
+expressed as (xq + ∆xq, yq + ∆yq). At this time, the delay relationship can be expressed as:
+	
+τ ′
+qp = 1
+c ((xq + ∆xq) sin θp + ∆yq cos θp)
+(12)
+Therefore, the delay error ∆τqp caused by the array element position error can be expressed as:
+	
+∆τqp = τqp −τ ′
+qp
+= 1
+c (∆xq sin θp + ∆yq cos θp)
+
+(13)
+Since φd = ω0τ, where ω0 = 2π
+λ  is the signal angular frequency. We refer to the position errors ∆x and ∆y 
+in the X-axis and Y -axis directions collectively as ∆d. When there is an array element position error, φ′
+d is 
+expressed as:
+	
+φ′
+d = 2π(d + ∆d) sin θ
+λ
+= 2πd sin θ
+λ
++ 2π∆d sin θ
+λ
+= φd + φref
+
+(14)
+From Eq. (10), we can see that when there is no array position error, the elements on the diagonal of the 
+covariance matrix Rx and the elements on each diagonal line parallel to the diagonal are equal.That is to say the 
+covariance matrix has the Toeplitz property. Combined with Eq. (14), we know that when an array position error 
+exists, the exponential delay difference includes a term related to the position error. At this time, the Toeplitz 
+structure of the covariance matrix is disrupted in the ideal case, which directly affects the DOA estimation 
+performance of MUSIC.
+Methods
+In this section, we propose an array element position error correction method that combines active correction 
+and self-correction to achieve MIMO array element position error correction and improve the angle estimation 
+accuracy of the MUSIC algorithm. First, we introduce an array element position error compensation method 
+based on overlapping reference array elements. We use an external target with a known angle to correct the 
+array element position error. This method is suitable for correcting the array element position error caused 
+by antenna process errors in a laboratory environment. Secondly, we combine the overlapping reference array 
+element method with the matrix reconstruction method and propose an array element position error correction 
+algorithm based on matrix reconstruction. This method is suitable for the influence of system noise and array 
+element disturbance on the angle estimation algorithm during operation.This makes up for the difficulty in 
+obtaining external correction sources during actual operation.
+Overlapping reference array element position error correction algorithm
+From Eq. (5), we can see that the first pair of overlapping elements is formed at the 7th virtual element position 
+in the antenna array, and the second pair of overlapping elements is formed at the 8th virtual element position. 
+We define the phase difference between the two pairs of overlapping elements as φO1 and φO2. Then, the phase 
+difference between the first and second pairs of overlapping elements is expressed as:
+Scientific Reports |        (2025) 15:18557 
+5
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 6 =====
+	
+{ φO1 = φ7 −φ′
+7 = φd + φref1
+φO2 = φ8 −φ′
+8 = φd + φref2 
+(15)
+where φv is the phase difference generated by the target motion.
+Assuming the position errors of two pairs of overlapping array elements are ∆d1 and ∆d2 respectively, the 
+relationship between the phase change components φref1 and φref2 caused by the position error and the array 
+element position error can be expressed as:
+	
+{
+φO1i = φref1 = 2π∆d1 sin θi
+λ
+φO2i = φref2 = 2π∆d2 sin θi
+λ
+
+(16)
+We calibrate the radar using strong reflectors, such as corner reflectors, to determine the compensation coefficients, 
+thereby eliminating the effect of Doppler frequency deviation caused by target motion on angle estimation. We 
+measure multiple stationary target data, collect radar echo data at different angles θi(i = 1, 2, . . . ), perform 
+distance and velocity FFT, and then extract the phase matrix of all virtual array elements to form the array 
+manifold matrix ˆA(θ).
+When the target is stationary, the phase difference φv introduced by the target motion is 0. At this time, only 
+the phase error φref caused by the array element position error will affect the angle estimation. By performing 
+quick sampling of multiple stationary targets, and since the target angle is known, the position errors ∆d1 and 
+∆d2 between multiple array elements can be calculated based on Eq. (16). The average value of these errors is 
+computed, and the average position errors between array elements are denoted as ∆d1 and ∆d2. At the same 
+time, based on Eq. (16), the phase differences φO1 and φO2 between array elements can be obtained. The phase 
+differences φO1 and φO2 are then compensated into the array manifold matrix A(θ) at the positions of the 
+overlapping elements, and the compensation results are represented as:
+	
+{ ˆa7(θi)re1 = ˆa7(θi) exp(−jφO1i)
+ˆa8(θi)re2 = ˆa8(θi) exp(−jφO2i) 
+(17)
+We use the steering vector matrices of the two pairs of overlapping array elements after phase compensation 
+to reconstruct the array manifold matrix ˆA(θ). Considering that the phase difference between adjacent virtual 
+array elements is φd = 2πd sin θ/λ, we use the overlapping array elements 7 and 8 as reference array elements 
+and construct the array element phase error matrix Γ according to Eq. (5):
+	
+
+
+
+rL
+qi = φq −(
+φ7 −2π(7−q)d sin θi
+λ
+)
+,
+q = 1, 2, . . . , 6
+rR
+qi = φq + (
+φ8 + 2π(q−8)d sin θi
+λ
+)
+,
+q = 9, 10, . . . , Q
+
+(18)
+where rL
+qi and rR
+qi are the phase errors of array elements 1-6 and 9-14. The MIMO array phase error matrix can 
+be expressed as:
+	
+Γ(rqi) = [
+e−jr1i, e−jr2i, . . . , e−jr6i, 1, 1, ejr9i, . . . , ejrQi]
+
+(19)
+We use the array element phase error matrix Γ(rqi) to compensate the array steering vector ˆa(θi). The 
+compensation result is expressed as:
+	
+ˆa(θi)ref = ˆa(θi)Γ(rqi)
+(20)
+Array element position error correction method based on matrix reconstruction
+In this subsection, the overlapping reference array element position error correction method is used to 
+compensate for the array phase error. However, in the actual radar operation process, there is a certain amount 
+of system noise and array element disturbance, which causes array errors. Therefore, the matrix reconstruction 
+method is introduced to reconstruct the covariance matrix in the MUSIC angle estimation method with a low 
+rank, restore its Toeplitz structure, and thus improve the radar angle estimation accuracy.
+We construct the array manifold matrix ˆA(θi)re based on the phase-compensated steering vector and use 
+the MUSIC algorithm to estimate the target angle. Considering that the number of samples of received data 
+in practical applications is limited, the maximum likelihood estimate ˜R is generally used to approximate the 
+covariance matrix R. The expression of ˜R is:
+	
+˜R = 1
+L
+L
+∑
+i=1
+XXH
+(21)
+where L is the number of snapshots.
+When L approaches +∞, the error between ˜R and R approaches 0, so the performance of the MUSIC 
+algorithm will be reduced under the influence of a low snapshot number and system noise. We use the array 
+manifold matrix after overlapping reference element compensation to construct the covariance matrix and first 
+perform Toeplitz preprocessing on it. The preprocessing process is actually to take the average of the elements 
+Scientific Reports |        (2025) 15:18557 
+6
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 7 =====
+on the diagonal and the elements on each diagonal. Since the covariance matrix is a Hermitian matrix, only 
+the upper triangular elements in the covariance matrix need to be processed. The processing process can be 
+summarized as follows:
+	
+˜RT =
+{
+˜rT (−q) =
+1
+Q−q
+∑Q−q
+i=1 ˜ri(i+q),
+0 ≤q ≤Q
+˜rT (q) = ˜r∗
+T (−q)
+
+(22)
+where Q is the number of array elements; (·)∗ represents complex conjugation; ˜rT (−q) is the value of the 
+element on the q-th diagonal line parallel to the main diagonal and above the main diagonal in ˜RT ; and ˜rij 
+represents the element in the i-th row and j-th column of ˜R.
+By performing eigenvalue decomposition on ˜RT , we extract the small eigenvalue associated with the subspace 
+of the signal direction vector ˜a(θ), and this eigenvalue can be used to form the noise subspace ˜UN. The MUSIC 
+algorithm can then express the corresponding signal power as:
+	
+PMUSIC =
+1
+aH(θ) ˜UN( ˜UN)Ha(θ)
+(23)
+Under ideal conditions, the direction vector a(θ) is aligned with the coordinate space ˜UN. Therefore, in Eq. 
+(23), the corresponding weight should be 0. However, in practical applications, due to system noise and errors, 
+the system experiences phase shifts from its nominal value. By performing peak estimation, the estimated peak 
+position can represent the direction of the incoming signal. However, when system noise and errors exist, the 
+MUSIC algorithm may fail to properly reject the erroneous peaks under noisy conditions. This can be improved 
+by using the Toepitz method, which effectively reduces such errors. Therefore, using only the Toepitz method to 
+recover the array configuration still affects DOA estimation, especially when array elements are misaligned or 
+heavily influenced by system noise. In such cases, the method might not fully recover the configuration, and the 
+error limits the accuracy of angle estimation.
+Assuming that the background noise is white noise, the covariance matrix of the received data usually exhibits 
+a low-rank property due to the sparseness of the source. However, in actual traffic scenarios, the background 
+noise is usually not pure white noise, and the environmental noise often has certain correlations or other 
+complex characteristics, which will destroy the low-rank property of the covariance matrix. Therefore, in order 
+to effectively suppress the interference of noise on the signal characteristics, it is necessary to construct a low-
+rank matrix close to the ideal covariance matrix and use this matrix to restore the key characteristic factors in 
+the signal. Especially after Toeplitz preprocessing, the characteristics of the low-rank matrix are more significant, 
+thereby effectively retaining the main characteristic factors in the signal space.
+Considering that the nuclear norm (trace norm) is a convex relaxation function of the matrix rank, we 
+perform a low-rank approximation on ˜RT  by solving the optimal solution of the nuclear norm optimization 
+problem.
+	
+min
+R0
+∥R0∥∗
+subject to
+∥˜RT −R0∥F ≤ϵ
+
+(24)
+where ∥· ∥∗ represents the trace norm; ∥· ∥F  represents the Frobenius norm; ϵ represents the tolerance to noise, 
+which is generally determined by the noise level. Noise tolerance is expressed as:
+	
+ϵ = Q × σ2
+n
+(25)
+In order to reduce the amount of calculation and enhance robustness, the Toeplitz property of the covariance 
+matrix is used. We let R0 = toep(u), where u is the row vector composed of the first row elements of R0, so Eq. 
+(24) can be transformed into:
+	
+min
+u
+∥toep(u)∥∗
+subject to
+∥˜RT −toep(u)∥F ≤ϵ
+
+(26)
+The optimized variable is reduced from a matrix to a single vector, which reduces the computational complexity. 
+We further relax Eq. (26), and the optimized equation is expressed as:
+	
+min
+u
+1
+2∥˜RT −toep(u)∥2
+F + µ∥toep(u)∥∗≤ϵ
+(27)
+where µ is a regularization parameter, and µ > 0, which is used to balance the influence of the first and second 
+terms on the optimization results. We use the convex optimization toolbox to obtain the optimal solution, 
+denoted as R∗, which is the covariance matrix after matrix reconstruction. We perform eigen decomposition on 
+R∗ and finally use the MUSIC algorithm to obtain the target angle estimate. The spectral function of the MUSIC 
+algorithm is expressed as:
+Scientific Reports |        (2025) 15:18557 
+7
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 8 =====
+	
+PMUSIC(θ) =
+1
+aH(θ)U ∗
+N(U ∗
+N)Ha(θ)
+(28)
+where U ∗
+N is the noise subspace eigenvector matrix corresponding to the Q −P small eigenvalues after eigen 
+decomposition of R∗. The specific process of array element position error correction and angle estimation 
+algorithm is shown in Fig. 3.
+Simulation and experiment analysis
+In this section, we verify the effectiveness of our method through computer numerical simulation experiments 
+and actual traffic scenario tests.
+Simulation analysis
+In this subsection, we verify the effectiveness of our algorithm through a series of computer numerical simulation 
+experiments. We designed two simulation scenarios, a single target scenario and a multi-target scenario. We set 
+the array element position error d1 to obey a uniform distribution, and further verify the effectiveness of our 
+method by comparing the angle estimation results of our method with the reference array element compensation 
+method and the traditional Toeplitz correction method, and analyzing the Monte Carlo experimental results.
+Simulation setup
+Our radar antenna array uses 4-TX and 4-RX to form 14 virtual array elements, including 2 pairs of overlapping 
+array elements. The array element spacing is set to d = 1.5λ. The array layout structure is shown in Fig 1. 
+The radar signal waveform uses a sawtooth frequency modulated continuous wave. The transmitting antenna 
+transmits signals in the order of TX1, TX4, TX2, and TX3. The receiving antenna receives the echo signal at the 
+same time and processes the echo signal using our algorithm. The millimeter wave radar parameters are shown 
+in Table 1, and the simulated target parameters are shown in Table 2.
+For the influence of target angle bias on the position error of array elements, based on Eq. (16), it can 
+be derived that∆d =
+λ
+2π sin(θ). If the target angle θ has a small bias ∆θ, the corresponding error in ∆d is 
+approximately:
+	
+∆(∆d)
+∆d
+≈cos(θ)
+sin(θ) ∆θ
+(29)
+Start
+Is the target 
+detected?
+Extract overlapping 
+array elements
+phase difference
+End
+Receive radar 
+echo signal
+Object Detection
+Constructing the array 
+element position error 
+compensation matrix
+Topelitz pretreatment
+MUSIC angle 
+estimation
+Yes
+No
+Overlapping element 
+error compensation
+Array manifold
+matrix compensation
+Constructing the 
+covariance matrix
+Nuclear norm low-
+rank matrix 
+approximation
+Target Angle
+No valid target
+Start
+Is the target 
+detected?
+Extract overlapping 
+array elements
+phase difference
+End
+Receive radar 
+echo signal
+Object Detection
+Constructing the array 
+element position error 
+compensation matrix
+Topelitz pretreatment
+MUSIC angle 
+estimation
+Yes
+No
+Overlapping element 
+error compensation
+Array manifold
+matrix compensation
+Constructing the 
+covariance matrix
+Nuclear norm low-
+rank matrix 
+approximation
+Target Angle
+No valid target
+Fig. 3.  Array element position error correction and angle estimation algorithm flow chart.
+ 
+Scientific Reports |        (2025) 15:18557 
+8
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 9 =====
+Thus, as θ approaches 0◦, the sensitivity increases, and as θ moves further from 0◦, the sensitivity decreases, 
+which can be verified through practical experiments by inserting angle biases of ±0.1◦, ±0.2◦, and ±0.5◦, as 
+shown in Table 3.
+The results show that in practical applications, when the reference target has an angle bias, the influence on 
+the final position accuracy is negligible.
+For the selection of the normalization factor µ, we set the received signal’s SNR to 0 dB, with the sampling 
+rate set to 500. The normalization factor µ is then determined using the MUSIC algorithm. After processing the 
+signal, a group of MUSIC angle measurements is carried out to find the optimal performance corresponding 
+to the normalization factor µ. The final experiments are performed based on the pre-measured group of 
+experimental methods to confirm the value of the normalization factor.
+For the selection of the signal-to-noise ratio (SNR), we calculate the corresponding results based on different 
+signal-to-noise ratios and sampling numbers, as shown in Table 4 and Table 5. The results indicate that the 
+selection of SNR and the sampling rate affects the corresponding errors as shown in Table 4 and Table 5.
+Single-target and multi-target scenario verification simulation results
+We select target 3 as the verification target for the single target scene, and target 1, target 2, and target 3 for the 
+multi-target scene. Our method is compared with the angle estimation results when position error exists, the 
+reference array method8, and the iterated Toeplitz method18. In the single target scenario, µ = 0.08, and in the 
+multi-target scenario, µ = 0.15. The simulation results are shown in Fig. 4.
+SNR (dB)
+Relative Error in ϵ( %)
+-8
+15
+-6
+14
+-4
+13
+-2
+12
+0
+10
+2
+10
+...
+...
+16
+10
+Table 4.  The relationship between SNR and ϵ.
+ 
+Angle Bias (∆θ)
+Relative Error in ∆d( %)
+±0.1◦
+0.19%
+±0.2◦
+0.38%
+±0.5◦
+0.95%
+Table 3.  Relationship between target angle bias (∆θ) and relative position error in ∆d.
+ 
+Target parameters
+Target distance (m)
+Target speed (m/s)
+Target Angle (°)
+Target 1
+18
+20
+-6.5
+Target 2
+55
+0
+1.5
+Target 3
+80
+5
+20
+Table 2.  Simulation target parameters.
+ 
+Radar parameters
+Simulation values
+Measured values
+Carrier frequency f0(GHz)
+60
+60
+Modulation period T (µs)
+45
+45
+FM-bandwidth B(MHz)
+200
+200
+Number of chirps Nd
+128
+128
+Distance resolution (m)
+0.75
+0.75
+Speed resolution (m/s)
+0.108
+0.108
+Angular resolution (◦)
+2.7
+2.7
+Table 1.  Millimeter wave radar parameters.
+ 
+Scientific Reports |        (2025) 15:18557 
+9
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 10 =====
+Figure 4 presents the simulation results for angle estimation. To maintain a consistent distribution probability 
+for the array element position error within a specified range, this error is modeled using a uniform distribution. 
+In Fig. 4a, we illustrate the results for a single-target scenario, while Fig. 4 b depicts the outcomes for a multi-
+target scenario.
+The figures clearly show that the presence of array element position errors significantly degrades the 
+performance of the MUSIC algorithm. The spectrum peaks become less pronounced, leading to deviations in 
+angle estimation results. When comparing our method to the reference array element method and the iterative 
+Toeplitz method, it is evident that our approach yields sharper peaks in the MUSIC spectrum and smaller angle 
+estimation errors in both single-target and multi-target scenarios. This further highlights the advantages of 
+our method in enhancing angle estimation performance for the MUSIC algorithm. The corresponding angle 
+estimation result data is presented in Table 6.
+Target parameters
+Uncorrected Angle(◦)
+Reference Element(◦)
+Iterated Toeplitz(◦)
+Our Approach(◦)
+Target 1
+-9.55
+-6.75
+-6.82
+-6.54
+Target 2
+1.52
+1.52
+1.54
+1.51
+Target 3
+18.60
+19.64
+20.65
+19.86
+Table 6.  Simulation data results.
+ 
+Fig. 4.  Angle estimation results. (a) Single target angle estimation comparison results. (b) Multiple target angle 
+estimation comparison results.
+ 
+Sampling Rate
+Relative Error in ϵ( %)
+200
+12
+300
+11.5
+400
+11
+...
+...
+900
+8.5
+1000
+8
+Table 5.  The relationship between sampling rate and ϵ.
+ 
+Scientific Reports |        (2025) 15:18557 
+10
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 11 =====
+Monte Carlo simulation experiment results
+To further assess the effectiveness of our proposed algorithm, we performed Monte Carlo experiments to analyze 
+the relationships between the signal-to-noise ratio (SNR) and root mean square error (RMSE), as well as between 
+the number of snapshots and RMSE. For the SNR-RMSE experiment, we fixed the number of snapshots at 200, 
+and for the snapshot number-RMSE experiment, we set the SNR to 0 dB. The results are presented in Fig. 5.
+Our algorithm was compared with both the reference array element method and the iterative Toeplitz 
+algorithm. The reference array element method utilizes the first array element as a reference, adjusting for array 
+phase based on the phase difference across two frequency modulation cycles of this reference element. However, 
+this method overlooks phase deviations in the reference element itself, resulting in inconsistent correction of 
+array element position errors. The iterative Toeplitz algorithm partially alleviates the impact of array element 
+position error on angle estimation, but it incurs a high computational cost due to iterative processing, and its 
+performance gains are limited, especially under low snapshot conditions.In contrast, the algorithm proposed in 
+this paper addresses the reference array element position error, reduces the computational burden in Toeplitz 
+matrix reconstruction, and decreases system noise. The RMSE achieved by our algorithm remains stable at 
+around 0.2◦. Compared with the other two algorithms, our approach shows clear advantages in both SNR and 
+snapshot number, making it more robust and efficient under various experimental conditions.
+Experiment analysis
+In this section, we use actual traffic roads as experimental scenarios and conduct experimental tests in actual 
+scenarios to verify the adaptability of our method in actual scenarios.
+Experiment setup
+The vehicle target echo data collected by FMCW radar in the actual measurement scene was used. The radar 
+hardware was developed by our R&D team and is composed of Calterah’s CAL60S244 chip and Xilinx’s ZYNQ-
+7020 chip. The antenna array layout is shown in Fig. 1, which includes 4-TX and 4-RX antennas, where M=4 and 
+N=4. The raw data was collected for PC experiments.
+We set up a stationary target scene and used a corner reflector to replace the stationary vehicle target. The 
+experimental scene layout is shown in Fig. 6. The straight-line distance between the radar and the corner reflector 
+is 5m, and the azimuth angle of the corner reflector relative to the radar is 0 degrees.
+We set the moving target scene to the actual traffic road scene. The actual measurement scene is a two-way 
+lane of an urban road. The radar is placed above the overpass and faces the lane to collect data. The actual scene 
+is as shown in the Fig. 7.
+The detection target is a moving vehicle target. The millimeter-wave radar parameters are shown in Table 
+1, We tested the 2-vehicle target and 5-vehicle target experimental scenarios respectively, and analyzed the 
+2-vehicle target scenario. The 2-vehicle target parameters are shown in Table 7.
+Experiment results
+We use Matlab2023b software to process the echo data collected from the actual road, and estimate the angle of 
+the target after 2D-FFT processing. Fig. 8 shows the angle estimation result of the stationary target. The result 
+shows that the angle estimation error of the target facing the radar is 0.16 degrees. The target angle estimation is 
+accurate and meets the actual angle measurement conditions.
+Fig. 5.  Error compensation algorithm performance. (a) SNR-RMSE comparison results. (b) Snapshot number-
+RMSE comparison results.
+ 
+Scientific Reports |        (2025) 15:18557 
+11
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 12 =====
+Figure 9 shows the results of multi-target detection, where Fig. 9a and Fig. 9b are the 2D-FFT spectrum 
+results of vehicles, and Fig. 9c and Fig. 9d are the angle estimation results of vehicles. The maximum peak point 
+cloud of the two-vehicle target is extracted for MUSIC angle estimation, and the MUSIC angle estimation results 
+are analyzed. Figure 9bcompares the MUSIC angle estimation results before and after error correction. The two 
+peaks in the figure represent two targets. When not corrected, the angle estimation results have a large error 
+with the actual value. After correction, the angle estimation results of target 1 and target 2 are -7.63◦ and 2.64◦, 
+respectively, which are basically consistent with the actual angles.
+To verify the feasibility of the algorithm’s extension in practical systems, we conducted a computational 
+overhead test. The nuclear norm optimization time was tested on a laptop equipped with an Intel Core i5-12500 
+processor (3.0 GHz, 6 cores, 8 threads) and 16 GB of RAM. For a 14×14-sized virtual array covariance matrix, 
+nuclear norm optimization reconstruction was performed, with the average processing time per optimization 
+being 6.4 milliseconds. Considering that the frame rate of millimeter-wave traffic radar systems typically ranges 
+from 20 to 50 milliseconds per frame, our method can run in real time under these hardware conditions, 
+Target parameters
+Target 1
+Target 2
+Range (m)
+31
+46
+Velocity (m/s)
+14.2
+11.9
+Angle (◦)
+-7.5
+2.5
+Measured range (m)
+31.13
+45.77
+Measured velocity (m/s)
+14.31
+11.92
+Uncompensated angle (◦)
+-29.66
+-18.60
+Measured angle (◦)
+-7.63
+2.64
+Table 7.  Actual target parameters.
+ 
+Fig. 7.  Actual target scene. (a) radar hardware equipment. (b) Scene with 2 vehicle targets. (c) Scene with 5 
+vehicle targets.
+ 
+(a)
+Reflector
+5m
+Radar
+0°
+Reflector
+5m
+Radar
+0°
+(b)
+Fig. 6.  Static experimental scene. (a) Radar and corner reflector. (b) Static scene coordinate system structure.
+ 
+Scientific Reports |        (2025) 15:18557 
+12
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 13 =====
+with a time usage ratio of approximately 12%-32%, thus meeting the latency requirements for real-time traffic 
+monitoring applications.
+Experimental results show that in actual traffic scenarios, the MIMO radar array element position error 
+correction method based on overlapping reference array element matrix reconstruction has a good correction 
+effect on the array element position error, which can effectively reduce the influence of the array element 
+position error on the angle estimation, meet the needs of actual traffic applications, and verify the feasibility of 
+the algorithm.
+Conclusion
+This paper studies the MIMO array element position error correction method. Aiming at the problem that the 
+array element position error caused by antenna manufacturing process errors and array element disturbances 
+in the operating state reduces the performance of the angle estimation algorithm, a reconstruction of the 
+overlapping reference element matrix is proposed. The array element position error correction method uses 
+a combination of external correction sources and self-correction to achieve array element position error 
+correction, and uses the MUSIC algorithm to achieve target angle estimation. Its effectiveness is verified through 
+simulation and experiment. Experimental results show that compared with traditional methods, this method 
+effectively solves the angle estimation error caused by array element position error, and the estimation accuracy 
+is stable within 0.2◦. In addition, by utilizing Toeplitz matrix reconstruction, the system noise is significantly 
+reduced, enabling the radar to achieve high detection accuracy under low signal-to-noise ratio and limited 
+snapshots. This method also has good angle estimation performance when the target distance is relatively close, 
+and has broad application potential in complex traffic scenes, autonomous driving and other related fields. Since 
+our method is an unsupervised optimization approach, it can be combined with neural network optimization 
+methods in the future, which will be the next research direction.
+-20
+-10
+0
+10
+20
+Angle (°)
+-20
+-15
+-10
+-5
+0
+5
+10
+Ampulitude (dB)
+X:-0.81
+Y:-0.19
+X:-0.16
+Y: -0.33
+Uncorrected
+Corrected
+Fig. 8.  Results of stationary target experiments.
+ 
+Scientific Reports |        (2025) 15:18557 
+13
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 14 =====
+Data availability
+The data involve the privacy and confidentiality agreements of the research subjects, and some of the data are 
+shared under commercial collaboration agreements. Therefore, we are unable to provide the data separately. 
+However, upon reasonable request, the data can be obtained from the corresponding author.
+Received: 5 November 2024; Accepted: 20 May 2025
+References
+	 1.	 Patole, S. M., Torlak, M., Wang, D. & Ali, M. Automotive radars: A review of signal processing techniques. IEEE Signal Process Mag. 
+34, 22–35 (2017).
+	 2.	 Roos, F., Bechter, J., Knill, C., Schweizer, B. & Waldschmidt, C. Radar sensors for autonomous driving: Modulation schemes and 
+interference mitigation. IEEE Microw. Mag. 20, 58–72 (2019).
+	 3.	 Chen, H., Li, X., Jiang, W. & Zhuang, Z. Mimo radar sensitivity analysis of antenna position for direction finding. IEEE Trans. 
+Signal Process. 60, 5201–5216 (2012).
+	 4.	 Grove, R. L., Dall, J. & Leth-Espensen, P. Mutual coupling and channel imbalance calibration of colocated mimo radars. IEEE Open 
+J. Antennas Propag. 3, 511–522 (2022).
+	 5.	 Geiss, J., Sippel, E., Braunwarth, M. & Vossiek, M. The impact of antenna array calibration errors on mimo and multi-channel 
+synthetic aperture radar imaging. IEEE J. Microw. 3, 635–654 (2023).
+	 6.	 Bechter, J., Roos, F. & Waldschmidt, C. Compensation of motion-induced phase errors in tdm mimo radars. IEEE Microw. Wirel. 
+Compon. Lett. 27, 1164–1166 (2017).
+0
+10
+20
+30
+velocity (m/s)
+0
+50
+100
+150
+distance (m)
+100
+110
+120
+130
+140
+150
+160
+Ampulitude (dB)
+(a)
+0
+5
+10
+15
+velocity (m/s)
+0
+50
+100
+150
+200
+distance (m)
+100
+110
+120
+130
+140
+150
+160
+Ampulitude (dB)
+(b)
+-90
+-45
+0
+45
+90
+Angle (°)
+-20
+-15
+-10
+-5
+0
+5
+10
+Ampulitude (dB)
+Our Approach
+Error results
+(c)
+-90
+-45
+0
+45
+90
+Angle (°)
+-20
+-15
+-10
+-5
+0
+5
+Ampulitude (dB)
+Our Approach
+Error results
+(d)
+Fig. 9.  Angle estimation experimental results. (a) 2D spectrogram of 2 targets. (b) 2D spectrogram of 5 
+targets. (c) Angle estimation results of 2 targets. (d) Angle estimation results of 2 targets.
+ 
+Scientific Reports |        (2025) 15:18557 
+14
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/
+
+
+===== PAGE 15 =====
+	 7.	 Dai, Z., Su, W., Gu, H. & Li, W. Sensor gain-phase errors estimation using disjoint sources in unknown directions. IEEE Sensors J. 
+16, 3724–3730 (2016).
+	 8.	 Lin, Y., Sun, Z., Guo, M. & Fu, Y. Phase compensation method based on reference-element for saa fmcw radar. IEEE Geosci. Remote 
+Sens. Lett. 18, 2097–2101 (2020).
+	 9.	 Häfner, S. & Thomä, R. Compensation of motion-induced phase errors and enhancement of doppler unambiguity in tdm-mimo 
+systems by model-based estimation. IEEE Sens. Lett. 4, 1–4 (2020).
+	10.	 Lee, H. & Chun, J. Virtual array response vector for angle estimation of mimo radar with a wide-band interleaved ofdm signal. 
+IEEE Commun. Lett. 25, 1539–1543 (2021).
+	11.	 Tian, F., Liu, W., Fu, W. & Huang, X. Motion parameter estimation based on overlapping elements for tdm-mimo fmcw radar. 
+IEICE Transactions on Commun. 106, 705–713 (2023).
+	12.	 Baral, A. B. & Torlak, M. Joint doppler frequency and direction of arrival estimation for tdm mimo automotive radars. IEEE J. Sel. 
+Top. Signal Process. 15, 980–995 (2021).
+	13.	 Zhang, X., He, Z., Zhang, X. & Yang, Y. Doa and phase error estimation for a partly calibrated array with arbitrary geometry. IEEE 
+Transactions on Aerosp. Electron. Syst. 56, 497–511 (2019).
+	14.	 Maślikowski, Ł. Calibration of mimo radar transmitting and receiving array using scene object measurement. Remote Sens. 14, 
+3573 (2022).
+	15.	 Zhao, Z., Tian, W., Deng, Y., Hu, C. & Zeng, T. Calibration method of array errors for wideband mimo imaging radar based on 
+multiple prominent targets. Remote Sens. 13, 2997 (2021).
+	16.	 Hu, C.-N., Lo, P., Ho, C.-P. & Chang, D.-C. Automatic calibration using a modified genetic algorithm for millimeter-wave antenna 
+modules in mimo systems. Int. J. Antennas Propag. 2020, 4286026 (2020).
+	17.	 Barthelme, A. & Utschick, W. Doa estimation using neural network-based covariance matrix reconstruction. IIEEE Signal Process. 
+Lett. 28, 783–787 (2021).
+	18.	 Yang, J. & Liu, C. Array location error calibrating algorithm based on toeplitz pre-processing. J. Xidian Univ. Sci. 38 (2011).
+	19.	 Liu, J., Zhou, W., Huang, D. D. & Juwono, F. H. Covariance matrix based fast smoothed sparse doa estimation with partly calibrated 
+array. AEU-Int. J. Electron. Commun. 84, 8–12 (2018).
+	20.	 Aounallah, N. Robust min-norm algorithms for coherent sources doa estimation based on toeplitz matrix reconstruction methods. 
+Int. J. Wirel. Mob. Comput. 24, 9–16 (2023).
+	21.	 Wagner, M., Park, Y. & Gerstoft, P. Gridless doa estimation and root-music for non-uniform linear arrays. IEEE Trans. Signal 
+Process. 69, 2144–2157 (2021).
+	22.	 Qi, B., Xu, L. & Liu, X. Improved multiple-toeplitz matrices reconstruction method using quadratic spatial smoothing for coherent 
+signals doa estimation. Eng. Comput. 41, 333–346 (2024).
+	23.	 Hu, X., Li, Y., Lu, M., Wang, Y. & Yang, X. A multi-carrier-frequency random-transmission chirp sequence for tdm mimo 
+automotive radar. IEEE Trans. Veh. Technol. 68, 3672–3685 (2019).
+Acknowledgements
+This work was supported in part by the Project of Science and Technology of Shaanxi 2020GY-029.
+Author contributions
+F.T. conceived the idea and performed the simulations. T.W. and S.W. performed the simulations and experi­
+ments and wrote the main manuscript text. W.F. proofread the paper. All authors reviewed the manuscript.
+Declarations
+Competing interests
+The authors declare no competing interests.
+Additional information
+Correspondence and requests for materials should be addressed to T.W.
+Reprints and permissions information is available at www.nature.com/reprints.
+Publisher’s note  Springer Nature remains neutral with regard to jurisdictional claims in published maps and 
+institutional affiliations.
+Open Access   This article is licensed under a Creative Commons Attribution 4.0 International License, which 
+permits use, sharing, adaptation, distribution and reproduction in any medium or format, as long as you give 
+appropriate credit to the original author(s) and the source, provide a link to the Creative Commons licence, and 
+indicate if changes were made. The images or other third party material in this article are included in the article’s 
+Creative Commons licence, unless indicated otherwise in a credit line to the material. If material is not included 
+in the article’s Creative Commons licence and your intended use is not permitted by statutory regulation or 
+exceeds the permitted use, you will need to obtain permission directly from the copyright holder. To view a copy 
+of this licence, visit http://creativecommons.org/licenses/by/4.0/.
+© The Author(s) 2025 
+Scientific Reports |        (2025) 15:18557 
+15
+| https://doi.org/10.1038/s41598-025-03276-1
+www.nature.com/scientificreports/

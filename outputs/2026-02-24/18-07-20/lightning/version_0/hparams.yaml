@@ -1,0 +1,15 @@
+tau: 8
+diff_method: esprit
+train_loss_type: rmspe
+field_type: Far
+learning_rate: 0.001
+weight_decay: 1.0e-09
+optimizer: Adam
+scheduler: ReduceLROnPlateau
+step_size: 50
+gamma: 0.5
+momentum: 0.9
+regularization: null
+variant: small
+norm_layer: false
+batch_norm: false

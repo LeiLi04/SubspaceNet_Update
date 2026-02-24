@@ -1,0 +1,1401 @@
+
+
+===== PAGE 1 =====
+7568
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+Multi Direction-of-Arrival Tracking Using Rigid
+and Flexible Antenna Arrays
+Zhuqing Tang
+, Student Member, IEEE, and Athanassios Manikas
+Abstract—This paper is concerned with the problem of
+simultaneously tracking the direction-of-arrival (DOA) of far-
+ﬁeld multiple moving sources/users in wireless communications
+using the vector-signal received by an antenna array of N ele-
+ments. The antenna array can be rigid (ﬁxed array locations) or
+ﬂexible (time-varying array locations), and it is used in conjunc-
+tion with a “manifold extender”, a spatiotemporal state-space
+model and a Kalman-type tracking approach for non-stationary
+wireless
+channels.
+In
+particular,
+two
+tracking
+approaches
+are proposed. The ﬁrst is based on an arrayed Extended
+Kalman Filter (arrayed-EKF) algorithm and the second on an
+arrayed Unscented Kalman Filter (arrayed-UKF) algorithm.
+Furthermore, if the array is rigid the spatiotemporal state-space
+model incorporates the DOAs and the angular velocities of the
+sources, while if it is ﬂexible it also includes the array locations in
+the set of state-variables. The performance of the two approaches
+using both rigid and ﬂexible arrays is evaluated using computer
+simulation studies and compared with a subspace tracking
+algorithm and a particle ﬁlter method under the same conditions.
+The results show that the arrayed-UKF and the arrayed-EKF
+show superior tracking performance, especially for low SNRs.
+Index Terms—Array processing, ﬂexible array, DOA tracking,
+extended Kalman ﬁlter, unscented Kalman ﬁlter, spatiotemporal
+arrays, array manifolds, extended manifolds.
+NOTATION
+A, a
+Scalar
+A, a
+Column vector
+A, r
+Matrix
+(·)T
+Transpose
+(·)H
+Hermitian transpose
+E {·}
+Expectation operator
+⊗
+Kronecker product
+IN
+N × N Identity matrix
+ON×M
+N × M matrix of zeros
+1N
+Column vector of N ones
+0N
+Column vector of N zeros
+R
+Set of real numbers
+C
+Set of complex numbers
+exp(A)
+Element by element exponential of vector A
+∇
+Vector differential operator
+Manuscript received May 7, 2020; revised November 4, 2020 and
+April 1, 2021; accepted May 17, 2021. Date of publication June 23, 2021;
+date of current version November 11, 2021. The associate editor coordinating
+the review of this article and approving it for publication was Y. Shen.
+(Corresponding author: Athanassios Manikas.)
+The authors are with the Department of Electrical and Electronics
+Engineering, Imperial College London, London SW7 2AZ, U.K. (email:
+a.manikas@imperial.ac.uk).
+Color versions of one or more ﬁgures in this article are available at
+https://doi.org/10.1109/TWC.2021.3085753.
+Digital Object Identiﬁer 10.1109/TWC.2021.3085753
+triu(A)
+Upper triangular potion of A
+QR(A)
+QR decomposition of A
+chol(A)
+Cholesky factorization of A
+I. INTRODUCTION
+D
+IRECTION-of-Arrival (DOA) tracking of multiple mov-
+ing sources/users using an array has been an important
+research area with a wide range of applications in sonar,
+radar, air trafﬁc control, wireless communications, remote
+sensing, etc..
+DOA tracking techniques can be classiﬁed into probabilistic
+and parametric. For instance, in [1], a probabilistic DOA
+tracking approach is presented which is based on a probability
+hypothesis density ﬁlter with a likelihood function expressed
+as a complex Wishart random matrix. In [2], the tracking
+of DOAs is also probabilistic and is based on the sparse
+approximation technique LASSO. One of the main tracking
+families of parametric techniques is the “subspace tracking”
+[3]–[6]. In [3], a cross-correlation based 2D DOA tracking
+algorithm is proposed using an automatic pair-matching batch
+method which, however, is restricted to only L-shape array
+geometries. Some “subspace tracking” techniques are based on
+various decomposition forms such as Singular Value Decom-
+position (SVD) [4], URV decomposition [5] and cross RV
+decomposition (CRV) [6].
+However, many DOA tracking techniques assume that the
+sources are stationary over a small time frame (observation
+interval) and for each time frame a DOA subspace estima-
+tion algorithm like multiple signal classiﬁcation (MUSIC) [7]
+can be applied. In these type of techniques the tracking is
+based on repetitive DOA estimation (or, in general, repetitive
+localization) where the set of consecutive estimates provide
+the tracking trajectory (e.g. [8]). However, in non-stationary
+environments, repetitive high-resolution estimation algorithms
+for DOA source trajectory tracking exhibit serious perfor-
+mance degradation. In addition, these techniques suffer from
+the data association problem and several algorithms have been
+proposed to avoid this problem. In [9], the authors minimize
+the norm of an error matrix based on the covariance matrix of
+the received array output. A repetitive DOA source tracking
+algorithm is proposed in [10] which uses the most recent
+received data to update the existing DOA estimates using the
+MUSIC algorithm. Both [9] and [10] avoid data association by
+preserving the order of the estimated DOAs over certain itera-
+tions, which however suffer from spread array spatial spectrum
+This work is licensed under a Creative Commons Attribution 4.0 License. For more information, see https://creativecommons.org/licenses/by/4.0/
+
+
+===== PAGE 2 =====
+TANG AND MANIKAS: MULTI DOA TRACKING USING RIGID AND FLEXIBLE ANTENNA ARRAYS
+7569
+effects caused by the source motion. Alternatively, state-
+space model based approaches have been proposed which are
+combined with various tracking algorithms (e.g. [11]–[14]).
+In [11], multiple target states (MTS) are deﬁned to describe
+the source motion, followed by a ML algorithm for updating
+the MTS and tracking the DOAs. In [12], a bank of linear
+combiner matrices are formed as state variables, and then
+they are updated adaptively by an H-inﬁnity ﬁlter to track
+the noise subspaces and consequently the DOAs. Furthermore,
+some Bayesian state-space models have been used in [13], [14]
+which incorporate the source motion and the likelihood of
+received measurements based on the source’s state. Then,
+a particle ﬁlter is used to track the source state to obtain
+the DOA of the sources. The particle ﬁlter has also been
+used in [15] and [16] for target tracking in radar system.
+However, in radar literature, “active” radar tracking approaches
+have been employed where both system architectures and
+assumptions are different than those used in communications.
+Another family of approaches for repetitive DOA estima-
+tion are based on Kalman Filter (KF). Since the standard
+Kalman ﬁlter requires the measurement model to be linear,
+all the approaches that use standard Kalman ﬁlter need to
+pre-estimate the DOA and view the DOA estimates as “mea-
+surement”. Then the pre-estimated DOA is reﬁned by the
+Kalman ﬁlter. For example, the Kalman ﬁlter has been used
+for multiple DOA tracking which are pre-estimated by a least
+squares (LS) estimator [17], or a Maximum Likelihood (ML)
+estimator [18], [19]. In [20], the proposed algorithm improves
+the algorithm in [10] by employing a source movement model
+and a Kalman ﬁlter. The Kalman ﬁlter has also been used
+in [21] for tracking signal subspace towards the objective of
+tracking single target. However, it is important to point out
+that the above KF approaches require the overall observation
+interval to be divided into small intervals over which the DOAs
+can be assumed to be stationary. Consequently, they will suffer
+from serious performance degradation when this assumption
+is not valid.
+In addition to KF, the Extended Kalman ﬁlter (EKF) and the
+Unscented Kalman Filter (UKF) are suitable for the case that
+the measurement model is non-linear. For instance, the EKF
+has been employed in [22] for trajectory tracking of moving
+sources using a large aperture rigid array and in [23] for DOA
+tracking of moving sources using a small aperture rigid array.
+In [24], the EKF is combined with a particle ﬁlter forming
+an EKPF algorithm. However, to the best of our knowledge,
+there are not many papers for DOA tracking using EKF and
+the majority of these papers are for single DOA tracking.
+In addition, the UKF has been rarely used and in [25], [26] it
+has been used for single DOA tracking. In general, the EKF
+and UKF algorithms have equal computational complexity but
+they are conceptually different. The EKF linearizes nonlinear
+transformations by using Taylor series expansions and then
+uses these linear transformations in standard Kalman ﬁlter.
+Whereas the UKF involves the unscented transformation which
+essentially selects a set of points (sigma points) via a deter-
+ministic sampling approach, and then propagates these points
+to the true nonlinear function which are then exploited to form
+the mean and covariance of the estimation [27], [28]. In this
+paper, both the EKF and UKF are employed to track multiple
+DOAs in non-stationary environment and our paper is the ﬁrst
+paper to employ UKF for multi-DOA tracking.
+All the above methods, like the majority of array processing
+techniques assume by default that the array geometry is rigid.
+On the other hand, using ﬂexible array geometries is an interest
+problem in array signal processing for airborne, vehicular,
+underwater and other applications [29]. The “ﬂexible array”
+is deﬁned as an antenna array with time varying geometry,
+i.e. each of the array elements move independently and this
+paper is an extension of [30] where a ﬂexible array formed by a
+swarm of unmanned aerial vehicles (UAVs) is presented. If the
+array geometry is ﬂexible, i.e. the array geometry changes
+as a function of time, then the majority (if not all) of the
+array processing algorithms and theory cannot be directly
+used.
+Several approaches have been proposed for solving source
+tracking problem with time varying arrays but for static
+sources. For example, the ML estimator has been employed
+in [31]–[33]. However, in these cases, a multi-dimensional
+search is required which is computationally prohibitive.
+In [34], two eigenstructure-based algorithms based on the con-
+cept of array interpolation and focusing matrices are proposed
+with faster approximations to the ML estimators. However,
+these algorithms need relatively large Signal to Noise Ratio
+(SNR) levels to maintain satisfactory performance. In [35],
+the authors use noncoherent time-varying arrays that are a
+collection of coherent subarrays with stationary covariance
+matrices. Then, the functions of the covariance matrices of the
+subarrays are derived to ﬁnd source locations. As it was stated
+before, all these approaches ([31]–[35]) are designed for static
+sources. In [36], a dynamic radar network is proposed which
+is related with a swarm of UAVs working independently for
+tracking the location of a single target. It uses a Markovian
+state space model and employs a two-step EKF algorithm.
+However, this approach is not related with ﬂexible arrays as
+the UAVs work independently and this scenario belongs to
+radar applications.
+This paper is concerned with tracking the DOA of multiple
+sources in non-stationary wireless communications using both
+rigid and ﬂexible arrays. In addition to [30] in the current
+literature, to the best of our knowledge, there are only two
+papers [37], [38] that deal with the tracking using time-
+varying arrays. Reference [37] is concerned with tracking
+stationary sources using an array of hydrophones. This is
+a “towed-array” - towed behind a submarine or a surface
+ship on a cable – where the hydrophones are placed at
+speciﬁc/constant distances along the cable. This is also a
+ﬂexible array because when the ship turns this line becomes
+curvy and there are small but very restricted changes in the
+overall shape. However, [37] deals with DOA estimation of
+stationary acoustic sources using Maximum Likelihood (ML)
+followed by a second estimation of the shape of the array using
+Kalman ﬁltering. Reference [38] is a “probabilistic” approach
+for non-stationary channels which completely ignores the para-
+meterisation in terms of the array manifold vector and array
+geometry. It recursively estimates a conditional probability
+density function (Bayesian ﬁltering) by following the EKF
+
+
+===== PAGE 3 =====
+7570
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+iterative steps, although this is not an EKF approach, while its
+performance is compared with that of a particle-ﬁlter method.
+In our proposed approaches, all the sources and the array
+locations are tracked in a uniﬁed way which is suitable for
+tracking even of fast moving sources using antenna array
+systems. In particular, two novel approaches are proposed
+based on an arrayed-EKF and an arrayed-UKF using
+• a rigid array and a ﬂexible array,
+• a spatiotemporal state-space model and
+• a “manifold extender”
+for simultaneously tracking multiple DOAs snapshot-by-
+snapshot. In our proposed approaches, both “rigid” and “ﬂex-
+ible” arrays as well as arrayed-EKF and arrayed-UKF are
+presented in a uniﬁed way. Furthermore, the concept of “man-
+ifold extender” (see [39]) is employed which increases the
+“degrees of freedom” of the system by integrating the spatial
+and the temporal domains. This is used in the spatiotemporal
+state-space model. Note that the “extended manifold” vectors
+are longer vectors than the spatial manifold vector and the
+locus of these vectors are mathematical objects (manifolds)
+that are embedded in a larger observation space than the
+one provided by the number of antenna array elements N
+(see [39]). If the array is ﬂexible, apart from tracking multiple
+DOAs, the array locations are also simultaneously tracked as
+they change arbitrarily with time. Therefore, we developed
+our array processing algorithms (arrayed-EKF/UKF), based on
+ﬁxed or time-varying array geometry, where all the antenna
+array elements (in a constant or a time varying geometry)
+work together as one unit for solving the problem of trajec-
+tory tracking of moving sources. The integration of all the
+above forms our proposed “arrayed-EKF” and “arrayed-UKF”
+algorithms.
+Note that the proposed algorithms in this paper have many
+applications, including UAV communications. For instance,
+a rigid antenna array may be deployed on a single UAV
+platform1 for tracking multiple users. Furthermore, a number
+of UAVs (a swarm of UAVs), each equipped with a single
+antenna having its own propulsion system, can be used as
+a ﬂexible array for multi-user tracking (e.g. [30]). In this
+case, each UAV is equipped with a GPS-clock so that the
+array system will have a common clock to keep the system
+coherent.
+The remainder of this paper is organized as follows.
+In Section II, the array system and the received vector-signal
+model are presented. In Section III, the mobility model of
+the multiple sources is described. Then, the extended mobility
+model is presented. In the case of ﬂexible arrays, the mobility
+model of the array elements is also discussed. In Section IV,
+the proposed approaches are introduced based on arrayed-
+EKF and arrayed-UKF for both rigid and ﬂexible arrays.
+In Section V, the performance of the proposed approaches
+is evaluated using computer simulation studies. Finally, this
+paper is concluded in Section VI.
+1Except the UAV platform, the rigid array may be deployed in aircraft,
+automobile, shipboard as well as in Node-B, eNode-B or gNode-B in an
+access network.
+II. SYSTEM MODEL
+Consider an array system for tracking multiple users with a
+receiver array of N antennas. Figure 1 shows the baseband rep-
+resentation of the array system model consisting of M far-ﬁeld
+transmitters/users, a wireless channel and an array receiver.2
+With reference to Figure 1, at Point-A, the transmitted data
+sequence of symbols of the i-th user {ai[n]} (with a symbol
+duration of Tcs) where each symbol is weighted by a Nc × 1
+weight-code vector given by
+wi
+Δ= [wi [1] , wi [2] , . . . , wi [q] , . . . , wi [Nc]]T
+(1)
+with
+wi[q] ∈±1,
+q ∈[1, Nc]
+(2)
+Then, at
+Point-B, the
+weighted data symbol sequence
+{wiai[n]} is driven to a Digital-to-Analog Converter (DAC)
+to produce a baseband transmitted signal mi(t) at Point-C.
+At the receiver, an antenna array of N antennas is employed
+with locations
+r = [r1, r2, . . . , rm . . . , rN]
+=
+
+rx, ry, rz
+T ∈R3×N
+(3)
+where the vector rm ∈R3×1 denotes the Cartesian coordi-
+nates of the m-th antenna and the N × 1 vectors rx, ry, rz
+are the Cartesian coordinates of all antennas on the x-axis,
+y-axis and z-axis, respectively. In this paper, we also consider
+the scenario where the array locations (and thus the array
+geometry) change due to any unknown forces. In this case,
+the array is ﬂexible with time-varying geometry, re-modelled
+as functions of time as follows
+r (t) = [r1 (t) , r2 (t) , . . . , rm (t) . . . , rN (t)]
+=
+
+rx (t) , ry (t) , rz (t)
+T ∈R3×N
+(4)
+Thus, at Point-D in Figure 1, the received baseband vector
+signal x (t) ∈CN×1 can be modelled as follows
+x (t) =
+M
+
+i=1
+βi (t) exp(j2πFit)Si(t)mi(t) + n(t)
+(5)
+where, for the i-th user, βi (t) denotes the path fading coef-
+ﬁcient, Fi represents the Doppler frequency and the vector
+n(t) ∈CN×1 denotes the additive white complex Gaussian
+noise of zero mean and covariance matrix given by
+Rnn = σ2
+nIN
+(6)
+with σ2
+n denoting the noise power. In Equ 5, Si(t) ∈CN×1
+denotes the time-varying manifold vector which is given as
+follows
+Si(t) =
+⎧
+⎪
+⎪
+⎨
+⎪
+⎪
+⎩
+exp
+	
+−j 2πFc
+c
+rT ui (t)
+
+for rigid array
+exp
+	
+−j 2πFc
+c
+r (t)T ui (t)
+
+for ﬂexible array
+(7)
+2The M narrowband far-ﬁeld users operate at the same time and on the
+same frequency band.
+
+
+===== PAGE 4 =====
+TANG AND MANIKAS: MULTI DOA TRACKING USING RIGID AND FLEXIBLE ANTENNA ARRAYS
+7571
+Fig. 1.
+Baseband representation of the array system model consisting of M transmitters, a SIMO multiuser wireless channel and an array receiver. The array
+can be rigid or ﬂexible.
+Fig. 2.
+The array’s Cartesian coordinate system and the unit-norm vector
+u (θ, φ) in terms of the azimuth angle θ and elevation angle φ.
+where Fc is the carrier frequency, c denotes the speed of light
+and ui (t) is given by
+ui (t) =
+⎡
+⎣
+cos θi (t) cos φi (t)
+sin θi (t) cos φi (t)
+sin φi (t)
+⎤
+⎦
+(8)
+with θi (t) and φi (t) representing the azimuth and the ele-
+vation angles of the i-th source. In general, the vector u =
+u (θ, φ) denotes the (3 × 1) unit-norm vector pointing towards
+the direction (θ, φ), as illustrated in Figure 2. In this paper,
+with no loss of generality, the elevation angle is assumed to
+be zero (i.e. φi (t) = 0).
+Equ 5 can also be rewritten in a more compact form as
+follows
+x (t) = S(t)m(t) + n(t)
+(9)
+where S(t) ∈CN×M is the matrix with columns the array
+manifold vectors, i.e.
+S(t) = [S1(t), S2(t), . . . , Si(t), . . . , SM(t)]
+(10)
+and m(t) ∈CM×1 is expressed to include, in addition to the
+M baseband message signals, the Doppler frequencies and the
+path coefﬁcients as follows
+m(t) =
+⎡
+⎢⎢⎢⎣
+β1 (t) exp(j2πF1t)m1(t)
+β2 (t) exp(j2πF2t)m2(t)
+...
+βM (t) exp(j2πFMt)mM(t)
+⎤
+⎥⎥⎥⎦
+(11)
+with its covariance matrix Rmm deﬁned as
+Rmm = E
+
+(m(t) −E {m(t)}) (m(t) −E {m(t)})H
+(12)
+With reference to Figure 1, the (N × 1) vector signal x (t) is
+ﬁrstly discretised (see Point-E). Then, at Point-F the (NNext×
+1) vector signal x [n] can be expressed as follows
+x [n] =
+M
+
+i=1
+(Si[n] ⊗wi)
+
+
+
+hi[n]
+mi[n]
+
+
+
+βi [n] exp(j2πFinT )ai [n] + n [n]
+(13a)
+=
+M
+
+i=1
+hi[n]mi[n] + n [n]
+(13b)
+= H[n]m[n] + n[n]
+(13c)
+where the vector n [n] ∈CNNext×1 denotes the discretised
+“extended” noise (i.e. the noise at Point-F in Figure 1) and
+the matrix H [n] ∈CNNext×M is given by
+H [n] = [h1 [n] , h2 [n] , . . . , hi [n] , . . . , hM [n]]
+(14)
+with its i-th column hi [n] ∈CNNext×1 denoting the time-
+varying extended manifold vector of the i-th user given as
+follows
+hi [n] = Si [n] ⊗wi
+(15)
+with Next = N c. Furthermore, at the transmitter, if the user
+being tracked does not include the weight wi, then wi = 1Next
+
+
+===== PAGE 5 =====
+7572
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+may be used. In this case, the extended manifold vector of
+Equ 15 is simpliﬁed to
+hi [n] = Si [n] ⊗1Next
+(16)
+Therefore, the extended manifold vector here has two
+forms/cases as described in Equ 15 and Equ 16 although
+other forms from [23], [39] may be included. In addition,
+if the manifold extender is not employed in this model, then
+Next = 1 and
+hi[n] = Si[n]
+(17)
+Thus, the vector hi [n] ∈CNNext×1 can be expressed as
+follows
+hi [n] =
+⎧
+⎪
+⎨
+⎪
+⎩
+Si [n] ⊗wi
+Next = N c
+Si [n] ⊗1Next
+Next = N c
+Si [n]
+Next = 1
+
+(18)
+Note that the array locations that constitute the extended
+manifold vector hi [n] may be a function of time (changing
+from symbol to symbol), depending on whether the array is
+rigid or ﬂexible.
+III. MOBILITY MODEL
+A. Source/User Mobility Model
+Since the array operates in the presence of M co-channel
+users, Figure 3 illustrates the mobility model of the i-th user,
+for i = 1, 2, . . ., M relative to the array reference point.
+As shown in Figure 3, the i-th user moves in an arbitrary
+direction with velocity-vector vi ∈R3×1 given as follows
+vi = vρiuvρi + vθiuvθi
+(19)
+where the velocity vector vi is decomposed into two other
+vectors:
+• the radial component vρiuvρi , and
+• the orthoradial (angular) component vθiuvθi ,
+with vρi denoting the radial velocity of the i-th source and
+vθi representing its angular velocity. The vectors uvρi and
+uvθi are unity vectors that are mutually orthogonal. The radial
+velocity vρi causes the Doppler effects which is modelled as
+exp(j2πFit) in Equs 5 and 11. Note that Fi is given by
+Fi = −Fcvρi
+c
+(20)
+As shown in Equ 13, the Doppler coefﬁcient has been incor-
+porated into the combined vector-signal m[n] which will then
+be estimated and utilised by the proposed tracking algorithms.
+Thus, the radial velocity does not affect the DOA/azimuth θi.
+If the i-th user moves with an angular velocity vθi, which can
+be constant or variable, its azimuth angle may be described as
+θi (t) = θi (t0) + vθi (t0) T
+(21)
+where
+T = t −t0
+(22)
+Fig. 3.
+Illustration of the mobility model of the i-th source/user. The velocity
+vector vi of the source is decomposed into its radial term vρiuvρi and the
+orthoradial term vθiuvθi , respectively. The direction (DOA) θi of the source
+is measured with respect to the array reference point. The array geometry at
+the receiver may be rigid or ﬂexible.
+is the time elapsed between t and t0. If T is assumed to be
+equal to the sampling period, i.e.
+t0 = (n −1)T
+(23)
+t = nT
+(24)
+then Equ 21 is discretised and becomes
+θi[n] = θi[n −1] + vθi[n]T
+(25)
+Thus, let us deﬁne the discrete-time state vector for the i-th
+user as bi[n], i.e.
+bi[n]
+△=
+ θi[n]
+vθi[n]
+
+(26)
+Then, the discrete time kinematic model for the i-th user for
+t = nT is given as
+bi[n] = Gibi[n −1] + bi[n]
+(27)
+where Gi ∈R2×2 is the transition matrix given by
+Gi =
+
+1,
+T
+0,
+1
+
+(28)
+In Equ 27, bi[n] ∈R2×1 represents perturbations about the
+azimuth angle and the angular velocity, and can be modelled as
+“noise” with zero mean and covariance matrix R
+bi
+bi ∈R2×2
+given by
+R
+bi
+bi = σ2
+θi
+⎡
+⎢⎣
+T 3
+3 ,
+T 2
+2
+T 2
+2 ,
+T
+⎤
+⎥⎦
+(29)
+where σ2
+θi denotes the continuous time model intensity for the
+azimuth-velocity.
+B. Flexible Array Mobility Model
+With reference to Figure 3, it is shown that the array at the
+receiver can be either rigid or ﬂexible. The movement of the
+ﬂexible array may include
+
+
+===== PAGE 6 =====
+TANG AND MANIKAS: MULTI DOA TRACKING USING RIGID AND FLEXIBLE ANTENNA ARRAYS
+7573
+• a known motion of the whole array which is represented
+by the motion of the array’s reference point and does not
+affect the array geometry,
+• a known motion of its individual elements relative to the
+reference point, and
+• small unknown motion or perturbations casued by any
+unknown forces3
+with the last two motions changing the array geometry. Thus,
+in a ﬂexible array the tracking of the array geometry (i.e. the
+tracking of the locations of the array elements) is essential.
+With a sampling period T , the discrete time mobility model
+of the array locations4 is expressed as follows
+bxy[n] = Gxybxy[n −1] + bxy[n]
+(30)
+where the vector bxy[n] is given as follows
+bxy[n] =
+ rx[n]
+ry[n]
+
+∈R2N×1
+(31)
+which includes the instantaneous array locations on the x-axis
+and y-axis, respectively. The vector bxy[n] ∈R2N×1 in Equ 30
+denotes the perturbations associated with their respective loca-
+tions, with its intensity σ2
+xy, and its covariance matrix is given
+as follows
+R
+bxy
+bxy = σ2
+xyI2N
+(32)
+The matrix Gxy ∈R2N×2N is a block diagonal matrix
+containing known transition matrices of all the array elements
+shown as
+Gxy=
+⎡
+⎢⎢⎢⎣
+F1,
+O2,
+· · · ,
+O2
+O2,
+F2,
+· · · ,
+O2
+...
+...
+...
+...
+O2,
+O2,
+· · · ,
+FN
+⎤
+⎥⎥⎥⎦
+(33)
+where Fj ∈R2×2 represents a known transition matrix of j-th
+array element. For instance, if ωj denotes the angular velocity
+of the j-th array element about the reference point, then
+Fj =
+
+cos ωjT,
+−sin ωjT
+sin ωjT,
+cos ωjT
+
+(34)
+C. Overall Mobility Model
+The
+overall
+mobility
+model,
+which
+is
+the
+discrete
+time M-user
+kinematic model, is constructed based on
+Equs. 27 and 30, as follows
+b[n] = Gb[n −1] + b[n]
+(35)
+where b[n] is the overall discrete-time state vector which is
+constructed as
+b[n] =
+
+
+bT
+1 [n], bT
+2 [n], . . . , bT
+M[n]
+T
+∈R2M×1
+rigid array
+
+bT
+xy[n], bT
+1 [n], . . . , bT
+M[n]
+T ∈R(2N+2M)×1
+ﬂexible array (36)
+and its perturbation vector b[n] is given as follows
+b[n] =
+
+
+b
+T
+1 [n],
+b
+T
+2 [n], . . . ,
+b
+T
+M[n]
+T ∈R2M×1
+rigid array
+
+b
+T
+xy[n],
+b
+T
+1 [n], . . . ,
+b
+T
+M[n]
+T ∈R(2N+2M)×1
+ﬂexible array (37)
+3Note that, even in ﬁxed array geometries, constant uncertainties in the array
+locations may decrease the performance of the direction-ﬁnding system [31].
+4With no loss of generality, the antenna array elements are assumed to be
+located on the (x, y) plane, i.e. rz[n] = 0N.
+TABLE I
+THE DIMENSIONALITY OF THE VECTOR/MATRIX PARAMETERS
+USED IN THE MOBILITY MODELS
+The
+matrix
+G
+represents
+the
+overall
+transition
+matrix
+given by
+G =
+⎧
+⎪
+⎨
+⎪
+⎩
+IM⊗Gi
+rigid array
+
+Gxy,
+O2N×2M
+O2M×2N,
+IM⊗Gi
+
+ﬂexible array
+(38)
+Based on the above equations, the covariance matrix P[n] of
+the discrete time state vector b[n] is constructed as follows
+P[n] = GP[n −1]GT + R
+b
+b ∈RNdim×Ndim
+(39)
+where
+Ndim =
+
+2M
+rigid array
+2N + 2M
+ﬂexible array
+(40)
+and the perturbation matrix R
+b
+b is given as
+R
+b
+b =
+⎧
+⎪
+⎨
+⎪
+⎩
+IM⊗R
+bi
+bi
+rigid array
+
+R
+bxy
+bxy,
+O2N×2M
+O2M×2N,
+IM⊗R
+bi
+bi
+
+ﬂexible array
+(41)
+Table I provides the dimensionality of the various vector/
+matrix parameters used in the mobility models. The mobility
+models employed in this section can be seen as some repre-
+sentative examples but other mobility models may be used in
+this proposed framework.
+IV. TRACKING ALGORITHMS BASED ON
+SPATIOTEMPORAL STATE-SPACE MODEL
+In this section, based on the antenna array models pre-
+sented in Sections II and III, two tracking algorithms are
+proposed which belong to the Kalman family of techniques
+for non-linear “measurement” models. We will call them
+
+
+===== PAGE 7 =====
+7574
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+“arrayed-EKF” and “arrayed-UKF” as they are based on the
+integration of
+• the array signal model of Section II for both “rigid” and
+“ﬂexible” antenna arrays,
+• the mobility models of Section III, and
+• the EKF/UKF iterative theoretical tools.
+Based on the snapshot at Point-F in Figure 1, modelled by
+Equ 13, and the overall mobility model given by Equ 36, the
+spatiotemporal state-space model is constructed as follows
+b [n] = Gb [n −1] + b [n]
+(42)
+x [n] = H (b [n]) m [n] + n [n]
+(43)
+describing the dynamics of all users’ motion (Equ 42) and the
+vector signal received by the rigid or ﬂexible arrays (Equ 43).
+The
+two
+proposed
+algorithms
+are
+summarised
+in
+Tables II and III. Note that the notation has been simpliﬁed,
+by replacing the symbol index [n] with a subscript n and,
+thus, the following notation is employed in Tables II and III
+bn
+△= b [n] ∈RNdim×1
+(44a)
+Pn
+△= P[n] ∈RNdim×Ndim
+(44b)
+xn
+△= x [n] ∈CNNext×1
+(44c)
+mn
+△= m [n] ∈CM×1
+(44d)
+It is important to point out that, in the presentation of the
+two algorithms in these two tables, the selection of a common
+Kalman structure is deliberately maintained for better clariﬁ-
+cation of each step. However, in the arrayed-UKF, which is
+based on the square-root UKF, the state-vector b [n] of Equ 36
+and the non-linear “measurement” vector x [n] of Equ 43
+should be further processed to form two matrices Bn and X.
+In particular, the matrix Bn ∈RNdim×(2Ndim+1) can be formed
+as follows
+Bn =
+
+B1, B2, . . . , Bj, . . . , B2Ndim+1
+
+(45)
+= bn ⊗1T
+2Ndim+1 + [0Ndim, ηTn, −ηTn]
+(46)
+where
+• Bj is the j-th column of the matrix Bn which is known
+as the j-th “sigma point-vector”.
+• η is a scaling factor
+• Tn is an Ndim × 2Ndim matrix which is the Cholesky
+factorisation5 of the covariance matrix Pn of the state
+vector of Equ 36. That is
+Pn = TnTH
+n
+(47)
+Then, by applying the nonlinear function to these “sigma point
+vectors” the measurement
+matrix X ∈CNNext×(2Ndim+1) is
+formed, i.e.
+X =
+
+H (B1) mn, H (B2) mn, . . . , H
+
+B2Ndim+1
+
+mn
+
+(48)
+Thus, using the unscented transformation instead of the Jaco-
+bian matrix of the nonlinear measurement, and propagating the
+5The Cholesky factorisation of Pn is unique as Pn is a positive deﬁnite
+matrix.
+Cholesky factor Tn instead of the covariance of the estimate
+error Pn, the proposed arrayed-UKF algorithm is summarised
+in Table III.
+Note that in Table III, the matrices W(m) and W(c)
+are
+diagonal
+matrices
+whose
+diagonal
+values
+are
+the
+weights to compute the mean and the covariance of the
+measurement, respectively. These matrices have the following
+deﬁnitions:
+W(m) =
+1
+Ndim + μdiag
+
+μ
+1
+212Ndim
+ 
+(49)
+W(c) =
+1
+Ndim + μdiag
+
+β
+1
+212Ndim
+ 
+(50)
+where the scaling parameters μ and β are as follows
+μ = Ndim(α2 −1)
+(51)
+β = μ + (1 −α2 + ρ)(Ndim + μ)
+(52)
+with the constant α controling the spread of the “sigma point-
+vectors” around bn, and ρ compensating for the distribution
+of bn. Furthermore, the parameter η in Equ 46 is related to μ
+as follows
+η =
+!
+(Ndim + μ)
+(53)
+With reference to Table II and Table III, the initial state b0
+can be provided by a priori guess or pre-estimated by any
+kind of the DOA estimation approaches, such as the ML,
+LS, or subspace approaches. The initial covariance P0 can
+be set to γI2M where γ indicates the conﬁdence level in the
+accuracy of the initial estimates.
+V. COMPUTER SIMULATION STUDIES
+The performance of the proposed algorithms are evaluated
+in this section using computer simulation studies. The data
+symbol sequence transmitted by each user is assumed to be a
+random complex sequence of zero mean and unity variance.
+The weight-codes are gold-codes of ±1s of length Next = N c
+generated by modulo-two addition of two m-sequences
+described by the polynomial D3+D2+1 and D3+D+1. This
+implies that Next = N c = 7. The user tracking is assumed
+to be carried out over a time interval of 5000 spatiotemporal
+snapshots x [n] ∈CNNext×1 collected at Point-F in Figure 1.
+The continuous time model intensity for the azimuth-velocity
+(see Equ 29) is set to σ2
+θi = 1.1 × 10−8(deg /T )2, ∀i and
+the intensity of the perturbations for the array locations is
+set to σ2
+xy = 6.4 × 10−7(λ/T )2. The parameter γ of the
+initialization stage of the proposed algorithms is set to 10−6.
+The parameters used in Equs 51 and 52 are set to α = 10−4,
+and ρ = 2.
+A. Rigid Array Geometry
+For the rigid antenna array, the geometry is assumed
+(without any loss of generality) to be a grid planar array
+of 9 elements and its locations are shown in Figure 4.
+Furthermore, it is assumed that the array operates in the
+presence of 4 far-ﬁeld moving sources/users and their ini-
+tial angular velocities are assumed to be 0 deg /T which
+
+
+===== PAGE 8 =====
+TANG AND MANIKAS: MULTI DOA TRACKING USING RIGID AND FLEXIBLE ANTENNA ARRAYS
+7575
+TABLE II
+FIRST PROPOSED APPROACH (ARRAYED-EKF ALGORITHM)
+then change according to the velocity trajectory shown
+in Figure 5.
+Figure 6 shows an example of DOA trajectory tracking of
+four far ﬁeld moving sources using the proposed arrayed-EKF
+and arrayed-UKF approaches for SNR = 10 dB. In Figure 6,
+the tracking results of the “Source 2” between the 3700-th
+snapshot and the 3800-th snapshot (framed area) are zoomed
+to show the tracking performance using both approaches. It is
+clear that both approaches track the DOAs with high accuracy,
+especially the arrayed-UKF approach. Then, the performance
+of the proposed arrayed-EKF and arrayed-UKF approaches
+for all three cases of Equ 18 is examined using Monte Carlo
+simulation studies. The results are shown in Figure 7 where
+the Root Mean Square Error (RMSE) of the estimated azimuth
+angles is plotted as a function of the SNR for 500 Monte Carlo
+simulations, where in each simulation the error is averaged
+over the whole trajectory corresponding to 3000 snapshots.
+It is evident in Figure 7 that the proposed approaches with
+the extended manifold vector hi [n] = Si [n] ⊗wi have
+better source tracking accuracy over the whole SNR range
+than with the vectors hi [n] = Si [n] ⊗1Next and hi [n] =
+Si [n]. In addition, the arrayed-UKF approach outperforms the
+arrayed-EKF approach.
+Then, under the same simulation environment as in Figure 7,
+the proposed algorithms with the extended manifold vector
+hi [n] = Si [n] ⊗wi are compared with
+• the subspace tracking algorithm presented in [12] which
+employs an H-inﬁnity ﬁlter for estimating the noise sub-
+TABLE III
+SECOND PROPOSED APPROACH (ARRAYED-UKF ALGORITHM)
+space which is then used to track snapshot-by-snapshot
+the DOAs of multipaths,
+• the particle ﬁlter approach of [40], but integrated with
+the received array vector-signal model for both rigid and
+ﬂexible antenna arrays and the overall mobility model
+with the state vector of Equ 36. This particle ﬁlter will
+be referred here as “arrayed-PF”.
+The comparative results are shown in Figure 8 and it is evident
+that the proposed algorithms outperform both the subspace
+tracking and the “arrayed-PF”algorithms.
+Next the RMSE performance of the arrayed-UKF algorithm
+for the extended manifold vector hi [n] = Si [n]⊗wi is exam-
+ined. Figure 9 shows the RMSE of the estimated DOA angles
+as a function of the number of spatiotemporal snapshots using
+the proposed arrayed-UKF algorithm for different SNRs. Note
+that, in Figure 9a, the initial DOAs are assumed known, and
+in Figure 9b the initial DOAs are obtained from a random
+Gausian distribution with unity variance. The results show that
+the estimation error for different signal environments is small
+and remains constant over time, which illustrates the stability
+of the proposed arrayed-UKF approach. Overall, based on
+
+
+===== PAGE 9 =====
+7576
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+Fig. 4.
+Rigid array case: Grid planar array geometry of N = 9 antennas, and
+the Cartesian coordinates of the array elements. Note: for the ﬂexible array,
+this is the initial array geometry.
+Fig. 5.
+Rigid array case: the azimuthal velocity trajectories of four moving
+sources.
+Fig. 6.
+Rigid array geometry: True (solid red lines) and estimated (dashed lines) trajectories of four moving sources using the proposed arrayed-EKF (green
+lines) and arrayed-UKF (blue lines) approaches.
+Fig. 7.
+RMSE of the estimated source azimuth angles averaged over
+3000 spatiotemporal snapshot evaluations using the arrayed-EKF and the
+arrayed-UKF approaches for the three cases of Equ 18 (500 iterations).
+Fig. 8.
+Comparison of the proposed arrayed-EKF and arrayed-UKF algo-
+rithms with other algorithms (the subspace tracking [12] and an arrayed-PF
+algorithm based on [40] using 100 particles).
+
+
+===== PAGE 10 =====
+TANG AND MANIKAS: MULTI DOA TRACKING USING RIGID AND FLEXIBLE ANTENNA ARRAYS
+7577
+Fig. 9.
+RMSE of the estimated source azimuth angles versus number of spatiotemporal snapshots using the arrayed-UKF approach with the extended manifold
+vector hi [n] = Si [n] ⊗wi under different SNR levels (1000 iterations).
+the results of both Figures 7 and 9, it can be concluded
+that the arrayed-UKF algorithm offers signiﬁcant tracking
+accuracy over the SNR range, which indicates its robustness
+to noise.
+B. Flexible Array Geometry
+For the ﬂexible antenna array, the initial geometry is
+assumed to be also given by Figure 4 but then the geometry
+will change randomly and a representative trajectory of the
+9 antennas relative to the array reference point is shown
+in Figure 10. The ﬁfth antenna array element is assumed to
+be the array reference6 point. For this trajectory, the angular
+velocity for each ﬂexible array element is assumed to be ωj =
+0.01(deg /T ), ∀j. The angular velocities of the sources are
+shown in Figure 11.
+Figure 12 shows another example of DOA trajectory track-
+ing of four moving sources using the proposed arrayed-EKF
+and arrayed-UKF approaches with a ﬂexible array geometry
+for SNR = 10 dB. The tracking results of “Source 1” between
+the 3700-th snapshot and the 3800-th snapshot are zoomed
+in. It can be observed that the DOA tracking works well
+with a ﬂexible array. The estimated array locations for
+n = 3000 and 5000 by the two algorithms are illustrated
+in Figures 13 and 14, respectively. Furthermore, the trajecto-
+ries of the ﬂexible array locations and the trajectories of the
+estimated array locations using the arrayed-UKF algorithm are
+shown in Figure 15. It is clear that the array geometry changes
+dramatically with time and its instantaneous array locations are
+successfully estimated by the proposed approaches.
+Finally, for the ﬂexible array case, 500 Monte-Carlo sim-
+ulations have been carried out under the same simulation
+environment as used in Figure 12. The two proposed algo-
+rithms are also compared with the “arrayed-PF” approach
+(using 150 particles) for the ﬂexible array case under the same
+simulation environment. Note that the “subspace tracking”
+algorithm [12] examined in Figure 8 is not able to work
+6The array reference point also moves but this motion is not shown (only
+the relative motion with respect to this reference point is shown).
+in the case of ﬂexible arrays. The results are shown in
+Figures 16 and 17 where the RMSE of the estimated array
+locations (Figure 16) and azimuth angles (Figure 17) are plot-
+ted as a function of the SNR where in each simulation the error
+over the DOA trajectory of 3000 snapshots is averaged for
+each moving source. These ﬁgures indicate that the proposed
+arrayed-UKF algorithm with the extended manifold vector
+hi [n] = Si [n]⊗wi has superior tracking accuracy in both the
+estimated array locations and the estimated azimuth angles.
+Finally, it can be seen from Figures 6 and 12 that the
+proposed algorithms do not suffer from the data association
+problem when the source trajectories cross each other. This
+is because of the use of the spatiotemporal state space model
+which provides a one-to-one mapping between the sources and
+their manifold vectors.
+VI. CONCLUSION
+In this paper, a theoretical framework is presented for track-
+ing far-ﬁeld sources in an non-stationary environment using
+both rigid and ﬂexible antenna array geometries. The proposed
+multi-source tracking framework is based on the integration of
+a spatiotemporal state-space modelling, the extended manifold
+concept and EKF/UKF theoretical iterative tools, for both
+rigid and ﬂexible array geometries. The performance of the
+proposed approaches was examined using computer simula-
+tion studies under various noise levels and compared with a
+subspace tracking and a particle ﬁlter algorithms. The results
+indicate that the arrayed-UKF algorithm has better tracking
+performance than the other algorithms for both rigid and
+ﬂexible array geometries, while it shows robustness to noisy
+environments.
+For further extension of the current work, antenna arrays
+may be deployed at each transmitter of Figure 1 (i.e. MIMO).
+In such system, the manifold vector Si [n] in Equ 18 can be
+replaced by S
+∗
+i [n] ⊗Si [n], which is known as “virtual array
+manifold”, where Si [n] denotes the manifold vector of the
+transmitter. In this case, the tracking performance could be
+further improved.
+
+
+===== PAGE 11 =====
+7578
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+Fig. 10.
+Flexible array geometry: a representative trajectory of the ﬂex-
+ible array locations. The instantaneous array locations are plotted every
+100 snapshots.
+Fig. 11. Flexible array case: the azimuthal velocity trajectories of four moving
+sources.
+Fig. 12.
+Flexible array geometry: True (solid red lines) and estimated (dashed lines) trajectories of the moving sources using the proposed arrayed-EKF
+(green lines) and arrayed-UKF approaches (blue lines).
+Fig. 13.
+Array geometry at n = 3000 showing the initial array loca-
+tions (circle), the true array locations (square) and the estimated array locations
+using the arrayed-UKF (diamond) and the arrayed-EKF (cross).
+Fig. 14.
+Array geometry at n = 5000 showing the initial array locations
+(circle), the true array locations (square) and the estimated array locations by
+the arrayed-UKF (diamond) and the arrayed-EKF (cross).
+
+
+===== PAGE 12 =====
+TANG AND MANIKAS: MULTI DOA TRACKING USING RIGID AND FLEXIBLE ANTENNA ARRAYS
+7579
+Fig. 15.
+Trajectories of the ﬂexible array locations over 5000 snapshots. The instantaneous array locations are plotted every 100 snapshots.
+Fig. 16.
+RMSE of the estimated array locations averaged over 3000 spatiotemporal snapshot evaluations using the arrayed-EKF approach and the arrayed-UKF
+approach for the three cases of Equ 18, and the “arrayed-PF” approach, as a function of SNR (500 iterations).
+Fig. 17.
+RMSE of the estimated source azimuth angles with the ﬂexible array averaged over 3000 spatiotemporal snapshot evaluations using the arrayed-EKF
+approach and the arrayed-UKF approach for the three cases of Equ 18, and the “arrayed-PF” approach, as a function of SNR (500 iterations).
+REFERENCES
+[1] A. Masnadi-Shirazi and B. D. Rao, “A covariance-based superposi-
+tional CPHD ﬁlter for multisource DOA tracking,” IEEE Trans. Signal
+Process., vol. 66, no. 2, pp. 309–323, Jan. 2018.
+[2] A. Panahi and M. Viberg, “Fast LASSO based DOA tracking,” in
+Proc. IEEE Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process.
+(CAMSAP), Dec. 2011, pp. 397–400.
+[3] G. Wang, J. Xin, J. Wang, N. Zheng, and A. Sano, “Subspace-based two-
+dimensional direction estimation and tracking of multiple targets,” IEEE
+Trans. Aerosp. Electron. Syst., vol. 51, no. 2, pp. 1386–1402, Apr. 2015.
+[4] T. Gustafsson and C. S. MacInnes, “A class of subspace track-
+ing
+algorithms
+based
+on
+approximation
+of
+the
+noise-subspace,”
+IEEE
+Trans.
+Signal
+Process.,
+vol.
+48,
+no.
+11,
+pp. 3231–3235,
+Nov. 2000.
+
+
+===== PAGE 13 =====
+7580
+IEEE TRANSACTIONS ON WIRELESS COMMUNICATIONS, VOL. 20, NO. 11, NOVEMBER 2021
+[5] G. W. Stewart, “An updating algorithm for subspace tracking,” IEEE
+Trans. Signal Process., vol. 40, no. 6, pp. 1535–1541, Jun. 1992.
+[6] E. S. Baker and R. D. DeGroat, “A correlation-based subspace tracking
+algorithm,” IEEE Trans. Signal Process., vol. 46, no. 11, pp. 3112–3116,
+Nov. 1998.
+[7] R. Schmidt, “Multiple emitter location and signal parameter estima-
+tion,” IEEE Trans. Antennas Propag., vol. AP-34, no. 3, pp. 276–280,
+Mar. 1986.
+[8] N. W. Whinnett and A. Manikas, “High-resolution array processing
+methods for joint direction-velocity estimation,” IEE Proc. F Radar
+Signal Process., vol. 140, no. 2, pp. 114–122, Apr. 1993.
+[9] C. R. Sastry, E. W. Kamen, and M. Simaan, “An efﬁcient algorithm for
+tracking the angles of arrival of moving targets,” IEEE Trans. Signal
+Process., vol. 39, no. 1, pp. 242–246, Jan. 1991.
+[10] C. K. Sword, M. Simaan, and E. W. Kamen, “Multiple target angle
+tracking using sensor array outputs,” IEEE Trans. Aerosp. Electron. Syst.,
+vol. 26, no. 2, pp. 367–373, Mar. 1990.
+[11] Y. Zhou, P. C. Yip, and H. Leung, “Tracking the direction-of-arrival
+of multiple moving targets by passive arrays: Algorithm,” IEEE Trans.
+Signal Process., vol. 47, no. 10, pp. 2655–2666, Oct. 1999.
+[12] A. Manikas and M. Sethi, “Joint multipath delay and direction tracking
+for CDMA array systems,” in Proc. Veh. Technol. Conference. IEEE
+55th Veh. Technol. Conference. VTC Spring, May 2002, pp. 175–179.
+[13] M. Orton and W. Fitzgerald, “A Bayesian approach to tracking multiple
+targets using sensor arrays and particle ﬁlters,” IEEE Trans. Signal
+Process., vol. 50, no. 2, pp. 216–223, Feb. 2002.
+[14] V. Cevher and J. H. McClellan, “General direction-of-arrival tracking
+with acoustic nodes,” IEEE Trans. Signal Process., vol. 53, no. 1,
+pp. 1–12, Jan. 2005.
+[15] P. Chavali and A. Nehorai, “Scheduling and power allocation in a
+cognitive radar network for multiple-target tracking,” IEEE Trans. Signal
+Process., vol. 60, no. 2, pp. 715–729, Feb. 2012.
+[16] R. Niu, R. S. Blum, P. K. Varshney, and A. L. Drozd, “Target
+localization and tracking in noncoherent multiple-input multiple-output
+radar systems,” IEEE Trans. Aerosp. Electron. Syst., vol. 48, no. 2,
+pp. 1466–1489, Apr. 2012.
+[17] H. Yan and H. H. Fan, “Signal-selective DOA tracking for wideband
+cyclostationary sources,” IEEE Trans. Signal Process., vol. 55, no. 5,
+pp. 2007–2015, May 2007.
+[18] C. R. Rao, C. R. Sastry, and B. Zhou, “Tracking the direction of arrival
+of multiple moving targets,” IEEE Trans. Signal Process., vol. 42, no. 5,
+pp. 1133–1144, May 1994.
+[19] M. Keche, A. Ouamri, I. Harrison, and M. S. Woolfson, “Performance
+evaluation of an algorithm for multiple target angle tracking,” IEE Proc.-
+Radar, Sonar Navigat., vol. 144, no. 5, pp. 252–258, Oct. 1997.
+[20] S. B. Park, C. S. Ryu, and K. K. Lee, “Multiple target angle tracking
+algorithm using predicted angles,” IEEE Trans. Aerosp. Electron. Syst.,
+vol. 30, no. 2, pp. 643–648, Apr. 1994.
+[21] B. Liao, Z.-G. Zhang, and S.-C. Chan, “DOA estimation and tracking
+of ULAs with mutual coupling,” IEEE Trans. Aerosp. Electron. Syst.,
+vol. 48, no. 1, pp. 891–905, Jan. 2012.
+[22] Y. I. Kamil and A. Manikas, “Multisource spatiotemporal tracking
+using sparse large aperture arrays,” IEEE Trans. Aerosp. Electron. Syst.,
+vol. 53, no. 2, pp. 837–853, Apr. 2017.
+[23] Z. Tang and A. Manikas, “Direction-of-arrival tracking of multiple fast-
+moving sources in antenna array based access networks,” in Proc. IEEE
+Int. Conf. Commun. (ICC), Jun. 2020, pp. 1–6.
+[24] S.-Y. Hou, H.-S. Hung, and T.-S. Kao, “Extended Kalman particle ﬁlter
+angle tracking (EKPF-AT) algorithm for tracking multiple targets,” in
+Proc. Int. Conf. Syst. Sci. Eng., Jul. 2010, pp. 216–220.
+[25] M. Koivisto, M. Costa, A. Hakkarainen, K. Leppanen, and M. Valkama,
+“Joint 3D positioning and network synchronization in 5G ultra-dense
+networks using UKF and EKF,” in Proc. IEEE Globecom Workshops
+(GC Wkshps), Dec. 2016, pp. 1–7.
+[26] Y. Ge, Z. Zeng, T. Zhang, and Y. Sun, “Unscented Kalman ﬁlter
+based beam tracking for UAV-enabled millimeter wave massive MIMO
+systems,” in Proc. 16th Int. Symp. Wireless Commun. Syst. (ISWCS),
+Aug. 2019, pp. 260–264.
+[27] R. Van der Merwe and E. A. Wan, “The square-root unscented Kalman
+ﬁlter for state and parameter-estimation,” in Proc. IEEE Int. Conf.
+Acoust., Speech, Signal Process., vol. 6, May 2001, pp. 3461–3464.
+[28] S. J. Julier and J. K. Uhlmann, “Unscented ﬁltering and nonlinear
+estimation,” Proc. IEEE, vol. 92, no. 3, pp. 401–422, Mar. 2004.
+[29] Z.-M. Liu, “Direction-of-arrival estimation with time-varying arrays via
+Bayesian multitask learning,” IEEE Trans. Veh. Technol., vol. 63, no. 8,
+pp. 3762–3773, Oct. 2014.
+[30] V. Sridhar and A. Manikas, “Target tracking with a ﬂexible UAV cluster
+array,” in Proc. IEEE Globecom Workshops (GC Wkshps), Dec. 2016,
+pp. 1–6.
+[31] A. Zeira and B. Friedlander, “Direction ﬁnding with time-varying
+arrays,” IEEE Trans. Signal Process., vol. 43, no. 4, pp. 927–937,
+Apr. 1995.
+[32] A. Zeira and B. Friedlander, “On the performance of direction ﬁnding
+with time-varying arrays,” Signal Process., vol. 43, no. 2, pp. 133–147,
+May 1995.
+[33] D. W. Rieken and D. Fuhrmann, “Constrained maximum-likelihood
+covariance estimation for time-varying sensor arrays,” in Proc. 9th Annu.
+Adapt. Sensor Array Process. Workshop, Jan. 2000, pp. 43–48.
+[34] B. Friedlander and A. Zeira, “Eigenstructure-based algorithms for direc-
+tion ﬁnding with time-varying arrays,” IEEE Trans. Aerosp. Electron.
+Syst., vol. 32, no. 2, pp. 689–701, Apr. 1996.
+[35] D. W. Rieken and D. R. Fuhrmann, “Generalizing MUSIC and MVDR
+for multiple noncoherent arrays,” IEEE Trans. Signal Process., vol. 52,
+no. 9, pp. 2396–2406, Sep. 2004.
+[36] A. Guerra, D. Dardari, and P. M. Djuric, “Dynamic radar network of
+UAVs: A joint navigation and tracking approach,” IEEE Access, vol. 8,
+pp. 116454–116469, 2020.
+[37] J. M. Goldberg, “Joint direction-of-arrival and array-shape tracking
+for multiple moving targets,” IEEE J. Ocean. Eng., vol. 23, no. 2,
+pp. 118–126, Apr. 1998.
+[38] W. D. Addison and M. D. MacLeod, “Non-stationary Bayesian direction
+of arrival estimation with drifting sensor locations,” in Proc. 16th Eur.
+Signal Process. Conf., Aug. 2008, pp. 1–5.
+[39] G. Efstathopoulos and A. Manikas, “Extended array manifolds: Func-
+tions of array manifolds,” IEEE Trans. Signal Process., vol. 59, no. 7,
+pp. 3272–3287, Jul. 2011.
+[40] M. S. Arulampalam, S. Maskell, N. Gordon, and T. Clapp, “A tutorial
+on particle ﬁlters for online nonlinear/non-Gaussian Bayesian tracking,”
+IEEE Trans. Signal Process., vol. 50, no. 2, pp. 174–188, Feb. 2002.
+Zhuqing Tang (Student Member, IEEE) received
+the
+B.Eng.
+degree
+(Hons.)
+in
+Electronic
+and
+Communication Engineering from the University of
+Liverpool, U.K., in 2016, and the M.Sc. degree in
+Communications and Signal Processing from Impe-
+rial College London, U.K., in 2017, where she is
+currently pursuing the Ph.D. degree in Communi-
+cations and Signal Processing with the Department
+of Electrical and Electronic Engineering, under the
+supervision of Prof. A. Manikas.
+Her research interests include array communica-
+tions, array signal processing, ﬂexible array signal processing, beamforming,
+and source tracking.
+Athanassios Manikas holds the Chair of Commu-
+nications and Array Processing with the Department
+of Electrical and Electronic Engineering, Imperial
+College London. He is a fellow of the Institution
+of Engineering and Technology (IET, formerly
+IEE) and the Institute of Mathematics and its
+Applications (IMA). He is also an Associate Editor
+of the IEEE TRANSACTIONS ON AEROSPACE AND
+ELECTRONIC SYSTEMS (Signal Processing and
+Aerospace Systems) and he was on the Editorial
+Board of the IET Signal Processing from 2007 to
+2020. He has held a number of research consultancies for the EU, industry,
+and government organizations, and he was the Technical Lead/Director of the
+University Defence Technology Centre in signal processing (supported by the
+Ministry of Defence U.K., and EPSRC–incorporating 12 British universities),
+from 2008 to 2013. He is also a member of the IEEE COMSOC, Signal
+Processing and Aerospace Societies, and has had various technical chairs at
+international conferences, including the Technical Program Committee Chair
+of the ﬂagship IEEE International Conference on Communications in 2015
+(IEEE ICC 2015, London). In 2016 and 2017, he was an IEEE ComSoc
+Distinguished Lecturer, and in 2017 and 2018, he was the Chair of the
+IEEE Communications Technical Committee on Transmission, Access and
+Optical Systems (TAOS). He has published an extensive set of journal and
+conference articles in the areas of wireless communications, radar, antenna
+arrays, and array signal processing, and is the author of a book (monograph)
+entitled Differential Geometry in Array Processing. He has served as an
+Expert Witness in the High Court of Justice in U.K., and Malaysia, and as
+a Panel Member (or External Assessor) in various international academies,
+including the Royal Society’s International Fellowship Committee and the
+European Research Council (ERC). He is also leading a strong group of
+researchers at Imperial College London and has supervised successfully
+more than 50 Ph.D. students and more than 200 master’s projects. He is also
+a member of the New York Academy of Science and a Chartered Engineer.

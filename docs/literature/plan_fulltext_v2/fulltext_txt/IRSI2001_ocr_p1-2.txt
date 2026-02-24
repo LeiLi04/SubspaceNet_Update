@@ -1,0 +1,102 @@
+OCR_SOURCE: /Users/lilei/PycharmProjects/SubspaceNet_Update/docs/literature/fulltext/subscription/IRSI2001.pdf
+OCR_PAGES: 1..2
+
+
+
+===== OCR PAGE 1 =====
+AN EFFICIENT ALGORITHM FOR PASSIVE
+DOA TRACKING USING UNSCENTED KALMAN FILTER
+
+C.VIJAY KUMAR Dr. R.RAJAGOPAL C.CHANDRASEKARAN
+AND N.RAVI KIRAN
+
+E.C.E. Dept., R.E. C C.R.L., BEL Hello Soft inc
+Tiruchirappalli- 620015 Bangalore -13 Hyderabad
+Ph: 0431 ~ 500727 Ph:080 -8385905 Ph:040- 6502272
+
+Cvkumar@rect.ernet.in tr@cribel.emet.in c_chandrasekaran@yahoo.com
+. nallaravi@yahoo.com
+
+ABSTRACT
+
+Tracking of multiple targets by using only the bearing information is an important
+problem in passive sensing scenarios such as passive radar or infrared seeker
+applications. In this paper, a.new algorithm is presented to adaptively estimate the
+AOAs of multiple moving targets when Linear Equispace Array (LES) is’ used for making
+the measurements. This algorithm is based on an extension of Differential MUSIC
+method. It can also discriminate sources and their multi-paths. The results obtained by
+this algorithm are then applied as input to a Non - Linear State Linear Measurements
+Unscented Kalman filter. The Unscented Kalman filter also adapts to maneuver. This
+algorithm gives 50percent reduction in the computation and memory requirements over
+unscented filter based tracker. Simulation results show the good performance of the
+filter over Unscented filter based tracker.
+
+1. INTRODUCTION
+
+Direction of Arrival (DOA) estimation in a passive radar scenario has attracted
+immense interest among researchers in the last two decades. Among the high
+resolution DOA estimation methods proposed, those based on the estimation of noise
+subspace / signal subspace vectors, in order to finally estimate the DOAs of the sources
+become very popular owing to their superior resolution capabilities and better bias
+performances. Notable among the Eigen structure methods is the MUSIC algorithm
+proposed by Schmidt [1]. This algorithm assumes that the source signals are at the
+most partially correlated and additive noise is spatially white.
+
+In realistic passive radar scenario one may encounter multiple sources, which
+are highly or fully coherent, and an additive noise field corrupting the signal, which is
+directional and spatially correlated. The Differential Music Algorithm proposed by
+Rajagopal and Rao [2] can be applied to estimate the DOAs of these sources. This
+method has been shown to enjoy many advantages over conventional MUSIC. Using
+Differential MUSIC DOAs of correlated multipath arrivals could be estimated, but the
+source and its specular arrivals cannot be distinguished. M.Zoltowski and Haber
+extended the conventional MUSIC algorithm to discriminate between the direct path
+
+rational Radar Symposium India - 2001 357
+
+
+
+===== OCR PAGE 2 =====
+arrival and specular path arrival. It can give faithful results only up to —5 dB. But the
+extended Differential MUSIC algorithm proposed here can work up to — 20 dB.
+
+A major disadvantage of eigen structure methods is their computational load. In
+order to reduce the computational complexity, Q-R decomposition of the difference
+matrix was applied in [3]. However this method is also a ‘block’ processing method. In
+order to make the DOA estimation algorithms adaptive, Yang and Kaveh [4], proposed
+updating techniques. These algorithms have still too high computational complexity and
+are not easily mapped into VLSI architectures (like systolic arrays) for real time
+applications. Hwang and Wei [5] have proposed a rank revealing QR updating
+procedure for DOA tracking. Though this method reduces the computational load
+considerably it cannot be applied to the generalized passive Sonar/Radar environment
+mentioned above. Rajagopal and Vijay kumar [6] have developed a dynamic and
+adaptive DOA estimation algorithm by using a Q-R updating procedure as and when
+new data arrive. Passive tracking of targets using angle only information is a classical
+navigation problem and has been extensively studied for naval applications [8-13] and
+for passive homing missile application [14]. Major efforts associated with the naval
+applications have been directed to analyze the observability of the tracking system and
+to find the proper filter structures for target state estimation. In all these works, the
+bearing information is assumed to be available through measurements made by some
+means. No effort has been made to tackle the measurement problem along with the
+tracking problem. KVS babu et.al. [15,16] and R. Rajagopal and Vijay Kumar Chakka [6]
+addressed this problem, but it is not possible to discriminate sources and their multi
+paths and also it is not possible for tracking of maneuverable targets. C.Vijaykumar and
+Rajagopal proposed [20] a unified procedure, which combines the DOA estimation and
+tracking using Unscented filter based tracker.This algorithm has high computational and
+memory requirements. This paper presents a computationally efficient algorithm. This
+Unsecented Kalman filter algorithm utilises 50percent less data memory space and 50
+percent reduction in the computation without reduction in performance. For adaptive
+DOA estimation, the Differential MUSIC algorithm is used. The results obtained are then
+applied as input to a Non-Linear State Linear Measurement Unscented Kaiman filter.
+This filter avoids the derivation of the Jacobian matrices for linearizing the nonlinear
+kinematics model. The Unscented Kalman filter based tracker uses normalized
+innovation square (NIS) criterion to detect maneuver and accounts for it by continuous
+process noise level adjustment. Simulation results show the good performance of the
+filter over the Unscented filter based tracker [20]
+
+This paper is organized into seven sections. Section 2 describes adaptive DOA
+Estimation. Section 3 presents Non Linear state Linear measurement for DOA Tracking.
+Section 4 presents DOA tracking using Unscented Kaiman filter and section 5 presents
+the simulation results and performance comparisons with Unscented filter based tracker
+[20] and finally conclusions are presented in section 6.
+
+358 International Radar Symposium India - 2007

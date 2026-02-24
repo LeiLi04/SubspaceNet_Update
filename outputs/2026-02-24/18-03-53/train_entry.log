@@ -1,0 +1,8 @@
+[2026-02-24 18:03:53,115][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-24 18:03:53,154][src.trainer_module.simulation.runner][INFO] - Simulation initialized with output directory: /Users/lilei/PycharmProjects/SubspaceNet_Update
+[2026-02-24 18:03:53,192][src.trainer_module.simulation.runner][INFO] - Trajectory mode: Disabled
+[2026-02-24 18:03:53,194][src.trainer_module.simulation.runner][INFO] - Starting training pipeline
+[2026-02-24 18:03:53,194][src.trainer_module.simulation.runner][INFO] - Using instantiated Lightning datamodule/trainer; skipping legacy data pipeline
+[2026-02-24 18:03:53,194][src.trainer_module.simulation.runner][INFO] - Skipping training (simulation.train_model=False)
+[2026-02-24 18:03:53,195][src.trainer_module.simulation.eval_pipeline][INFO] - Saving results to /Users/lilei/PycharmProjects/SubspaceNet_Update
+[2026-02-24 18:03:53,195][SubspaceNet.hydra][INFO] - Hydra run finished: success

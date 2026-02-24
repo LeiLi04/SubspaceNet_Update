@@ -1,40 +1,15 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
 env/
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 
 # Experiment results
 experiments/results/
-outputs/*
-!outputs/checkpoints/.gitkeep
-!outputs/logs/.gitkeep
-!outputs/figures/.gitkeep
-experiments/debug_logs/git
-# Models
-*.pth
-*.pt
-*.pkl
-
 # Dataset files
-data/datasets/
 *.h5
 
 # Distribution / packaging
@@ -61,19 +36,5 @@ Thumbs.db
 # Local runtime cache
 .cache/
 
-# Literature review (avoid committing full texts / subscription exports)
-docs/literature/fulltext/
-docs/literature/fulltext_by_theme/
-docs/literature/exports/
-docs/literature/plan_*/text/
-docs/literature/plan_*/fulltext_txt/
-docs/literature/plan_*/ocr_tables/
-docs/literature/plan_*/ocr_figures/
-docs/literature/plan_*/arxiv_text/
-docs/literature/plan_*/**/*.pdf
-docs/literature/plan_*/**/*.png
-docs/literature/plan_*/**/*.jpg
-docs/literature/plan_*/**/*.jpeg
-
-# Reference PDFs (keep out of git)
-docs/reference_original/*.pdf
+# Local agent worktrees and logs
+.claude/worktrees/

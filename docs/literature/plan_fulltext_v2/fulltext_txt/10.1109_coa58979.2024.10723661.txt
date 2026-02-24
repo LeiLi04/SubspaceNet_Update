@@ -1,0 +1,611 @@
+
+
+===== PAGE 1 =====
+ 
+Direction-of-Arrival Tracking Loop for Single-
+Vector Hydrophone 
+ 
+Xinyuan Ou 
+School of Future Technology 
+Harbin Engineering University 
+Harbin, China 
+ 
+ouxinyuan@hrbeu.edu.cn 
+ 
+Zhichao Jiang 
+College of Underwater Acoustic 
+Engineering 
+Harbin Engineering University 
+Harbin, China 
+20170531jzc@hrbeu.edu.cn 
+ Xiao Han 
+College of Underwater Acoustic 
+Engineering 
+Harbin Engineering University 
+Harbin, China 
+hanxiao1322@hrbeu.edu.cn 
+Abstract—In dynamic scenarios, traditional single-vector 
+hydrophone DOA estimation methods suffer from low accuracy. 
+In this study, for the first time, the concept of a single-vector 
+hydrophone DOA tracking loop is introduced. It employs an 
+average intensity estimator or an active average intensity 
+estimator as the phase discriminator and utilizes a second-order 
+phase-locked loop to dynamically track the incoming direction of 
+the signal. For the optimal synthesis of the velocity, the output of 
+the phase discriminator in the phase-locked loop is utilized. 
+Computer simulation and analysis confirm the effectiveness of 
+this approach, revealing accurate DOA tracking and optimal 
+velocity channel combining in dynamic environments. 
+Keywords—vector hydrophone, direction-of-arrival, phase-
+locked loop 
+I. INTRODUCTION 
+The complexity and variability of the underwater acoustic 
+channel 
+show 
+significant 
+challenges 
+for 
+underwater 
+communication and measurement. A single-vector hydrophone 
+(SVH) comprises an omnidirectional pressure sensor and 
+dipole-directional particle velocity (acceleration) sensors. It 
+can simultaneously measure the sound pressure and particle 
+velocity at a specific point in the sound field. A single SVH 
+can estimate the direction of arrival (DOA) of a sound source 
+and provide good spatial directivity. By utilizing the DOA 
+estimation from the signal, the pressure and velocity outputs of 
+the vector hydrophone can be combined by proper weights to 
+achieve spatial gains of 4.8 to 6 dB in an isotropic noise field 
+[1]. 
+Several options for DOA estimation are found in the 
+literature [2, 3], including average intensity estimator, complex 
+intensity estimator, and active average intensity estimator. The 
+frequency-domain acoustic intensity method, also known as the 
+cross-spectrum method, represents the time-domain acoustic 
+intensity in the frequency domain. Its advantage lies in the 
+ability to estimate the DOA of multiple targets with distinct 
+spectral characteristics within a given bandwidth. It performs 
+well in estimating the DOA of wideband signals such as ship-
+radiated noise. Yin [4] proposed an active average intensity 
+estimator algorithm for CDMA underwater communication 
+with an SVH. By utilizing the excellent autocorrelation and 
+cross-correlation properties of the pseudo-random sequence 
+code, the algorithm can simultaneously estimate the DOAs of 
+multiple users in the same frequency band, enabling directional 
+communication and increasing the number of users. 
+The aforementioned SVH DOA estimation methods are 
+based on batch processing, where DOA estimation is 
+performed in segments and then electronic rotation is utilized 
+to form velocity combinations. These static estimation methods 
+do not utilize historical data and cannot achieve continuous 
+tracking. In practical applications, when the receiving end 
+rotates on the water surface or there is relative motion between 
+the transmitter and receiver, the DOA of the communication 
+target will change over time, which limits the performance of 
+DOA estimation methods and results in low accuracy in 
+dynamic scenarios. To address this issue, some algorithms 
+have been proposed, like Kalman filtering and particle filtering 
+[5]. However, these algorithms contain matrix operations and 
+are too complicated to be implemented in real time. 
+This study proposes an SVH DOA estimation method 
+based on a phase-locked loop (PLL). It utilizes an average 
+intensity estimator or active average intensity estimator as the 
+phase discriminator and employs a second-order PLL to 
+dynamically track the incoming direction of the signal. In the 
+meantime, the in-phase branch of the phase discriminator 
+outputs the optimal combination of velocity channels. This 
+method has low computational complexity and can track the 
+signal's direction in real time. 
+II. MEASUREMENT MODEL 
+Under far-field conditions, neglecting the differences in 
+sensitivity between the pressure and velocity channels of the 
+vector sensor, the output of a two-dimensional SVH can be 
+represented in the following form: 
+ቐ
+𝑝(𝑡) = 𝑥(𝑡) + 𝑛௣(𝑡)
+𝑣௫(𝑡) = 𝑥(𝑡)𝑐𝑜𝑠𝜃+ 𝑛௫(𝑡)
+𝑣௬(𝑡) = 𝑥(𝑡)𝑠𝑖𝑛𝜃+ 𝑛௬(𝑡)
+                (1) 
+where 
+2024 OES China Ocean Acoustics (COA) | 979-8-3503-4029-7/24/$31.00 ©2024 IEEE | DOI: 10.1109/COA58979.2024.10723661
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+ 𝑝(𝑡) represents the received sound pressure signal by 
+the SVH. 
+ 𝑥(𝑡)  =  𝑠(𝑡) ⊗ ℎ(𝑡) represents the incoming signal, 
+where 𝑠(𝑡) is the transmitted signal from the source, 
+ ℎ(𝑡) is the channel impulse response, and ⊗ stands for 
+time convolution. 
+ 𝑣௫(𝑡) and 𝑣௬(𝑡) represent the received velocity signals 
+along the x-axis and y-axis, respectively. 
+ 𝜃 denotes the azimuth angle of the signal arrival 
+direction, with 0 degrees defined as the positive x-axis. 
+ 𝑛௣(𝑡), 𝑛௫(𝑡), and 𝑛௬(𝑡)are mutually independent white 
+noises with variances of 𝜎௣
+ଶ, 𝜎௩௫
+ଶ, and 𝜎௩௬
+ଶ, respectively, 
+satisfying the following relationships [6]: 
+𝜎௣
+ଶ= 2𝜎௩௫
+ଶ= 2𝜎௩௬
+ଶ= 𝜎௡
+ଶ. 
+ 
+(2) 
+In (2), 𝜎௡
+ଶ is defined as the power of environmental noise, 
+can be modeled as follows: 
+𝜎௡
+ଶ= 𝐵𝑁଴= 𝑓௦௔௠௣𝑁଴2
+⁄ , #(3)
+ 
+where 𝑁଴ represents the noise power spectral density, 𝑓௦௔௠௣ 
+represents the sampling frequency of the hydrophone, and 𝐵 
+represents the bandwidth of the noise. 
+Therefore, when only isotropic noise is present, the 
+covariance matrix of the three channels of the SVH is given by 
+[6] 
+𝑹௡= ൦
+𝑣𝑎𝑟(𝑝)         𝑐𝑜𝑣(𝑝, 𝑣௫)    𝑐𝑜𝑣൫𝑝, 𝑣௬൯
+𝑐𝑜𝑣(𝑣௫, 𝑝)     𝑣𝑎𝑟(𝑣௫)        𝑐𝑜𝑣൫𝑣௫, 𝑣௬൯
+𝑐𝑜𝑣൫𝑣௬, 𝑝൯    𝑐𝑜𝑣൫𝑣௬, 𝑣௫൯       𝑣𝑎𝑟൫𝑣௬൯
+൪ 
+= ൦
+1   0   0
+0  
+ଵ
+ଶ   0
+0   0   
+ଵ
+ଶ
+൪𝜎௡
+ଶ.                                                      (4) 
+When the SVH receives signals without any noise, the 
+signals of the three channels can be represented in matrix form 
+as follows: 
+𝑿(𝑡) = ቎
+𝑝(𝑡)
+𝑣௫(𝑡)
+𝑣௬(𝑡)
+቏= ൥
+1
+𝑐𝑜𝑠𝜃
+𝑠𝑖𝑛𝜃
+൩𝑥(𝑡) = 𝑨(𝜃)𝑥(𝑡). #(5)
+ 
+In the equation, 𝑨(𝜃) represents the signal steering vector, is 
+given as follows: 
+𝑨(𝜃) = ൥
+1
+𝑐𝑜𝑠𝜃
+𝑠𝑖𝑛𝜃
+൩.                                     (6) 
+Therefore, when the SVH receives signals without any 
+noise, the covariance matrix of the three channels of the SVH 
+is given by [6] 
+𝑹௦= 1
+𝑇න𝑿(𝑡)𝑿்(𝑡)𝑑𝑡
+்
+ 
+= 1
+𝑇න𝑨(𝜃)𝑨𝑻(𝜃)𝑥(𝑡)𝑥(𝑡)𝑑𝑡
+்
+ 
+= 𝑨(𝜃)𝑨𝑻(𝜃) ∙1
+𝑇න𝑥(𝑡)𝑥(𝑡)𝑑𝑡
+்
+ 
+= ൥
+1           𝑐𝑜𝑠𝜃            𝑠𝑖𝑛𝜃 
+𝑐𝑜𝑠𝜃      cosଶ𝜃      𝑐𝑜𝑠𝜃𝑠𝑖𝑛𝜃
+𝑠𝑖𝑛𝜃   𝑠𝑖𝑛𝜃𝑐𝑜𝑠𝜃     sinଶ𝜃
+൩𝜎௦
+ଶ. #(7)
+ 
+In (7), 𝜎௦
+ଶ represents the power of the signal received by the 
+hydrophone, and T represents the integration time. 
+𝜎௦
+ଶ= 1
+𝑇න𝑥(𝑡)𝑥(𝑡)𝑑𝑡
+்
+#(8)
+ 
+III. ALGORITHM 
+Unlike the currently open-loop direction estimation 
+algorithms, the method proposed in this study is a closed-loop 
+estimation algorithm, as shown in Fig. 1. The algorithm 
+comprises 
+electronic 
+rotation, 
+cross-correlation, 
+phase 
+discriminator, loop filter, and numerically controlled oscillator 
+(NCO), forming a phase-locked loop. This approach not only 
+obtains the estimated azimuth angle 𝜃෠ but also outputs the 
+optimized velocity combinations, which are 𝑣௖ and 𝑣௦. 
+First, the velocity vector (𝑣௫, 𝑣௬)  undergoes electronic 
+rotation, with a rotation angle of 𝜃෠, which is outputted by 
+NCO. Then, an open-loop estimation of the error quantity 
+(𝜃−𝜃෠)  is performed. The tracking loop in this study is 
+compatible 
+with 
+various 
+DOA 
+open-loop 
+estimation 
+algorithms. These open-loop estimation algorithms are utilized 
+to estimate (𝜃−𝜃෠), and the estimated value of ൫𝜃−𝜃෠൯ serves 
+as the output of the phase discriminator. After passing through 
+the loop filter, it controls the NCO to generate 𝜃෠. The phase-
+locked loop is a negative feedback loop that iteratively 
+approaches 0 for ൫𝜃−𝜃෠൯. 
+For simplicity, this study adopts the average intensity 
+estimator and active average intensity estimator as the open-
+loop estimator. The following sections explain each module of 
+the algorithm. 
+A. Electronic Rotation 
+Based on the estimated azimuth angle 𝜃෠, the electronic 
+rotation of 𝑣௫ 𝑎𝑛𝑑 𝑣௬ yields 𝑣௦ and 𝑣௖. The electronic rotation 
+can be expressed using complex notation as follows: 
+𝑣௖+ 𝑖∙𝑣௦= ൫𝑣௫+ 𝑖∙𝑣௬൯𝑒ି௜ఏ෡. #(9)
+ 
+The real and imaginary parts can be expressed as follows: 
+ 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+ 
+Fig. 1. Block diagram of DOA tracking loop. 
+                     𝑣௖= 𝑣௫𝑐𝑜𝑠𝜃෠+ 𝑣௬𝑠𝑖𝑛𝜃෠ 
+                          = 𝑥(𝑡) cos൫𝜃−𝜃෠൯+ ൫𝑛௫𝑐𝑜𝑠𝜃෠+ 𝑛௬𝑠𝑖𝑛𝜃෠൯ 
+                          = 𝑥(𝑡) cos(𝜃௘) + 𝑛௖,                                     (10) 
+                     𝑣௦= −𝑣௫𝑠𝑖𝑛𝜃෠+ 𝑣௬𝑐𝑜𝑠𝜃෠ 
+                          = 𝑥(𝑡) sin൫𝜃−𝜃෠൯+ (−𝑛௫𝑠𝑖𝑛𝜃෠+ 𝑛௬𝑐𝑜𝑠𝜃෠) 
+                          = 𝑥(𝑡) sin(𝜃௘)
++ 𝑛௦,                                          (11) 
+where 𝜃௘= 𝜃−𝜃෠ and 𝑛௖, 𝑛௦ symbolize the noise components 
+in the 𝑣௖ and 𝑣௦. 
+B. Cross-Correlation  
+The simplest method for DOA estimation using SVH is the 
+average intensity estimator. In this method, the received 
+pressure signal 𝑝(𝑡)  is cross-correlated with 𝑣௖ and 𝑣௦, 
+resulting in 𝐼௫ and 𝐼௬, respectively. 
+𝐼௫= න𝑝(𝑡)𝑣௖(𝑡)𝑑𝑡= 𝑇𝜎௦
+ଶ𝑐𝑜𝑠𝜃௘+ Δ௫
+்
+଴
+, #(12)
+ 
+𝐼௬= න𝑝(𝑡)𝑣௦(𝑡)𝑑𝑡
+்
+଴
+= 𝑇𝜎௦
+ଶ𝑠𝑖𝑛𝜃௘+ Δ௬, #(13)
+ 
+where 𝑇 stands for the cross-correlation integration time. On 
+the right side of (12) and (13), the first term is the signal 
+component, and the second term is the noise component. 
+If the receiver has knowledge of the reference waveform 
+𝑟(𝑡) of the received signal, such as the spreading code in 
+CDMA communication, the active average intensity estimator 
+can be employed. In this method, the reference waveform 𝑟(𝑡) 
+is cross-correlated with 𝑣௖ and 𝑣௦, resulting in 𝐼௫ and 𝐼௬, 
+respectively. 
+𝐼௫= න𝑟(𝑡)𝑣௖(𝑡)𝑑𝑡= 𝑇𝜎௦
+ଶ𝑐𝑜𝑠𝜃௘+ Δ௫,
+்
+଴
+#(14)
+ 
+ 𝐼௬= න𝑟(𝑡)𝑣௦(𝑡)𝑑𝑡
+்
+଴
+= 𝑇𝜎௦
+ଶ𝑠𝑖𝑛𝜃௘+ Δ௬. #(15)
+ 
+C. Phase Discriminator 
+Using the inverse tangent (arctan) function to obtain an 
+estimation of 𝜃௘: 
+𝜃෠௘= tanିଵ൫𝐼௬, 𝐼௫൯, #(16)
+ 
+where tanିଵ(
+) is a four-quadrant inverse tangent function 
+and 𝜃෠௘∈(−𝜋, 𝜋). 
+D. Loop Filter 
+In the context of oceanic applications, where dynamics are 
+relatively small when compared with aerospace applications, a 
+second-order PLL should be sufficient to meet the dynamic 
+tracking requirements of underwater acoustics. In this case, the 
+loop filter is implemented as a first-order infinite impulse 
+response filter, as shown in Fig. 2. The input to the loop filter is 
+𝜃෠௘ (estimated error), and the output is the frequency control 
+signal. The transfer function 𝐹(𝑧) of the loop filter can be 
+given as follows [7]: 
+𝐹(𝑧) =
+(𝐶ଵ+ 𝐶ଶ) −𝐶ଵ𝑧ିଵ
+1 −𝑍ିଵ
+. #(17)
+ 
+The loop filter has well-established design methods, where 
+𝐶ଵ and 𝐶ଶ are calculated based on the loop parameters 
+(𝐵௅, 𝜁, 𝑘), where 𝐵௅ is the loop bandwidth, ζ is the damping 
+ratio, and  𝑘 is the loop gain. The natural frequency is 
+calculated from the loop parameters according to the following 
+[7]: 
+𝜔௡=
+8𝜁𝐵௅
+4𝜁ଶ+ 1 . #(18)
+ 
+Then, the values of 𝐶ଵ and 𝐶ଶ for the filter can be 
+calculated according to the following [7]: 
+𝐶ଵ= 1
+𝑘
+8𝜁𝜔௡𝑇
+4 + 4𝜁𝜔௡𝑇+ (𝜔௡𝑇)ଶ, #(19)
+ 
+𝐶ଵ= 1
+𝑘
+4(𝜔௡𝑇)ଶ
+4 + 4𝜁𝜔௡𝑇+ (𝜔௡𝑇)ଶ. #(20)
+ 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+Fig. 2. Second-order phase lock loop filter. 
+ 
+E. NCO 
+The output of the loop filter is the frequency control signal 
+𝑓(𝑡) , which serves as the input to the NCO. The NCO 
+generates the phase output 𝜃(𝑡), implementing the integral 
+operation: 
+𝜃(𝑡) = න2𝜋∙𝑓(𝑡)𝑑𝑡
+௧
+଴
+. #(21)
+ 
+The phase output 𝜃(𝑡)  corresponds to the estimated 
+azimuth angle 𝜃෠ mentioned above, which is a function of time. 
+IV. SIMULATION AND ANALYSIS 
+To investigate the performance of the tracking loop 
+described in this study and the impact of different parameters, 
+we use computer simulations. The simulations employ a phase 
+discriminator based on the average intensity estimator. 
+The main parameter settings are as follows: sampling 
+frequency is 48 kHz, carrier frequency is 12 kHz, signal 
+waveform is linear frequency modulation (LFM), signal and 
+noise bandwidths are 8 kHz, and simulation durations are 200 
+seconds. The signal-to-noise ratio (SNR), defined as 𝑆𝑁𝑅=
+10lg (𝜎௦
+ଶ𝜎௡
+ଶ
+⁄
+), ranges from −10 to 10 dB in 1-dB increments. 
+The simulations include three scenarios: stationary, circular 
+motion, and linear motion. 
+A. Scenario 1 
+The source and hydrophone remain stationary, with 
+azimuth angle θ = 60°. In the simulation, we first set the cross-
+correlation integration time 𝑇 =  0.1 s  and vary the loop 
+bandwidth 𝐵௅ to values of 0.1, 0.2, 0.3, 0.4, and 0.5 Hz. The 
+simulation results in different SNRs are used to calculate the 
+root mean square error (RMSE) of the azimuth estimation, as 
+shown in Fig. 3. Fig. 4 shows the comparison between the 
+estimated DOA and the true value of θ. 
+In Fig. 3, as the loop bandwidth 𝐵௅ decreases, the RMSE 
+decreases, which indicates a higher estimation accuracy of the 
+algorithm. When SNR > 0 dB, the RMSEs of the DOA 
+tracking loop with different 𝐵௅ values are less than 1°, 
+demonstrating high precision in tracking and estimation. 
+Fig. 5 displays the RMSEs of the azimuth angle estimation 
+with 𝐵௅ = 0.1 Hz versus the cross-correlation integration time, 
+including 0.1, 0.2, 0.5, 0.8, and 1 s. The figure shows that 
+shorter integration times have a slight advantage in 
+performance. However, the performance difference among 
+different integration times is relatively small. Therefore, for 
+subsequent simulations, T = 0.1 s is chosen as the cross-
+correlation integration time. 
+B. Scenario 2 
+The source moves in a uniform circular motion around the 
+hydrophone, completing one full circle every 20 s. The 
+simulation results are shown in Figs. 6, 7, and 8. Fig. 6 depicts 
+the RMSE of the azimuth angle estimation for different SNRs, 
+with the cross-correlation integration time 𝑇 =  0.1 s  and 
+varying loop bandwidth values of 𝐵௅ = 0.1, 0.2, 0.3, 0.4, and 
+0.5 Hz. Similar to the results in Scenario 1, smaller loop 
+bandwidth (𝐵௅) leads to smaller RMSE, which indicates a 
+higher estimation accuracy of the algorithm. When SNR > 0 
+dB, the RMSEs of the DOA tracking loop with different 𝐵௅ 
+values are less than 1°, also demonstrating high precision. 
+In this dynamic scenario, the performance of the tracking 
+loop is similar to the static scenario, without significant 
+estimation errors caused by the circular motion. This is because 
+the second-order phase-locked loop not only eliminates 
+constant tracking errors but also mitigates constant-speed 
+tracking errors. Therefore, in the dynamic scenario of uniform 
+circular motion, the proposed DOA tracking loop exhibits no 
+dynamic errors. 
+Figs. 8 and Fig. 9 show the comparison between the 
+estimated DOA and the true value with SNR = 10 dB or −10 
+dB, respectively, demonstrating a high degree of consistency 
+between the estimated and true values. Fig. 7 displays the 
+tracking errors for different loop bandwidths, which indicates 
+that tracking loops with smaller loop bandwidths have the 
+advantage of higher tracking accuracy but slower convergence 
+speed. 
+C. Scenario 3 
+Fig. 10 shows a two-dimensional illustration of the scenario. 
+The signal source (a ship) moves in a straight line at a constant 
+speed, passing near the hydrophone. The hydrophone is 
+positioned at the origin, and the angle between the source's 
+trajectory and the hydrophone’s x-axis is set to −60°. The 
+variation of the azimuth angle θ over time is illustrated in Fig. 
+13. When the source is closest to the hydrophone (at time point 
+100 s), the azimuth angle changes rapidly, causing θ to 
+decrease quickly. Fig. 13(a) not only provides the true values 
+of the azimuth angle but also displays the estimated values 
+from the tracking loops with different 𝐵௅ values, with 𝑆𝑁𝑅=
+10 dB. For comparison, Fig. 13(b) presents the estimation of 
+DOA with 𝑆𝑁𝑅= −10 dB in Scenario 3. The simulation 
+demonstrates that the tracking performance is fairly 
+satisfactory. 
+Fig. 11 shows the RMSE for different SNRs with varying 
+loop bandwidths in Scenario 3. There is no obvious difference 
+between Fig. 11, Fig. 3, and Fig. 6. 
+However, Fig. 12 shows that the tracking loop with 
+𝐵௅= 0.1𝐻𝑧 exhibits noticeable dynamic errors in the range of 
+−0.6° to 0.6° during the time interval of 60 to 140 s. This 
+interval corresponds to the period when the source ship is 
+closest to the hydrophone and the azimuth angle changes 
+rapidly. The dynamic errors originate from the acceleration of 
+the azimuth angle rather than environmental noise. In 
+comparison, tracking loops with larger loop bandwidths exhibit 
+smaller dynamic errors. This is because a second-order phase-
+locked loop with a smaller loop bandwidth introduces greater  
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+ 
+Fig. 3. RMSEs of the DOA tracking for different 
+𝐵௅, with 𝑇= 0.1 s in Scenario 1. 
+ 
+Fig. 4. DOA estimation compared with the true 
+value for different 𝐵௅, with 𝑇= 0.1 s and 𝑆𝑁𝑅=
+10 dB in Scenario 1. 
+ 
+ 
+ 
+Fig. 5. RMSEs of the DOA tracking for different 𝑇, 
+with 𝐵௅ = 0.1 Hz in Scenario 1. 
+ 
+Fig. 6. RMSEs of the DOA tracking for different 
+𝐵௅, with 𝑇 = 0.1 s in Scenario 2. 
+ 
+Fig. 7. Error of the DOA tracking for different 𝐵௅, 
+with 𝑆𝑁𝑅= 10 dB, 𝑇= 0.1 s in Scenario 2. 
+ 
+Fig. 8. Estimation of DOA compared with the true 
+value for different 𝐵௅, with 𝑇= 0.1 s and 𝑆𝑁𝑅=
+10 dB in Scenario 2. 
+ 
+ 
+ 
+Fig. 9. Estimation of DOA compared with the true 
+value for different 𝐵௅, with 𝑇= 0.1 s and 
+𝑆𝑁𝑅= −10 dB in Scenario 2. 
+ 
+ 
+Fig. 10. Two-dimensional view of Scenario 3. 
+ 
+Fig. 11. RMSEs of the DOA tracking for different 
+𝐵௅, with 𝑇= 0.1𝑠 in Scenario 3. 
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:28 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+ 
+ 
+(a) 
+ 
+（b） 
+Fig. 12. Error of the DOA tracking for different 𝐵௅, 
+with 𝑆𝑁𝑅= 10 dB, 𝑇= 0.1 s in Scenario 3. 
+Fig. 13(a). Estimation of DOA compared with the true value, with 𝑇= 0.1 s, 𝑆𝑁𝑅= 10 dB, and different 
+𝐵௅ in Scenario 3. (b) The estimation of DOA compare with the true value, with 𝐵௅= 0.1 Hz, 𝑇= 0.1 s,
+𝑆𝑁𝑅= −10 dB in Scenario 3. 
+ 
+ 
+ 
+acceleration dynamic errors. Therefore, the choice of loop 
+bandwidth must strike a balance. It cannot be arbitrarily 
+reduced to improve DOA tracking accuracy. Tracking loops 
+with very small loop bandwidths may have high accuracy but 
+lower tolerance for acceleration dynamics and noise, which 
+potentially leads to loss of lock. 
+V. CONCLUSION 
+This study proposes a DOA estimation method for SVH 
+based on a PLL, specifically designed for underwater 
+communication in dynamic scenarios. The method utilizes 
+algorithms such as the average intensity estimator or the active 
+average intensity estimator as the phase discriminator. It 
+employs a second-order PLL to dynamically track the direction 
+of incoming signals, iteratively approaching zero estimation 
+error. When the estimation error approaches 0, the in-phase 
+branch of the discriminator is the optimal combination of the 
+velocity channel. Computer simulation results demonstrate that 
+this method can achieve high-precision tracking of the 
+incoming signal direction in various dynamic scenarios. 
+Notably, the tracking loop proposed in this study is an 
+algorithm framework that can be compatible with various 
+open-loop DOA estimation methods. It employs these open-
+loop 
+estimation 
+algorithms 
+to 
+implement 
+the 
+phase 
+discriminator function within the loop. 
+Compared with tracking methods such as Kalman filtering 
+and particle filtering, the proposed method has the advantage 
+of lower computational complexity, making it more suitable for 
+low-power underwater acoustic platforms. 
+REFERENCES 
+ 
+[1] 
+F. A. Bozzi and S. M. M. Jesus, “Acoustic vector sensor 
+underwater communications in the Makai Experiment,” in Proceedings of 
+Meetings on Acoustics, AIP Publishing, 2021, p. 070029. 
+[2] 
+J. Cao, J. Liu, J. Wang, and X. Lai, “Acoustic vector sensor: 
+Reviews and future perspectives,” IET Signal Process., vol. 11, pp. 1–9, 
+February 2017. 
+[3] 
+P. Felisberto, P. Santos, and S. M. Jesus, “Tracking source azimuth 
+using a single vector sensor,” in Fourth International Conference on Sensor 
+Technologies and Applications, Venice, Italy: IEEE, 2010, pp. 416–421. 
+[4] 
+Y. Jing-Wei, D. Peng-Yu, Z. Xiao, Z. Guang-Ping, Acoustic 
+Science and Technology Laboratory, and Harbin Engineering University, 
+“Harbin 150001, china; and college of underwater acoustic engineering,” Acta 
+Physiol. Sin. Harbin: Harbin Engineering University 150001, China, ‘Direct-
+sequence spread-spectrum underwater acoustic communication based on 
+single vector differential energy detector’, vol. 65, no. 4, p. 044302, 2016. 
+[5] 
+X. Li, H. Sun, L. Jiang, Y. Shi, and Y. Wu, “Modified particle 
+filtering algorithm for single acoustic vector sensor DOA tracking,” Sensors, 
+vol. 15, pp. 26198–26211, October 2015. 
+[6] 
+M. Yuan, C. Wang, L. Da, and Q. Li, “Signal detection method 
+using a single vector hydrophone in ocean acoustics,” J. Acoust. Soc. Am., 
+vol. 152, pp. 789–798, August 2022. 
+[7]        K. Borre, D. M. Akos, N. Bertelsen, P. Rinder, and S. HoldtJensen, 
+“Carrier and code tracking,” in A Software-Defined GPS and Galileo 
+Receiver: A Single-Frequency Approach, Boston, MA: Birkhäuser, 2007, pp. 
+87–108. 
+ 
+0
+50
+100
+150
+200
+time(s)
+-60
+-40
+-20
+0
+20
+40
+60
+80
+100
+120
+DOA true value
+BL=0.1Hz
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:42:28 UTC from IEEE Xplore.  Restrictions apply. 

@@ -1,0 +1,432 @@
+
+
+===== PAGE 1 =====
+Comparative analysis of EKF and Particle Filter
+performance for an acoustic tracking system for
+AUVs exploiting bearing-only measurements
+Matteo Bresciani
+Dipartimento di Ingegneria dell’Informazione
+Universit`a di Pisa and ISME, Italy
+matteo.bresciani@phd.unipi.it
+Riccardo Costanzi
+Dipartimento di Ingegneria dell’Informazione
+and Centro di Ricerca ”E. Piaggio”
+Universit`a di Pisa and ISME, Italy
+riccardo.costanzi@unipi.it
+Vincenzo Manzari
+Naval Experimentation and Support Centre of Italian Navy
+La Spezia, Italy
+vincenzo.manzari@marina.difesa.it
+Giovanni Peralta
+Dipartimento di Ingegneria dell’Informazione
+Universit`a di Pisa and ISME, Italy
+giovanni.peralta@phd.unipi.it
+Daniele S. Terracciano
+Naval Experimentation and Support Centre of Italian Navy
+and Dipartimento di Ingegneria dell’Informazione
+Universit`a di Pisa, Italy
+daniele.terracciano@ing.unipi.it
+Andrea Caiti
+Dipartimento di Ingegneria dell’Informazione
+and Centro di Ricerca ”E. Piaggio”
+Universit`a di Pisa and ISME, Italy
+andrea.caiti@unipi.it
+Abstract—This paper aims to compare different navigation
+state estimation approaches for the tracking of an Autonomous
+Underwater Vehicle (AUV) based on Direction of Arrival (DoA)
+measurements. The use of passive acoustic devices to compute
+the DoA information allows for a high rate (up to 1Hz in
+the proposed tests) of the measurements while the AUV moves
+underwater. The informative content of these data integrated
+with the synchronised data of the on-board sensors allows for a
+ﬁne tracking of the vehicle under test for navigation performance
+evaluation. The paper addresses the issue of the selection of the
+proper data ﬁltering strategy for the estimation of the navigation
+state of the AUV. In particular, it investigates whether the
+adoption of a Particle Filter (PF) has signiﬁcant advantages with
+respect to a classical approach based on an Extended Kalman
+Filter (EKF). The two approaches exploit the same models and
+parameters to limit the comparison to the ﬁltering strategy.
+The ground truth is the GPS signal provided by the receiver
+integrated within the antenna on the AUV under test. The
+comparative analysis considers both the estimation performance
+and the computation load. Results are extensively provided for
+a subset of all the processed dataset, all the remaining part of
+data conﬁrm the reported analysis.
+Index Terms—Kalman ﬁlter, Particle ﬁlter, Autonomous Un-
+derwater Vehicles, Acoustic tracking system, Bearing-only mea-
+surements, Acoustic Modems, USBL
+I. INTRODUCTION
+Autonomous Underwater Vehicles (AUVs) are nowadays
+widely used in marine applications, thanks to the technological
+progress over the years that has made such vehicles easier to
+use and less expensive than in the past. The absence of GPS
+in sub-sea scenarios affects the vehicle underwater navigation
+performance which negatively impacts the goodness of the
+sub-sea gathered data. For this reason, the underwater vehicle
+localisation is a very challenging topic. In literature, a lot
+of research works deal with this issue. A review of the
+state of the art of AUV navigation and localisation can be
+found in [1], where the Extended Kalman Filter (EKF) and
+Particle Filter (PF) approaches are presented in Simultaneous
+Localisation and Mapping (SLAM) applications. Different PF
+applications can be found in [2] and [3]. The work presented
+in [2] shows a PF approach based on time difference of arrival
+(TDOA) of acoustic signals from beacons around a robot.
+Reference [3] exploits environment semantic information
+to extend the standard particle ﬁlter approach. In previous
+works of the authors, target tracking algorithms based on
+bearing only measurements provided by Ultra-Short Baselines
+(USBLs) sensors and calibration procedure of an acoustic
+tracking system have been implemented, in order to verify the
+vehicle conformity with long term underwater navigation. In
+particular, the authors aimed at creating an Underwater Test
+Range (UTR) system for underwater vehicles. This system is
+in charge of tracking the vehicle position using ﬁlters which
+expoloit Direction of Arrival (DoA) measures provided by
+USBLs. The tracking system is detailed in [4], and the utilised
+calibration procedure utilised is presented in [5]. In a further
+past work, the authors have used the Unscented Kalman Filter
+(UKF) based approach for resolving the localisation issue in
+the UTR system [6]. The purpose of this work is to compare
+EKF and PF state estimation approaches for AUV tracking
+ 
+ 
+978-1-7281-5446-6/20/$31.00 ©2020 IEEE
+Global Oceans 2020: Singapore - U.S. Gulf Coast | 978-1-7281-5446-6/20/$31.00 ©2020 IEEE | DOI: 10.1109/IEEECONF38699.2020.9389288
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:37:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+using DoA measurements. The choice of these ﬁlters is due to
+the non-linearity of the problem. In addition, the chosen ﬁlters
+are widely used for localisation problems both in maritime
+and non-maritime scenarios. In this paper, the measurements
+from two USBL devices have been utilised. These devices
+have been used only as passive sensors, in order to detect the
+vehicle transmitted signals. In this way the USBLs provide
+only DOA measures. The advantage of this conﬁguration is
+the high vehicle ping rate which guarantees frequent DoA
+observations. The experimental campaign planned in order to
+acquire the exploited data, was performed on March 2019 in
+La Spezia (Italy) using an eFolaga AUV.
+The paper is structured as follows: section II presents the
+navigation model, section III describes the experimental setup
+used during the sea test, section IV reports the comparison
+results in terms of computational time, position, velocity and
+drift estimation goodness and ﬁnally section V summarises
+conclusions.
+II. MODELS
+In this work, the localisation problem is limited to the
+horizontal plane thanks to the reliable depth measurements
+provided by the sensor installed on the vehicle. The state used
+for the estimation ﬁlters is composed of:
+• pnorth, the position of the vehicle along the North direc-
+tion in a NED reference frame;
+• peast, the position of the vehicle along the East direction
+in a NED reference frame;
+• v, the speed of the vehicle along the course direction;
+• δ, the drift of the vehicle, which is the angle between
+heading and course directions;
+Thus, the state vector can be expressed as:
+x = [pnorth, peast, v, δ]T ∈R4
+The model has as inputs the heading measurements provided
+by the magnetic compass, which is used in the ﬁlters prediction
+step. The state-transition model represents a model with slowly
+variable speed along the course axis and is deﬁned by the
+following equations:
+
+
+
+
+
+
+
+
+
+pnorthk+1
+= pnorthk + v cos(ψ + δ) dT
+peastk+1
+= peastk + v sin(ψ + δ) dT
+vk+1
+= wvk dT
+δk+1
+= wδk dT
+(1)
+where ψ is the heading angle used as input, wv and wδ are the
+white Gaussian process noise which characterise the derivative
+with respect to the time of the state respective component. The
+time interval dT has a value of 0.1s, as the ﬁlter loop rate
+is 10Hz, which corresponds to the maximum vehicle sensor
+acquisition rate.
+The observation model, which exploits the DoA measurements
+provided by two USBLs, is:
+h = atan2(peast −seast, pnorth −snorth)
+(2)
+where atan2 returns the four-quadrant inverse tangent, snorth
+and seast are the positions of the USBL providing measures
+in NED reference frame, obtained through the calibration
+procedure presented in [5] . In the EKF the observation
+model is used in the correction step; in the PF the DoA
+measurements are exploited to compute the likelihood of each
+particle within each correction step and to consequently update
+their associated weights.
+III. EXPERIMENTAL SETUP
+A. Operational scenario
+This investigation was performed in post-processing, ex-
+ploiting part of the dataset acquired during a campaign per-
+formed in La Spezia (Italy) during March 2019 at the SEALab,
+the joint research laboratory between the Inter-university Cen-
+ter of Integrated Systems for the Marine Environment (ISME),
+of which University of Pisa (UNIPI) is a co-founder, and the
+Naval Support and Experimentation Centre of Italian Navy
+(CSSN).
+The working area is an artiﬁcial basin between two piers,
+within which two USBLs have been deployed as DoA sensors.
+It is a challenging environment from an acoustic point of view
+because of the very shallow water and the proximity to the
+quayside which frequently cause the multi-path phenomena
+generating unreliable measurements.
+Fig. 1: Working area in green with the position of the two
+USBL devices
+Figure 1 shows the operational scenario and the USBL
+devices positions. The green polygon represented in the ﬁgure
+deﬁnes the working area where the vehicle was moving during
+the tests.
+B. Equipment setup
+The trials were carried out using the eFolaga AUV [1],
+showed in Figure 2, a torpedo-shape vehicle made up of a
+pair of ﬁbreglass cylinders connected to two terminating wet
+sections where propelling thrusters and pump jets are located,
+together with a bladder enabling variations of the vehicle
+buoyancy. For these trials the vehicle was equipped with: depth
+sensor, compass, 2D inclinometer and a GPS. All the sensors
+data are collected at a rate of 10 Hz, except for the GPS
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:37:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+Fig. 2: eFolaga AUV
+which provides measures at 1 Hz. The vehicle was able to
+communicate with the USBL devices thanks to an acoustic
+modem (Evologics S2C M 18/34) integrated on-board. The
+acoustic tracking system, was composed of two DoA sensors,
+in order to track the vehicle. During the tests, the DoA sensors
+involved were USBL devices deployed in known position on
+the seaﬂoor properly calibrated in post-processing to determi-
+nate their attitude [5]. The vehicle, equipped with a compliant
+modem, was programmed to transmit in broadcast acoustic
+packets containing current timestamp with a frequency of 1
+Hz. The USBL devices receiving the message are likely able
+to compute the DoA, and to associate the vehicle timestamp to
+the measurements by reading the content of the message. Thus,
+this information can be easily synchronised in post-processing
+with other data collected on-board the vehicle thanks to the
+timestamp encoded in the acoustic messages.
+C. Mission description
+In this work the dataset is used for the comparison analysis.
+Such dataset was acquired during the test performed in the sce-
+nario detailed in III-A with the equipment presented in III-B,
+is used for the comparison analysis. This dataset is composed
+of six different missions that include similar manoeuvres, in
+order to carry out a consistent analysis.
+Figure 3 shows an example of trajectory, displaying the
+GPS measurements, performed by the vehicle in the missions
+analysed. The position estimation are performed exploiting
+missions containing vehicle trajectories on the surface, in order
+to utilise as ground truth the available latitude and longitude
+measurements provided by the GPS device mounted on the
+vehicle.
+IV. RESULTS
+The authors aim to evaluate the performances of EKF
+and PF ﬁlters in terms of computational time and estimation
+performance. The estimation evaluation is based on the subset
+of missions that took place on the surface. The GPS mea-
+surements available for these missions have not considered
+within the ﬁlters, except for the initialisation, but have been
+used as Ground Truth to quantify the estimation performance.
+The comparative analysis is carried out estimating the state
+vector by varying: particles number in the PF, missions and
+Fig. 3: Example of mission
+process noise on the drift state in both EKF and PF ﬁlters. In
+particular:
+• mission: in order to get a clearer picture of the perfor-
+mance of the two ﬁlters, six different missions, presented
+in the subsection III-C, are used. All of these are extracted
+from the investigation detailed in the subsection III-A
+performed with the equipment showed in the subsection
+III-B. Each mission represent a different vehicle trajec-
+tory, performed in the same conditions.
+• process noise on the drift: the values (expressed in
+deg/s) imposed on the drift standard deviation are,
+δstd dev = [3, 5, 10, 15]
+(3)
+• number of particles: in the PF the number of particles
+vary as follows,
+#particles = [500, 1000, 3000, 5000]
+(4)
+The state estimated by each ﬁlter, and the corresponding
+computational time, for each conﬁguration of parameters, were
+stored and post-analysed in order to extract information in
+terms of quality, robustness and efﬁciency. In this section the
+results relating to the performed analysis will be presented. For
+space issues, only two missions will be shown, as the results
+obtained are similar for all six missions of the analysed dataset
+A. Position estimation error analysis
+The position estimation error is evaluated through the Root
+Mean Square Error (RMSE) respect to GPS measurements in
+meters and evaluating the estimation error over the time, also
+in meters, for each mission and each possible combination of
+the parameters deﬁned above.
+Figure 4, 5, 6 and 7 show the estimation error over the
+time of EKF (in black in the ﬁgure) and PF (in red in the
+ﬁgure) with respect to GPS measurements used as reference,
+in two different conditions of the process noise on the drift
+state. These plots show a PF performance improvement when
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:37:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+Fig. 4: Mission 1. Error over the time of EKF and PF
+estimation compared with the GPS ground truth. The process
+noise on the drift is 3 deg/s. The number of particles is 1000.
+Fig. 5: Mission 1. Error over the time of EKF and PF
+estimation compared with the GPS ground truth. The process
+noise on the drift is 15 deg/s. The number of particles is 1000.
+Fig. 6: Mission 2. Error over the time of EKF and PF
+estimation compared with the GPS ground truth. The process
+noise on the drift is 3 deg/s. The number of particles is 1000.
+Fig. 7: Mission 2. Error over the time of EKF and PF
+estimation compared with the GPS ground truth. The process
+noise on the drift is 15 deg/s. The number of particles is 1000.
+the process noise on the drift increases. In fact, the average
+RMSE of the PF estimation is lower when the drift standard
+deviation is 15 deg
+s
+(ﬁgures 5 and 7). In the reported cases
+the standard deviation of the drift noise are 3 and 15
+deg
+s
+respectively. In this paper, the data of only two mission are
+reported, but this trend has been veriﬁed in all the six missions
+in the analysed dataset.
+(a) Stems of absolute value of the difference between RMSE for each
+conﬁguration
+(b) Table representing the lower RMSE
+for each conﬁguration
+Fig. 8: Mission 1. RMSE for each conﬁguration correlated by
+an illustrative table.
+Figure 8 and 9 report the absolute value of the difference
+between the EKF and PF RMSE on the vehicle position and
+a table which quantiﬁes the lower RMSE value for each
+conﬁguration, for mission 1 and 2 respectively. The cases in
+which the EKF estimates are better than the ones obtained
+through the PF are displayed in black, the others in red. Also
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:37:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+(a) Stems of absolute value of the difference between RMSE for each
+conﬁguration
+(b) Table representing the lower RMSE
+for each conﬁguration
+Fig. 9: Mission 2. RMSE for each conﬁguration correlated by
+an illustrative table.
+this kind of data analysis based on the RMSE reveals the same
+trend: the PF performance increases when the process noise
+on the drift augments.
+B. Drift and velocity analysis
+In this subsection the estimation of the drift and velocity
+state by varying the process noise on the drift will be reported.
+Since the evolution of drift and velocity are similar by varying
+the missions, the results of only one is shown. Figures 10 and
+11 show the evolution of the drift estimation, for EKF and PF
+respectively, by varying the process noise on the drift. Under
+the same process noise conditions, the drift estimated by the
+PF has greater ﬂuctuations with respect to the one estimated
+by the EKF. Figures 12 and 13 instead, show that this aspect
+is not found in the velocity estimation evolution. Indeed, the
+two estimated velocity plots (EKF in ﬁgure 12) and (PF in
+ﬁgure 13) have the same trend.
+C. Computational time analysis
+This subsection will report an efﬁciency analysis in term
+of computational time between for EKF and PF ﬁlters. This
+analysis has been performed using a machine with an Intel
+Core i7-8550U CPU @1.99GHz in MATLAB environment.
+The time analysis, reported in ﬁgure 14, represents the time
+required, for both ﬁlters, to estimates the vehicle positions of
+the entire considered mission. The ﬁlter estimations reported
+are composed of 943 prediction steps and 89 correction steps.
+The computation time measured, and showed in ﬁgure 14, are:
+• EKF: 0.169 seconds
+• PF with 500 particles: 0.743 seconds
+• PF with 1000 particles: 1.071 seconds
+• PF with 3000 particles: 1.517 seconds
+• PF with 5000 particles: 1.989 seconds
+Fig. 10: EKF estimation drift plot over the time by varying
+the noise on the drift.
+Fig. 11: PF estimation drift plot over the time by varying the
+noise on the drift. The particle number is set to 1000.
+Fig. 12: EKF estimation velocity plot over the time by varying
+the noise on the drift.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:37:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+Fig. 13: PF estimation velocity plot over the time by varying
+the noise on the drift. The particle number is set to 1000.
+Fig. 14: Computational time analysis
+As expected, EKF has higher performance than PF from a
+computational time point of view, and the process time of the
+PF augments when increasing the particles number. This result
+is also obtained from the analysis of all the other missions in
+the considered dataset; detailed results of only one mission are
+reported because of space issues.
+V. CONCLUSIONS
+A performance comparison between the Extended Kalman
+Filter and the Particle Filter has been reported in this paper
+for the particular scenario of AUV tracking in terms of trajec-
+tory estimation errors and computational time. This analysis
+revealed, as expected, a signiﬁcant difference in favour of the
+EKF from the computational time point of view. Such disparity
+has been quantiﬁed for different numbers of particles in the
+PF. From a trajectory estimation point of view, the reported
+analysis, based on the RMSE, highlights a trend according
+to which the PF tends to improve as the standard deviation
+of the process noise on the drift state component increases.
+The difference on the RMSE always in the order of 10−2
+meters does not suggest particular advantages in the use of
+an approach with respect to the other one for the speciﬁc
+application and scenario.
+ACKNOWLEDGEMENTS
+The authors would like to thank all the SEALab members,
+the joint applied research lab oratory between the Naval Sup-
+port and Experimentation Center (CSSN) of the Italian Navy
+and the Italian Inter-university Research Center of Integrated
+Systems for Marine Environment (ISME), who supported the
+research team during the missions at sea.
+REFERENCES
+[1] L. Paull, S. Saeedi, M. Seto and H. Li, ”AUV Navigation and Localiza-
+tion: A Review”, in IEEE Journal of Oceanic Engineering, vol. 39, no.
+1, pp. 131-149, January, 2014.
+[2] N. Y. Ko, T. G. Kim, Y. S. Moon, ”Particle ﬁlter approach for localization
+of an underwater robot using time difference of arrival”, Oceans-Yeosu
+(pp. 1-7). IEEE, 2012.
+[3] F. Maurelli, S. Krupiski, ”A Semantic-Aided Particle Filter Approach
+for AUV Localization,” OCEANS - MTS/IEEE Kobe Techno-Oceans
+(OTO), Kobe, pp. 1-5, 2018.
+[4] R. Costanzi, D. Fenucci, V. Manzari, A. Caiti, R. Petroccia, ”Towards
+an autonomous underwater vehicles test range: At-sea experimentation
+of bearing-only tracking algorithms”, Annual Reviews in Control, vol.
+46, pp. 304 - 314, 2018.
+[5] M. Bresciani, R. Costanzi, V. Manzari, D. Terracciano, ”Acoustic
+tracking system for AUVs exploiting DoA sensors - calibration and
+performance characterisation”, IFAC CAMS, Daejeon, September 18-
+20, 2019.
+[6] R. Costanzi, D. Fenucci, V. Manzari, A. Caiti, ”Bearing-only UV
+tracking performance: Unscented Kalman Filter estimation against un-
+certainty in underwater nodes position”, IFAC 2017.
+[7] A. Alvarez, et al. ”Folaga: A low-cost autonomous underwater vehicle
+combining glider and AUV capabilities.” Ocean Engineering 36.1: 24-
+38, 2009.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:37:15 UTC from IEEE Xplore.  Restrictions apply. 

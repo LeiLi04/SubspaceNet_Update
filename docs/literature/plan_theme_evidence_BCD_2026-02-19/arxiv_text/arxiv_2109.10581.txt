@@ -1,0 +1,1860 @@
+
+
+===== PAGE 1 =====
+DA-MUSIC: Data-Driven DoA Estimation via Deep
+Augmented MUSIC Algorithm
+Julian P. Merkofer, Student Member, IEEE, Guy Revach, Student Member, IEEE, Nir Shlezinger, Member, IEEE,
+Tirza Routtenberg, Senior Member, IEEE, and Ruud J. G. van Sloun, Member, IEEE
+Abstract—Direction of arrival (DoA) estimation of multiple
+signals is pivotal in sensor array signal processing. A popular
+multi-signal DoA estimation method is the multiple signal clas-
+siﬁcation (MUSIC) algorithm, which enables high-performance
+super-resolution DoA recovery while being highly applicable in
+practice. MUSIC is a model-based algorithm, relying on an
+accurate mathematical description of the relationship between
+the signals and the measurements and assumptions on the signals
+themselves (non-coherent, narrowband sources). As such, it is
+sensitive to model imperfections. In this work we propose to over-
+come these limitations of MUSIC by augmenting the algorithm
+with speciﬁcally designed neural architectures. Our proposed
+deep augmented MUSIC (DA-MUSIC) algorithm is thus a hybrid
+model-based/data-driven DoA estimator, which leverages data
+to improve performance and robustness while preserving the
+interpretable ﬂow of the classic method. DA-MUSIC is shown
+to learn to overcome limitations of the purely model-based
+method, such as its inability to successfully localize coherent
+sources as well as estimate the number of coherent signal sources
+present. We further demonstrate the superior resolution of the
+DA-MUSIC algorithm in synthetic narrowband and broadband
+scenarios as well as with real-world data of DoA estimation from
+seismic signals.
+I. INTRODUCTION
+Source separation, localization, and tracking are crucial tasks
+in sensor array processing. In particular, direction of arrival
+(DoA) estimation of multiple, broadband, and possibly coherent
+signal sources plays a key role in a wide range of applications,
+including radar, communications, image analysis, and speech
+enhancement [2]–[4]. Over the last decades, a multitude of
+different DoA estimation algorithms have been proposed, and
+the problem is an active area of research [5], [6].
+A leading scheme employed in many DoA applications is the
+popular multiple signal classiﬁcation (MUSIC) algorithm [7],
+which can provide asymptotically unbiased estimates of the
+number of incident wavefronts present, their approximate fre-
+quencies, and their DoAs. MUSIC and other classic approaches,
+e.g., conventional beamforming [8] and MVDR beamform-
+ing [9], are based on knowledge of the underlying statistical
+model; this dependency induces several key limitations. Among
+the drawbacks of the model-based (MB) approaches is the
+inherent limitation of the signal model from which they are
+Parts of this work were presented in the 2022 IEEE International Conference
+on Acoustics, Speech, and Signal Processing (ICASSP) as the paper [1]. J. P.
+Merkofer is with the EE Dpt., Eindhoven University of Technology, Eindhoven,
+The Netherlands (e-mail: j.p.merkofer@tue.nl), this work was partially done
+while being with the ETH Z¨urich. G. Revach is with the D-ITET, ETH Z¨urich,
+Switzerland, (email: grevach@ethz.ch). N. Shlezinger and T. Routtenberg are
+with the School of ECE, Ben-Gurion University of the Negev, Beer Sheva,
+Israel (e-mail: {nirshl; tirzar}@bgu.ac.il). T. Routtenberg is also with the ECE
+Dpt., Princeton University, Princeton, NJ, United States. R. J. G. van Sloun
+is with the EE Dpt., Eindhoven University of Technology, and with Phillips
+Research, Eindhoven, The Netherlands (e-mail: r.j.g.v.sloun@tue.nl).
+derived, which considers narrowband signals. This results, for
+example, in the inability to consistently estimate the DoA of
+correlated (coherent) signals, as well as a failure to resolve
+closely spaced signals with an insufﬁcient number of samples
+or a low signal-to-noise ratio (SNR) [5], [7].
+To extend narrowband models to broadband DoA esti-
+mation, various extensions and alternative approaches have
+been explored [10], because when the impinging signals
+are broadband, multiple frequency ranges can carry different
+information regarding the DoA angles at hand. Generally, these
+extensions from narrowband to broadband can be subdivided
+into coherent and incoherent processing methods. In coherent
+processing methods, the covariance matrices of the observations
+in different frequency bins are coherently combined using
+certain transformation matrices. Most coherent techniques are
+based on the coherent signal subspace (CSS) concept [11],
+which focuses the transformations of the covariances at
+different frequencies into a surrogate narrowband model, yet
+utilizes different transformation matrices. Incoherent broadband
+processing methods combine DoA estimates obtained separately
+for each frequency bin [12].
+The recent success of data-driven (DD) deep learning
+(DL) across a wide range of disciplines gave rise to neural
+network (NN)-aided DoA estimators [13]. The works [14]–[17]
+implemented model-agnostic DoA estimation using a dense NN,
+a convolutional NN (CNN), a sparse-connected CNN, and a U-
+Net architecture, respectively. Other methods [18], [19] utilize
+the knowledge of the spatial covariance matrices, where [18]
+trained a CNN based on a classiﬁcation task (allowing it to also
+operate with unknown number of sources) and [19] analyzed
+purely DD estimators and DD methods in combination with
+maximum likelihood estimation (MLE). The works [20], [21]
+also combined DL with MLE by using multiple dense NNs
+and a ResNet, respectively, to estimate a subset of candidate
+angles. [22] extends the architecture of [21] to estimate the
+number of sources with the ResNet. While such black-box
+NNs enable handling array imperfections due to their model-
+agnostic nature, they involve highly parameterized models that
+may be computationally intensive and lack the interpretability
+of MB methods.
+Alternatively, NNs were used to robustify the MB MUSIC
+as a form of hybrid MB/DD system [23], [24]. Speciﬁcally,
+the work [25]and [26] proposed to estimate the discretized
+MUSIC spectrum from the (spatially smoothed) covariance
+matrix of the measurements through the utilization of multiple
+convolutional NNs. While these methods are more robust
+to model inaccuracies compared with the original MUSIC
+algorithm, utilizing the MUSIC spectrum as a label for
+training causes them to experience the same drawbacks as
+1
+arXiv:2109.10581v5  [eess.SP]  11 Jan 2023
+
+
+===== PAGE 2 =====
+their MB counterpart. Another DD approach proposed in [27]
+considered systems with subarray sampling and uses NNs to
+obtain a single estimated covariance matrix from incoherent
+subarray measurements. This NN-aided estimate is utilized
+for DoA recovery via the subspace-based MUSIC algorithm.
+The method addresses the fundamental dependency of MUSIC
+on the estimated covariance matrix, thereby robustifying the
+MUSIC algorithm, yet it does not fully exploit the NNs’
+ability to improve MUSIC, as the NN is trained using the
+true covariance matrix as a label, without considering its
+downstream task. Furthermore, the work [28] proposed a hybrid
+MB/DD approach that includes an eigenvalue decomposition
+(EVD) of full-row Toeplitz matrices reconstruction (FTMR)
+matrices [29] and classiﬁcation deep NNs for estimation of
+a MUSIC-like spectrum and detection of number of sources
+present via eigenvectors and eigenvalues
+The works [30], [31] applied CNNs for broadband DoA
+estimation of a single source. The two approaches, however,
+utilize very different preprocessing methods and are trained
+as classiﬁcation and regression tasks, respectively. While the
+classiﬁcation approach limits itself to a ﬁxed resolution, the
+regressor of [31] outputs the DoA angles directly. Therefore, it
+can achieve an arbitrary resolution, yet it is limited to the
+spatial covariance matrix as input. Another approach [32]
+ﬁrst decomposed the broadband signals into non-overlapping
+narrowband components and used support vector regression to
+obtain the DoA.
+The limitations of both existing MB and DD DoA estimation
+algorithms in resolving multiple signals that are possibly
+broadband and coherent motivate the derivation of a NN-aided
+DoA estimator capable of leveraging data to enable MUSIC
+to successfully operate in such scenarios.
+We introduced deep augmented MUSIC (DA-MUSIC) in [1],
+a hybrid MB/DD implementation of MUSIC, which exploits the
+structure of the classic subspace algorithm while augmenting
+it with NNs to learn to enhance its performance. The proposed
+architecture overcomes the fundamental limitations of MUSIC,
+enabling it to accurately detect the locations of coherent sources.
+Our design builds upon the insight that the sensitivity to model
+mismatch and inability to handle coherent and broadband
+sources of MUSIC lie in its estimation of the noise and
+signal subspaces through an EVD of the empirical covariance
+matrix. Accordingly, the proposed DA-MUSIC improves this
+crucial step by obtaining a surrogate, pseudo covariance matrix
+through a recurrent NN (RNN) from the measurements, which
+is learned along with a NN that acts as a peak ﬁnder. This
+work presents crucial extensions to DA-MUSIC allowing it
+to operate with an unknown and varying number of signal
+sources by successfully estimating the number of sources
+for non-coherent and coherent signals. An additional neural
+augmentation allows the categorization into noise and signal
+eigenvectors to be obtained in a learned fashion by training a
+classiﬁer. Numerical results show an estimation accuracy of
+98% in comparison to MUSIC with 89% accuracy in the same
+non-coherent scenario. We further demonstrate DA-MUSIC’s
+capabilities in various SNR domains, three different broadband
+scenarios, as well as real-world seismic signals. DA-MUSIC
+not only manages to focus frequency components but is also
+able to concurrently focus an interdependent elevation angle
+to receive a stable azimuth estimation.
+The rest of the paper is organized as follows: Section II
+describes the assumed system model and surveys some of
+the related work of DoA estimation, as well as the technical
+details of the MB MUSIC algorithm; Section III introduces
+the DA-MUSIC algorithm; Section IV presents the results of
+the simulations; and Section V provides concluding remarks.
+Throughout the paper, we use boldface lower-case letters for
+vectors; e.g., x, and boldface uppercase letters, e.g., for X. The
+ith entry of a vector x is denoted by xi and entries separated by
+commas represent column vectors. We use calligraphic letters
+to denote the discrete-time Fourier transform, e.g., X(ω) is
+the frequency representation of a signal x(t). We use (·)⊤
+and (·)H to denote the transpose and Hermitian operators
+respectively, and ∥·∥and ∥·∥F to denote the ℓ2 and Forbenius
+norms respectively. Further, U and CN represent the uniform
+and the complex normal distributions. The symbol I denotes
+the identity matrix.
+II. SYSTEM MODEL AND PRELIMINARIES
+In this section, we detail the system model for which we de-
+velop the proposed DA-MUSIC algorithm in Section III. To that
+aim, we ﬁrst discuss the signal model in Subsection II-A. Then,
+we formulate the DoA estimation problem in Subsection II-B,
+and survey some of the related literature in Subsection II-C.
+Since our proposed solution builds upon the MUSIC algorithm,
+we recall MUSIC in Subsection II-D and brieﬂy discuss the
+CSS method for broadband extension in Subsection II-E.
+A. Signal Model
+We distinguish the considered signal model into two cases:
+the conventional narrowband setting and its more general
+broadband setup. For more details regarding the two models,
+we refer the reader to the textbooks [10], [33], and [34].
+1) Narrowband: The most common setup in the array
+signal processing literature concerning DoA estimation is the
+narrowband setting. Here, the time it takes for the waves to
+propagate the array is assumed to be negligible such that the
+occurring delays are sufﬁciently small. Therefore, the signal
+measurement model for an arbitrary array structure consisting
+of M sensor elements measuring D impinging narrowband
+signals takes the following form:
+x(t) = A(θ) s(t) + v(t).
+(1)
+In (1), the measurements x(t) ∈CM at time instance t depend
+on the signals s(t) ∈CD, which originate from the unknown
+angles θ = [θ1, . . . , θD], while v(t) ∈CM is additive white
+Gaussian noise. The matrix A(θ) ∈CM×D contains the
+steering vectors {a(θd)}, i.e.,
+A(θ) =
+a(θ1) . . . a(θD)
+,
+(2)
+where {θd} are the source directions. For example, the steering
+vector a(ψ) for a uniform linear array (ULA) with an element
+spacing of ∆m = ℓ/2, where ℓis the wavelength of the signals,
+is deﬁned for direction ψ as
+a(ψ) =
+
+1, e−jπ sin ψ, . . . , e−jπ(M−1) sin ψ
+.
+(3)
+2
+
+
+===== PAGE 3 =====
+…
+Noise
+subspace
+1
+aH( ) EN EH
+N a( )
+EN
+P( )
+v1:M
+{a( )}
+…
+…
+DoA
+Estimator
+EVD
+λmin
+multiplicity
+Noise
+subspace
+MUSIC Spectrum
+1
+aH( ) EN EH
+N a( )
+Peak
+ﬁnder
+MUSIC
+KX
+EN
+P( )
+ˆD
+λ1:M
+v1:M
+ˆ✓
+x(t)
+t=1,...,T
+ˆN
+Input
+DoAs
+{a( )}
+Observations
+EVD
+λmin
+multiplicity
+Noise
+subspace
+MUSIC Spectrum
+1
+aH( ) EN EH
+N a( )
+Peak
+ﬁnder
+MUSIC
+KX
+EN
+P( )
+ˆD
+λ1:M
+v1:M
+ˆ✓
+x(t)
+t=1,...,T
+ˆN
+Input
+DoAs
+{a( )}
+Fig. 1: DoA estimation illustration.
+Consequently, the steering vectors (and, in turn, the matrix
+A(θ)) specify the underlying array geometry. The collection
+of the measurements at the array elements over multiple time
+instances is deﬁned as
+X =
+x(1) . . . x(T)
+,
+(4)
+where T is referred to as the number of snapshots.
+2) Broadband: In practice, many signals are broadband,
+and the delay caused by propagating the array aperture needs
+to be incorporated into the signal model. The following
+notation models the measurements received at array element
+m ∈{1, ..., M}
+xm(t) =
+D
+X
+d=1
+sd(t −τmd) + vm(t),
+(5)
+where τmd represents the time delay of the mth array element
+measuring source d ∈{1, ...., D} compared to the measurement
+at the reference element m = 1. Transformed to the frequency
+domain, the relationship in (5) at frequency ω becomes
+Xm(ω) =
+D
+X
+d=1
+e−jωτmd Sd(ω) + Vm(ω),
+(6)
+which can in turn be written in vector-matrix form analogous
+to the narrowband system model (1) as follows:
+X(ω) = A(ω, θ) S(ω) + V(ω).
+(7)
+For a ULA, the broadband steering vectors are deﬁned for
+frequency ω and angle of interest ψ as
+a(ω, ψ) =
+
+1, e−jω ∆m
+c
+sin ψ, . . . , e−jω(M−1) ∆m
+c
+sin ψ
+, (8)
+where c is the propagation velocity.
+B. Problem Formulation
+DoA estimation is concerned with localizing signal sources
+by determining their angles of incidence utilizing the measure-
+ments of an array aperture [33]. Formally, this corresponds to
+estimating the angles θ = [θ1, . . . , θD] from the measurements
+x(t) = [x1(t), . . . , xM(t)] measured at multiple time instances
+t ∈{1, ..., T}. An illustration of such a system is depicted in
+Fig. 1. The following additional assumptions are imposed upon
+the observation model as well as the derived synthetic data.
+The signals are uncorrelated to the noise (though signals may
+possibly be correlated with each other) and generated in the far-
+ﬁeld region. And there is uniform propagation in all directions
+in an isotropic and non-dispersive medium. We further assume
+that we have knowledge (though possibly mismatched) of the
+underlying array geometry, implying that we can compute an
+approximation of a(ψ) or a(ω, ψ). We consider a data-driven
+setting where we have access to training data. This data is a set
+of U pairs, {(Xu, θu)}U
+u=1, each comprising the observations
+and DoA angles from where the signals originated. In many
+scenarios; e.g., in wireless communications, a speciﬁc training
+set can be developed before deployment. If the ground-truth
+DoAs are not obtainable at all, the data-driven DoA estimator
+must be trained by utilizing synthetic data that closely describes
+the real signals. Our goal is thus to leverage the available
+domain knowledge and data to design a system for recovering
+the DoAs θ from a corresponding observation matrix X whose
+columns are T snapshots of the measured waveforms at the
+M sensors.
+C. Related Literature
+We next provide an overview of relevant DoA estimation
+methods based on the above problem formulation, motivating
+the need for our proposed DA-MUSIC detailed in Section III.
+An extensive overview of various MB DoA estimators can
+be found in [5], [6], and a recent literature review of DD
+DoA estimation approaches can be found in [35]. We thus
+only discuss some representative MB methods, followed by
+reviewing relevant broadband extensions, and conclude with
+DD architectures for narrowband as well as broadband signals.
+1) MB Narrowband Estimators: The conventional beam-
+former (i.e. maximizing the steered response) is a basic
+approach to DoA estimation and an extension of classical
+Fourier-based spectral analysis [8]. Various improvements and
+alternative beamforming methods have been developed, such
+as the minimum variance distortionless response beamformer
+[9] and other adaptive beamformers [36]. An overview of
+beamforming techniques can be found in [37].
+An alternative family of DoA estimators is based on subspace
+methods, which aim at recovering the DoAs by identifying
+the noise and signal subspaces. The MUSIC algorithm [7]
+is a highly popular subspace-based method and has been
+researched extensively. Being the focus of this paper, more
+information and a detailed description of the algorithm can
+be found in Section II-D. Extensions of MUSIC include Root-
+MUSIC [38], a polynomial-rooting version, as well as spatially
+smoothed MUSIC, which removes the correlation between the
+incident signals by dividing the receiver array into overlapping
+subarrays [39]. In practice, however, the number of coherent
+sources is mostly unknown, and therefore the decorrelation
+effect of spatial smoothing is not obvious [40]. Another popular
+subspace-based method for DoA estimation is estimation of
+signal parameters via rotational invariance techniques (ESPRIT)
+[41] and its variations [42]. These methods rely heavily on the
+accuracy of the underlying model assumptions, are generally
+sensitive to array aperture perturbations, and are inherently
+derived for narrowband signals.
+2) MB Broadband Estimators: Broadband DoA estimation
+algorithms can be categorized into two groups: incoherent
+methods and coherent methods. Generally, incoherent methods
+3
+
+
+===== PAGE 4 =====
+Empirical
+cov.
+EVD
+λmin
+multiplicity
+Noise
+subspace
+MUSIC Spectrum
+1
+aH(ψ) E ˆ
+N EH
+ˆ
+N a(ψ)
+Peak
+finder
+MUSIC
+KX
+E ˆ
+N
+P(ψ)
+ˆD
+λ1:M
+v1:M
+ˆθ
+x(t)
+t=1,...,T
+ˆN
+Input
+DoAs
+{a(ψ)}
+Fig. 2: Block diagram of the MUSIC algorithm.
+use independent frequency bins (IFBs) to process the DoA
+information at every frequency separately and then combine the
+results of these narrowband DoA estimations. There are many
+different variations in the implementation of this approach [43]–
+[45], which typically vary in the computation of the covariance
+matrices. Unfortunately, the computational complexity increases
+with each frequency bin.
+Conversely, coherent methods combine the covariance matri-
+ces estimated for IFBs in order to apply narrowband techniques
+directly over a single, so-called focused covariance matrix. An
+overview of coherent techniques can be found in [10], [46].
+A leading approach for coherent broadband DoA estimation
+is based on the CSS method [11], with example estimators
+given in [47]–[49]. Many variations of the CSS method are
+concerned with the crucial aspect of the focusing strategy,
+proposing different techniques to combine the covariances at
+each IFB to obtain a faithful narrowband formulation. See,
+for example, [50], [51] and the more recent summary [52].
+These methods, however, experience signiﬁcant bias with larger
+angular sectors of interest and can impose additional model
+assumptions such as noise statistics.
+3) DD Estimators: Inspired by the dramatic success of DL
+in computer vision and natural language processing, recent
+years have witnessed a growing interest in the application of
+NNs for DD DoA estimation. A recent review of DL DoA
+estimation approaches can be found in [53] and essential
+methods were covered in Section I. DL architectures presented
+in the numerical evaluations or otherwise closely related to
+this work are summarized and discussed below.
+The work [18] implemented a CNN architecture for DD DoA
+estimation based on a multi-label classiﬁcation task. Particularly,
+the method takes real, imaginary, and phase information of
+the sample covariance as a three-channel input and predicts a
+probability grid of directions. Given the binary cross-entropy
+loss for training, the method is capable of operating with a
+potentially unknown and varying number of sources. However,
+with a growing number of sources, the number of classes grows
+exponentially.
+Similarly to the above, the methods in [25], [26] propose
+CNNs for DoA estimation by taking the same channels of
+the sample covariance matrix as input (spatially smoothed
+covariance of single snapshot for [26]). However, the CNNs
+are trained as a regression task estimating a discretized segment
+of the MUSIC spectrum. Thereby, they not only inherit the
+drawbacks and imitations of MUSIC but are, besides increased
+robustness, dependant on the underlying model assumptions.
+The sample covariance matrix estimate deviates from the
+actual covariance, especially with multiple possibly coherent
+broadband signals which affect MB as well as DD performance.
+The work [27] considered systems with subarray sampling and
+trained a NN for covariance matrix reconstruction. The method
+takes subarray covariance matrices as input and predicts a full
+covariance matrix. This NN-aided estimate is then utilized
+for DoA recovery with the MUSIC algorithm. While this
+approach addresses the fundamental dependency of MUSIC
+and other doa estimators on the estimated covariance matrix, it
+is still dependent on their subarray estimate, and cannot further
+inﬂuence or react to MUSIC’s performance.
+The approach presented in [28] proposed a hybrid MB/DD
+framework with dense NNs for localization and estimation of
+the number of sources. To reduce the mentioned issues of the
+sample covariance matrix the framework computes a FTMR
+matrix from the measurements. Then an EVD decomposes
+it into eigenvalues and eigenvectors which are utilized to
+predict the number of sources present and produce a pseudo
+MUSIC spectrum, respectively. Trained similarly to [18], the
+localization NN input, however, is directly dependent on the
+selection of noise eigenvectors which makes this method less
+robust to an incorrect estimation of the number of sources.
+D. MUSIC Algorithm
+As our proposed DA-MUSIC algorithm originates from the
+MUSIC algorithm, we next present this method in detail.
+MUSIC, originally proposed by Schmidt in [7], considers
+the narrowband signal model with incoherent sources (1),
+where the signals in s(t) are mutually independent. Fig. 2
+visualizes a simple outline of the MUSIC structure as a block
+diagram. The approach takes the empirical covariance matrix
+of the received measurements X, then conducts an EVD,
+followed by categorizing the eigenvectors into signal and noise
+subspaces. The orthogonality between the two subspaces allows
+the formulation of a spatial spectrum, which contains peaks at
+DoA angles.
+1) Formal Derivation: With the assumption of the signal
+and the noise being uncorrelated, the covariance matrix of x(t)
+is given by
+KX = A(θ)KSAH(θ) + λK0
+X,
+(9)
+with KS being the covariance of the incident signals s(t).
+The matrix A(θ)KSAH(θ) is singular and has a rank of less
+4
+
+
+===== PAGE 5 =====
+RNN
+EVD
+NN
+Selection
+MUSIC Spectrum
+1
+aH(ψ) ˜E ˜E
+H a(ψ)
+NN
+Deep Augmented MUSIC
+˜K
+˜E
+P(ψ)
+ˆD
+λ1:M
+v1:M
+ˆθ
+x(t)
+t=1,...,T
+ˆN
+Input
+DoAs
+{a(ψ)}
+Z−1
+Fig. 3: Block diagram of the DA-MUSIC algorithm.
+than M when the number of array elements M is strictly
+larger than the number of signals D. Therefore, λ is an
+eigenvalue of KX (in the metric of K0
+X, which takes the form
+K0
+X = σ2I for additive white Gaussian noise (AWGN) with
+variance σ2). Further, A(θ)KSAH(θ) has to be non-negative
+deﬁnite, because A(θ) has full rank and KS is positive deﬁnite,
+and consequently, λ in (9) is the minimal eigenvalue of KX,
+denoted λmin. The multiplicity of λmin corresponds to the
+number of incident wavefronts, and equals N = M −D.
+MUSIC builds upon this representation of the covariance
+of the signals. The algorithm takes as input T snapshots of
+the waveforms at M array elements, represented as X in (4),
+and uses them to obtain an empirical estimate of KX via
+ˆKX =
+1
+T XXH. Then, the number of incident signals D is
+estimated via
+ˆD = M −ˆN,
+(10)
+where ˆN is the estimated multiplicity of the minimal eigenvalue
+of ˆKX. The eigenvectors corresponding to the ˆN smallest
+eigenvalues form the noise subspace E ˆ
+N, which is orthogonal
+to the D dimensional signal subspace spanned by the incident
+signal mode vectors. Consequently, MUSIC estimates the DoAs
+by computing the spatial spectrum
+P(ψ) =
+1
+aH(ψ)E ˆ
+NEH
+ˆ
+Na(ψ),
+(11)
+and the ˆD dominant peaks of P(ψ) are set as the estimated
+DoA angles ˆθ.
+MUSIC is a popular and highly applicable subspace-based
+method that is reasonably efﬁcient and statistically consis-
+tent [5], [54]. When the signal model is adequately accurate,
+it can achieve super-resolution and deliver a highly accurate
+estimate of the number of signal sources present. Nevertheless,
+the algorithm is sensitive towards the accuracy of the empirical
+estimate of KX, and cannot reliably estimate the DoA angles
+as well as the number of sources of coherent signals. The
+reason for this is that highly correlated signals cause zero
+entries within the covariance matrix and can, therefore, become
+indistinguishable from noise [55]. Furthermore, the MUSIC
+algorithm is inherently a narrowband approach due to the
+assumptions imposed on the system model. Nonetheless, it can
+be extended to broadband, i.e., signal models as in (7), and so
+we next describe the coherent method to achieve this, which
+is also adopted in our proposed DA-MUSIC.
+E. Coherent Broadband
+The main concept behind coherent broadband DoA esti-
+mation is to transform the different frequency covariance
+matrices into a single covariance matrix at a focusing frequency.
+Accordingly, coherent methods ﬁnd appropriate transformations
+for each frequency, transform the covariances, and obtain a
+focused covariance matrix by some form of averaging. In
+particular, the CSS method [11] aims at combining the spatial
+signal subspaces to align the signal subspaces associated with
+the DoA along all frequency bins. To formulate this, let K(ω)
+be the covariance of the frequency domain observations (7),
+and divide the spectrum into B IFBs with central frequencies
+{ωb}B
+b=1. The focused covariance matrix, which is used as the
+input covariance for narrowband DoA recovery, is estimated
+as
+K =
+B
+X
+b=1
+αb Tb K(ωb) TH
+b ,
+(12)
+where Tb is the focusing matrix and frequency bins are
+prioritized by the weighting αb. The focusing matrices can be
+determined by attempting to focus the spectral components at
+some frequency ωr and some focusing angles ψ by solving
+Tb = arg min
+T ∥A(ωr, ψ) −T A(ωb, ψ)∥F.
+(13)
+Coherent techniques have been shown to achieve a better
+estimation accuracy and a smaller computational complexity
+as well as a lower resolution threshold than non-coherent
+methods [52]. However, the CSS methods require initial values
+for the focusing matrix T, the reference frequency ωr, and the
+relevant focusing angles ψ to ﬁnd the focusing matrices with
+(13), and are typically sensitive towards these initial values.
+Additionally, it is not guaranteed that the alignment of the
+signal and noise subspaces exists to form a viable general
+covariance matrix without disarranging the noise subspace
+[51].
+III. DEEP AUGMENTED MUSIC
+DA-MUSIC is a hybrid MB/DD DoA estimation algorithm
+derived from the classic MUSIC algorithm by replacing crucial
+and model mismatch sensitive elements of the model-based
+structure with speciﬁc NNs. Fig. 3 outlines the resulting
+structure of the DA-MUSIC architecture and highlights the
+remaining similarities to the original MUSIC algorithm, de-
+picted in Fig. 2.
+5
+
+
+===== PAGE 6 =====
+GRU
+dense
+reshape
+complex
+EVD
+selector spectrum
+MLP
+dense
+x(t)
+(2 · M, T)
+a(ψ)
+h
+(2 · M)
+(2 · M · M)
+(2 · M, M)
+˜K
+(M, M)
+(M, M)
+EN
+(M, N)
+P(ψ)
+(R)
+(2 · M)
+(D)
+ˆθ
+Fig. 4: Detailed network structure of the DA-MUSIC algorithm.
+Principally, DA-MUSIC builds upon the understanding
+that the core challenges associated with the classic MUSIC
+algorithm can be tackled by providing a surrogate covariance
+matrix. In particular, as the CSS method provides a surrogate
+covariance K that transforms a broadband signal model into
+a narrowband one, a similar approach can be employed to
+handle coherent sources and array mismatches. Therefore, to
+improve the categorization of the noise and signal subspaces,
+the correlation of the received measurements is learned from
+temporal data by employing a dedicated RNN, which is
+augmented into the overall ﬂow of MUSIC. We next elaborate
+on the architecture in Subsection III-A, after which we
+present the training method in Subsection III-B and provide a
+discussion in Subsection III-C.
+A. Architecture
+The proposed DA-MUSIC algorithm preserves the structure
+of the MB MUSIC while replacing certain critical aspects with
+NNs. Our neural augmentations aim to improve the crucial
+steps of estimating the noise and signal subspaces from the
+empirical covariance and the translation of the spatial spectrum
+into DoAs via peak ﬁnding. By doing so, DA-MUSIC is not
+constrained by the additional model assumptions imposed
+in the derivation of MUSIC, and can, as we will show, e.g.
+learn to successfully localize coherent signals. To present the
+architecture of DA-MUSIC, we commence with the simple
+case where the number of sources D is known, and then show
+how its estimation is incorporated. Details of the NNs used in
+our experimental study are reported in Section IV.
+1) Known Number of Sources: Fig. 4 depicts a detailed
+outline of the individual elements of the DA-MUSIC architec-
+ture. The respective output dimensions of the corresponding
+components are given in the bracket notation. First, the input
+signal x(t) is transformed into the pseudo covariance matrix
+˜K using a RNN implemented through a gated recurrent unit
+(GRU). The ﬁnal state of the GRU is passed to a dense layer
+enabling a reshaping to the desired dimension of the pseudo
+covariance matrix ˜K as well as the subsequent transformation of
+the complex space. Then, through the continued use of the EVD,
+the algorithm categorizes the subspaces using the eigenvectors.
+Inserting the steering vectors a(ψ) allows to compute an
+estimate of the spatial spectrum in (11), denoted P(ψ),
+identically to MB MUSIC, by using the noise eigenvectors
+selected from ˜K.
+Next, DA-MUSIC attains the DoAs from the spatial spec-
+trum P(ψ) using an additional NN, comprised of a multi-
+layer perceptron (MLP) of three fully connected dense layers
+followed by a single dense layer with linear activation. The
+input to the MLP are R samples of P(ψ) taken uniformly
+in [0, 2π). The output of the MLP is the set of estimated
+DoA angles ˆθ. The beneﬁts of using a NN-based peak-ﬁnder
+compared to a model-based one are two-fold. First, learning the
+translation of the pseudo-spectrum into DoAs from data enables
+achieving improved resolution compared to conventional peak
+ﬁnding, since ˆθd ∈[0, 2π) instead of being dependent on the
+number of angles ψ used to evaluate the spectrum. Furthermore,
+peak ﬁnding is generally non-differentiable; thus, replacing
+it with a NN facilitates training DA-MUSIC end-to-end. The
+resulting architecture enables the application of gradient-based
+optimization, by propagating through the NNs as well as the
+EVD operation, as done in [56]. Doing so allows us to jointly
+tune the noise subspace recovery along with the translation of
+the MUSIC spectrum into DoAs by comparing its estimated
+DoAs with the true DoAs, as we detail in Subsection III-B.
+2) Varying Number of Sources: Delivering unbiased esti-
+mates of the number of signal sources as well as the ability
+to successfully localize these sources makes MUSIC highly
+applicable. The above-discussed DA-MUSIC architecture can
+be extended to operate with a potentially unknown and varying
+number of signal sources, despite the determinant nature of
+the NNs. This is achieved by addressing three key aspects of
+the algorithm: the estimation of the number of sources; the
+selection process of the noise subspace from the eigenvectors;
+and the adaptation of the output strategy to overcome the
+varying number of DoA angles.
+Estimating
+number
+of
+sources: Our design allows
+DA-MUSIC to learn abstract mappings as pseudo covariance
+features ˜K, which is geared towards end-to-end training and
+is not restricted to a natural ordering of the model-based
+covariances. Consequently, instead of estimating the number of
+sources by inspecting the magnitude of its eigenvalues, we opt
+a data-driven approach. We augment the process of estimating
+the number of sources with a classiﬁer, implemented through
+a MLP, as a classiﬁcation task. Since subspace methods with
+M inputs can resolve at most M −1 signals, the classiﬁer
+has M −1 classes. Fig. 5 depicts the DA-MUSIC architecture
+with an added classiﬁer taking the eigenvalues as an input and
+outputting an estimate of the number of sources.
+Computing noise subspace: The noise subspace selector
+needs to know the number of sources D ∈{1, ..., M −1} to
+classify the eigenvectors into signal and noise subspaces; i.e.,
+by choosing the eigenvectors corresponding to the N = M −D
+smallest eigenvalues. When the number of sources is not known,
+we propose to weight each eigenvector by an estimate of it
+belonging to the noise subspace. We do this by introducing an
+additional neural augmentation, depicted in Fig. 6, which uses
+a MLP to cluster the eigenvalues in a learned fashion.
+In particular, the MLP maps the estimated M eigenvalues
+into a vector q =
+q1, ..., qM
+
+whose entries hold the individual
+probabilities of choosing the corresponding eigenvector as a
+noise eigenvector. The selection is performed by computing
+˜E = Vdiag(q) =
+q1v1 . . . qMvM
+
+, allowing to learn a
+suitable noise subspace. Note that this setting specializes
+in the conventional approach of assigning based on the
+multiplicity of the minimal eigenvalues; in the conventional
+approach, the entries of q are either ones or zeros and ˜E
+coincides with the corresponding subspace. Consequently, the
+6
+
+
+===== PAGE 7 =====
+GRU
+dense
+reshape
+complex
+EVD
+selector spectrum
+MLP
+dense
+MLP
+dense
+x(t)
+(2 · M, T)
+a(ψ)
+h
+(2 · M)
+(2 · M · M)
+(2 · M, M)
+˜K
+(M, M)
+λ
+(M)
+λ
+(M)
+(2 · M 2)
+(M −1)
+ˆD
+V
+(M, M)
+˜E
+(M, M)
+P(ψ)
+(R)
+(2 · M)
+(M −1)
+ˆθ
+Fig. 5: DA-MUSIC algorithm with a separately trained (inter-
+nal) classiﬁer.
+GRU
+dense
+reshape
+complex
+EVD
+real
+MLP
+dense
+matrix
+·
+selector spectrum
+MLP
+dense
+MLP
+dense
+x(t)
+(2 · M, T)
+a( )
+h
+(2 · M)
+(2 · M · M)
+(2 · M, M)
+eK
+(M, M)
+λ
+(M)
+λ
+(M)
+(2 · M 2)
+(M −1)
+ˆD
+λ
+(M)
+V
+(M, M)
+(2 · M)
+(2 · M)
+q
+(M)
+diag(q)
+(M, M)
+(M, M)
+˜E
+V
+(M, M)
+˜E
+(M, M)
+P( )
+(R)
+(2 · M)
+(M −1)
+ˆ✓
+selector
+Fig. 6: Detailed outline of the DA-MUSIC subspace selection
+augmentation.
+proposed approach provides additional ﬂexibility in selecting
+the noise subspace and facilitates coping with settings where
+distinguishing between the eigenvectors is challenging due, for
+example, to low SNRs.
+Outputting varying number of DoAs: The most common
+strategy to overcome the dynamic output dimensions of NNs is
+to scale the output dimension to the maximum occurring value.
+In our case, since MUSIC cannot resolve more than M −1
+sources, the dimension of the last dense layer of DA-MUSIC
+is set to M −1. The only additional modiﬁcation required with
+this strategy compared with known D is the slight alteration
+to the loss function discussed in Subsection III-B below. An
+advantage of this strategy is that the approach allows to extract
+up to M −1 DoA, where θ1 is most likely a true DoA angle,
+θ2 has a slightly lower probability to be a DoA angle, etc. The
+ﬁnal estimation is thus carried out by ﬁrst taking ˆD from the
+module that estimates the number of sources, and then using
+the ﬁrst ˆD outputs as the recovered DoAs.
+B. Training Procedure
+DA-MUSIC is trained end-to-end in a supervised setting as
+a multiple regression problem. As detailed in Subsection II-B,
+the training set is comprised of U tuples of sequences of
+measurements and their corresponding DoAs; i.e., the uth tuples
+includes the Tu measurements Xu and their corresponding Du
+DoA angles θu. We ﬁrst describe how this data is used for
+training when D is known and ﬁxed; i.e., Du ≡D. This acts
+as a preliminary step for discussing how the training procedure
+is carried out in the general case where the model does not
+have knowledge D.
+1) Known Number of Sources: Given a sequence of mea-
+surements X as input, the model predicts the estimated DoA
+angles ˆθ that are compared to the true DoA angles θ. Gradient-
+based optimization is possible because every element of the
+architecture is differentiable, allowing backpropagation through
+the complete structure. Derived from the root mean squared
+periodic error (RMSPE) [57], [58] the following loss function
+additionally compares all permutations of the predicted angles
+with the true angles to capture all possible assignments of
+the estimated DoA to the true DoA. Thereby the minimal
+permutation RMSPE includes the permutation invariance of
+the DoAs and is obtained as:
+RMSPE(θ, ˆθ) = min
+P∈PD
+ 1
+D
+modβ(θ −Pˆθ)
+
+2 1
+2
+,
+(14)
+where PD is the set of all D × D permutations and modβ
+denotes the element-wise modulus operation regarding the
+angle range of interest, e.g. β = π for ψ ∈[−π/2, π/2) or
+β = 2π for ψ ∈[0, 2π).
+2) Unknown Number of Sources: As discussed in the
+previous subsection, DA-MUSIC is designed to resolve a
+varying and unknown number of sources by introducing an
+additional NN classiﬁer for the number of sources. To formulate
+the training procedure of the overall system, we use wc to
+denote the trainable parameters of the classiﬁer, while wd
+represents the parameters of the remaining trainable modules
+of DA-MUSIC (covariance estimator, peak ﬁnder, and subspace
+selector). The loss used to train wd is the RMSPE loss of (14),
+which is altered during training to account for varying sources
+by computing,
+LRMSPE
+θu, ˆθ(Xu)
+
+= RMSPE
+θ1:Du, ˆθ1:Du(Xu)
+
+.
+(15)
+In (15), ˆθ(Xu) denotes the M −1 outputs of DA-MUSIC
+applied to Xu, while θ1:Du = (θ1, ..., θDu). This means that
+only the ﬁrst Du angles of the estimated DoA ˆθ are compared
+with the true DoA θ while the remaining angles of ˆθ are
+completely ignored.
+The separate classiﬁer is trained using the categorical cross-
+entropy of the classes as a loss function ensuring optimal
+training. In particular, letting λu be the input to the MLP
+classiﬁer when applying DA-MUSIC to Xu and letting ˆ
+D(λu)
+be the softmax output of the MLP applied to λu (with ˆDi(λu)
+being its ith entry), the loss used for training wc is given by
+LCE
+Du, ˆ
+D(λu)
+
+= −log ˆDDu(λu).
+(16)
+It is noted that since (16) is used for training wc, then one
+should block the gradient during backpropagation from passing
+from the classiﬁer to the EVD, as indicated by the dashed
+connections in Fig. 5. This ensures that the MLP learns from the
+eigenvalues themselves and not by inﬂuencing and disrupting
+the GRU. Further, the regressor is completely independent
+of the classiﬁer, which allows DA-MUSIC to operate with
+different classiﬁers if needed or with any other desired scheme
+delivering an estimate of D. The resulting training procedure
+(employing mini-batch gradient descent with ADAM [59]) is
+summarized as Algorithm 1.
+C. Discussion
+The design of the architecture of DA-MUSIC is derived from
+the model-based MUSIC structure. This allows for exploiting
+the successful aspects of the algorithm while improving
+7
+
+
+===== PAGE 8 =====
+Algorithm 1: Training DA-MUSIC
+Data: Data set {(Xu, θu)}U
+u=1, learning rate µ = 0.001,
+decay rates b1 = 0.9, b2 = 0.999, ϵ = 10−8
+1 Initialize weights wd, wc;
+2 Initialize moment vectors νd, υd, νc, υc;
+3 for epoch = 1, 2, . . . do
+4
+for each batch do
+5
+Apply DA-MUSIC to {Xu} for u ∈batch;
+6
+Compute gradients gd via
+gd ←∇wd
+P
+u∈batch
+LRMSPE(θu, ˆθ(Xu));
+7
+Compute gradients gc via
+gc ←∇wc
+P
+u∈batch
+LCE(Du, ˆ
+D(λu));
+8
+Update biased ﬁrst moment via
+9
+νd ←b1νd + (1 −b1)gd;
+10
+νc ←b1νc + (1 −b1)gc;
+11
+Update biased second raw moment via
+12
+υd ←b2νd + (1 −b2)g2
+d;
+13
+υc ←b2νc + (1 −b2)g2
+c;
+14
+Compute bias corrected moments ˆνd, ˆνc, ˆυd, ˆυc;
+15
+Update wd via wd ←wd −µ ˆνd/(
+√ˆυd + ϵ);
+16
+Update wc via wc ←wc −µ ˆνc/(
+√ˆυc + ϵ);
+17
+end
+18 end
+certain critical elements and alleviating important drawbacks.
+Replacing the empirical covariance estimation with a RNN
+is the key neural augmentation of DA-MUSIC, enabling the
+system to learn the pseudo covariance from the measurements
+themselves such that the resulting surrogate model facilitates
+subspace-based DoA recovery. Thereby, the performance of
+DA-MUSIC, for example, is not affected by coherent signals
+and other related issues discussed in Subsection II-D. Further-
+more, learning end-to-end allows DA-MUSIC to operate with
+broadband signals, as it effectively learns to produce a focused
+pseudo covariance, similarly to the CSS methods discussed in
+Subsection II-C. It is noted that our augmentation approach
+depends on the array geometry, as the steering vectors a(·)
+are used for computing the MUSIC spectrum. Nonetheless, as
+we numerically demonstrate in Section IV, DA-MUSIC learns
+to overcome mismatches in the array geometry from the data
+without any alterations or renewed training.
+Speciﬁcally, the RNN utilized by DA-MUSIC is able to learn
+an appropriate focusing matrix while concurrently correlating
+the measurements comparably to (12). The usage of a RNN
+applied to the time-domain signal and only passing the last state
+to the next layer allows DA-MUSIC to operate with different
+signal durations and possibly cope in real-time with dynamic
+variations in the DoAs, though investigation of the latter is left
+for future work. Our experiments indicate that a deeper RNN
+aids the correlation aspect while a wider RNN allows a more
+complicated mapping with this correlation.
+Another important component of the architecture of
+DA-MUSIC is its incorporation of the EVD as a means for
+division into subspaces. Though computationally expensive, the
+internal EVD allows DA-MUSIC to not only classify signal
+and noise subspaces with the eigenvalues, but also signiﬁcantly
+simpliﬁes the estimation of the number of signal sources
+present.
+To enable training end-to-end from the errors in (14), a
+TABLE I: Simulation parameters.
+Parameter Description
+Notation
+Default Value
+Array geometry
+ULA
+Number of array elements
+M
+8
+Element spacing
+∆m
+ℓmin/2
+SNR
+10 dB
+Snapshots
+T
+200
+Grid points of continuum
+R
+360
+Min. frequency
+fmin
+0 [Hz]
+Max. frequency
+fmax
+999 [Hz]
+Sampling frequency
+fs
+2(fmax + 1)
+Time length
+Tsamp
+1 s
+Fast Fourier transform (FFT) points
+Nf
+Tsamp · fs
+NN-based peak ﬁnder is used in form of a MLP. Model-based
+peak-ﬁnding is generally non-differentiable; therefore, replacing
+it with a NN enables gradient-based optimization through the
+entire DA-MUSIC structure. Furthermore, improved resolution
+can be achieved by extracting the DoA from the spatial
+spectrum in a learned manner (i.e., ˆθd ∈[0, 2π) and it is
+not dependent on the number of angles ψ used to evaluate the
+spectrum P(ψ)).
+IV. NUMERICAL EVALUATIONS
+In this section, we present our numerical evaluations of the
+proposed DA-MUSIC algorithm1 Our experimental study is
+comprised of evaluations in a narrowband synthetic setting
+(Subsection IV-A); a broad synthetic setup (Subsection IV-B);
+and experiments with real-world data corresponding to azimuth
+estimation in seismic arrays (Subsection IV-C).
+A. Synthetic Narrowband
+The numerical evaluations of synthetic data presented below
+are obtained by simulating the measurements x(t) according
+to the narrowband system model (1). In particular, we simulate
+a ULA with M = 8 array elements that measure impinging
+waveforms originating from the DoA angles θ = [θ1, . . . , θD],
+which are separately drawn from the uniform distribution
+U(−π/2, π/2). The signals s(t) = [s1(t) . . . sD(t)]⊤are
+each drawn randomly from the complex Gaussian distribution
+CN(0, 1) for all t modeling random amplitudes and phases.
+The noises measured at the M array elements v(t)
+=
+[v1(t) . . . vM(t)]⊤are also drawn from CN(0, 1) for all t,
+followed by appropriate scaling to meet the constant SNR.
+In the coherent cases, all signals have identical amplitudes
+and phases, and when not stated otherwise, the simulation
+parameters are set according to Table I.
+1) Known Number of Sources: We ﬁrst evaluate the RMSPE
+in [rad] achieved when the number of sources D is known in
+the synthetic narrowband scenario described above. The results,
+reported in Table II, compare the performance of the following
+DoA estimators for a different number of sources D:
+• The DA-MUSIC architecture is implemented according
+to Fig. 3 and trained separately for each case D.
+• The classic MB MUSIC algorithm, implemented as
+described in Section II-D, utilizes the external knowledge
+of D.
+1The source code used in our experiments can be found at https://github.
+com/DA-MUSIC/TVT23.
+8
+
+
+===== PAGE 9 =====
+Fig. 7: DoA estimation of D = 2 closely spaced sources.
+Fig. 8: DoA estimation with mismatch in the array geometry
+for D = 5 sources.
+• The CNN architecture of [18], with a reduced stride in
+the ﬁrst layer to account for M = 8, and an increased
+grid-size for the last layer to achieve R = 360.
+• The DD DeepMUSIC proposed in [25], while incorporat-
+ing minor alterations that were necessary to accommodate
+for the difference in the setup, includes tuning of individual
+hyperparameters to assure successful training of the CNNs.
+The above algorithms are compared with a random guessing of
+the DoA angles. The results in Table II show that the proposed
+DA-MUSIC notably outperforms all considered benchmarks,
+notably surpassing the MB MUSIC algorithm not only for
+coherent sources, but also for non-coherent ones, which is the
+scenario for which the MB algorithm is designed.
+TABLE II: RMSPE of different DoA estimation algorithms
+with constant and known D for T = 200 snapshots.
+RMSPE
+[rad]
+DA-MUSIC
+CNN
+Deep-
+MUSIC
+Classic
+MUSIC
+Random
+non-coherent
+D = 2
+0.0117
+0.0237
+0.0329
+0.0336
+0.6809
+D = 3
+0.0315
+0.0464
+0.1600
+0.0841
+0.6034
+D = 4
+0.0563
+0.0841
+0.2656
+0.1459
+0.5421
+D = 5
+0.0751
+0.1319
+0.2701
+0.2008
+0.4963
+coherent
+D = 2
+0.0140
+0.0274
+0.5781
+0.2350
+0.6854
+D = 3
+0.0407
+0.0528
+0.4023
+0.4819
+0.6060
+D = 4
+0.0519
+0.0859
+0.2915
+0.4522
+0.5407
+D = 5
+0.0658
+0.1254
+0.3054
+0.4401
+0.5000
+Fig. 9: DoA estimation of D = 5 signals with different SNRs.
+Fig. 10: DoA estimation of D = 5 signals with different
+number of snapshots T.
+To compare the resolution of the algorithms, Fig. 7 shows
+the RMSPE for localizing D = 2 non-coherent signals, which
+are located close together at a ∆θ distance from each other. The
+MB MUSIC algorithm is shown to collapse when the angular
+difference approaches ∆θ ≈0.1 radians, while DA-MUSIC
+demonstrates a constant low error for all ∆θ, indicating its
+improved resolution.
+Next, we evaluate DA-MUSIC in the presence of a mismatch
+in the array geometry. Fig. 8 depicts the RMSPE achieved
+when each element of the steering vector a(·) is corrupted
+with zero-mean Gaussian noise, leading to a mismatch from
+the values used to compute the spatial spectrum. Indicating
+improved robustness, DA-MUSIC is shown to overcome such
+mismatches in the array geometry from the data. The CNN,
+TABLE III: RMSPE of different DoA estimation algorithms
+with varying and unknown D for T = 200 snapshots.
+RMSPE
+[rad]
+DA-MUSIC
+CNN
+Classic
+MUSIC
+Beamformer
+Random
+non-coherent
+D = 2
+0.0430
+0.0403
+0.0428
+0.1900
+0.8318
+D = 3
+0.0705
+0.0842
+0.0917
+0.2906
+0.6981
+D = 4
+0.0894
+0.1463
+0.1489
+0.3757
+0.6021
+D = 5
+0.1222
+0.1847
+0.1856
+0.4029
+0.5357
+coherent
+D = 2
+0.0383
+0.0376
+0.6139
+0.1670
+0.8243
+D = 3
+0.0688
+0.0729
+0.5743
+0.2843
+0.6962
+D = 4
+0.0869
+0.1181
+0.5258
+0.3883
+0.6051
+D = 5
+0.1046
+0.1652
+0.4744
+0.4179
+0.5435
+9
+
+
+===== PAGE 10 =====
+Fig. 11: Accuracy of estimating
+ˆD for various T with
+D ∈{2, ..., 5} non-coherent signals.
+Fig. 12: Accuracy of estimating
+ˆD for various T with
+D ∈{2, ..., 5} coherent signals.
+deepMUSIC, and the Random algorithm remain unaffected as
+they are independent of a(·).
+Fig.9 depicts the performances differences when localizing
+D = 5 non-coherent signals with T
+= 200 snapshots
+available for different SNRlevels in the range of [−20, 20]
+dB. DA-MUSIC shows a constant low SNRfor positive dB
+settings and without any ﬂuctuations which slowly decreases
+with increasing SNR.
+We conclude the evaluation of DA-MUSIC with a known
+number of sources by considering the case in which the
+number of available snapshots T is varied. Fig. 10 depicts the
+performance degradation of the estimators with fewer snapshots
+available. The DD estimators are only trained for the case
+T = 200 as indicated by the circle around the T = 200
+marker, yet manage to operate with shorter sequences during
+inference due to the recurrent unit or by taking the covariance
+matrix as input.
+2) Unknown and Varying Number of Sources: Table III
+shows the results obtained in the exact same narrowband
+scenario introduced in Section IV-A above but with an
+unknown and varying number of sources D ∈{2, ..., 5}. Here,
+during inference, the DoA estimation algorithms do not have
+any knowledge of the varying number of sources present.
+To compute the RMSPE in such settings (i.e., if the DoA
+estimators output the wrong number of sources ˆD), the DoA are
+either truncated (least dominant peaks for the MB algorithms
+and the CNN and highest indexed DoA angles for DA-MUSIC)
+Fig. 13: RMSPE for varying and unknown number of
+D ∈{2, ..., 5} non-coherent signals.
+Fig. 14: RMSPE for varying and unknown number of
+D ∈{2, ..., 5} coherent signals.
+or padded with random DoA angels until |ˆθ| = |θ| = D. We
+compare the following DoA estimators:
+• The DA-MUSIC architecture is implemented according
+to Fig. 5 with the classiﬁer which predicts the number
+of sources being trained along with the overall DoA
+estimation method.
+• The DA-MUSIC (RTC) variation is also implemented
+according to Fig. 5, yet with a retroactively trained
+classiﬁer (RTC), i.e., we ﬁrst train DA-MUSIC for a
+speciﬁc scenario, and then we ﬁx the DoA estimator
+modules and train only the classiﬁcation network for
+alternate scenarios.
+• The Classic MUSIC algorithm is implemented as before
+but determines the number of sources by estimating the
+multiplicity of the smallest eigenvalue utilizing a pre-
+determined threshold.
+• The CNN of [18] as introduced above.
+• A conventional beamformer [8], utilizing a peak-ﬁnder
+to estimate the number of sources by determining the
+number of dominant peaks.
+• The Random algorithm corresponds to the base perfor-
+mance when choosing DoA angles at random.
+Figs. 11 and 12 show the accuracy in identifying the number
+of sources versus the number of snapshots T obtained by
+the mentioned algorithms during the estimation of ˆD for
+non-coherent and coherent signals, respectively. Again, the
+DD estimators are only trained for the case T = 200 as
+10
+
+
+===== PAGE 11 =====
+TABLE IV: Simulation parameters of the broadband scenarios.
+Parameter Description
+Notation
+Value
+Scenario 1
+Modulation frequency
+fc,d
+0 −999 [Hz]
+Scenario 2
+Number of subcarriers
+K
+1000
+Signal bandwidth
+∆fd
+1000 [Hz]
+Scenario 3
+Modulation frequency
+fc,d
+0 −899 [Hz]
+Number of subcarriers
+K
+10
+Signal bandwidth
+∆fd
+100 [Hz]
+indicated by the circle. Unfortunately, the performance of the
+internal classiﬁer of DA-MUSIC is dependent on the number of
+snapshots, and to be able to maintain a more constant accuracy
+it must be trained for each case. Consequently, DA-MUSIC
+(RTC), which trains its classiﬁer retroactively, requires separate
+training for each number of snapshots, yet manages to achieve
+the most accurate predictions.
+The corresponding performances in localizing the varying
+number of sources are depicted in Figs. 13 and 14 for
+non-coherent and coherent signals, respectively. The shown
+RMSPE is an average over all considered D ∈{2, ..., 5}. The
+fundamental limitation of the MB MUSIC structure to estimate
+the number of signal sources for coherent signals also severely
+impacts the localization abilities of the algorithm.
+B. Synthetic Broadband
+We proceed to evaluate DA-MUSIC in a broadband setting.
+The previously introduced synthetic environment requires
+certain alterations and assumptions to account for broadband
+signals. The sensor elements of the receiving array are ade-
+quately spaced, and the element spacing is therefore assumed
+to be
+∆m = ℓmin
+2
+= 1
+2
+c
+fmax
+,
+(17)
+where ℓmin is the minimal wavelength corresponding to
+the maximal occurring frequency fmax and the frequency
+spectrum of interest is considered to be within [fmin, fmax].
+The measurements are simulated utilizing the broadband system
+model (7), where the elements of S(ω) and W(ω) are the Nf-
+point FFTs of the elements of s(t) and w(t). The parameter
+values of the different broadband scenarios are speciﬁed in
+Table IV if not speciﬁed otherwise. We simulate the following
+DoA estimators:
+• The DA-MUSIC architecture is implemented according
+to Fig. 3, but the GRU parameters are scaled (having
+10 times more parameters available) to enable optimal
+learning despite the more complex broadband scenarios.
+• The classic MUSIC algorithm is implemented in its
+narrowband format as described in Section II-D and
+utilizes steering vectors calibrated to the exact array
+element spacing using ℓmin/2.
+• Broadband MUSIC corresponds to an incoherent broad-
+band extension of MUSIC [46] and is implemented using
+10 [Hz] per IFB; i.e., |ωb −ωb−1| = 10 [Hz] for all
+b ∈{1, ..., B}.
+• The DoA estimators are again compared to choosing DoA
+angles at random.
+We consider the following three different signal models of the
+broadband signals sd(t) for d ∈{1, ..., D}:
+Fig. 15: RMSPE for known number of D = 2 signals from
+Broadband Scenario 1.
+Fig. 16: RMSPE for known number of D = 2 signals from
+Broadband Scenario 2.
+Fig. 17: RMSPE for known number of D = 2 signals from
+Broadband Scenario 3.
+1) Broadband Scenario 1: A broadband signal is obtained as
+narrowband signals modulated on different carrier frequencies,
+i.e.,
+sd(t) = ¯sd exp (2πjfc,dt),
+(18)
+where for each d ∈{1, ..., D}, both ¯sd and fc,d are randomly
+drawn from CN(0, 1) and U(fmin, fmax) respectively.
+2) Broadband Scenario 2: Broadband signals are obtained
+via orthogonal frequency division multiplexing (OFDM) [60],
+which are modulated on the same carrier frequency. The signals
+are considered in baseband and take the following form
+sd,OFDM = 1
+K
+K−1
+X
+k=0
+¯sk exp (2πjk∆fdt/K),
+(19)
+11
+
+
+===== PAGE 12 =====
+where ¯sk ∼CN(0, 1) is randomly drawn for each of the K
+subcarriers and the bandwidth is ∆fd = fmax −fmin.
+3) Broadband Scenario 3: A combination of the two
+previous scenarios and consists of OFDM signals modulated
+on different carrier frequencies
+sd(t) = exp (2πjfc,dt) sd,OFDM,
+(20)
+where fc,d is drawn randomly from U(fmin, fmax −∆fd) to
+account for the signal bandwidth ∆fd.
+Results: Figs. 15, 16, and 17 present the RMSPE obtained
+when localizing D = 2 broadband signals from Broadband
+Scenario 1, 2, and 3 respectively. The number of snapshots
+goes as high as the sampling frequency fs = 2000 [Hz] and is
+given logarithmically. This high number is suitable for the MB
+broadband MUSIC algorithm to achieve reliable transformation
+from the time domain to the frequency domain. DA-MUSIC
+is again only trained for the case T = 200, as indicated by a
+circle around the marker, yet manages to perform similarly well
+with a higher number of snapshots. As expected, the classic
+narrowband MUSIC algorithm completely fails to operate
+with these broadband signals, while DA-MUSIC consistently
+achieves the most accurate estimates, outperforming the MB
+broadband MUSIC algorithm, except for Broadband Scenario
+3 with a very large number of snapshots T > 103, where
+DA-MUSIC trained with much shorter sequences is slightly
+outperformed by the MB estimator. These results demonstrate
+the suitability of DA-MUSIC for coping with broadband
+scenarios with a limited number of observations.
+Figs. 18, 19, and 20 analyze the performances with differently
+sized frequency ranges [fmin, fmax]. It is noted that the
+architecture of DA-MUSIC is almost invariant towards such
+scalings and manages to handle signals during inference with
+much larger bandwidths or modulated with higher carrier
+frequencies than the signals of the training data. Speciﬁcally,
+DA-MUSIC is only trained for signals with carrier frequencies
+and bandwidths within 0 to 1000 [Hz] as indicated by the
+circle around the marker. The results in Figs. 18-20 show that
+DA-MUSIC, whose complexity is ﬁxed, learns to achieve the
+most accurate estimates, outperforming the MB broadband
+MUSIC; the latter requires an increase of the number of IFBs
+to overcome a larger frequency range and has a constant 10 [Hz]
+per bin in the depicted results leading to a severe increase in
+computational complexity.
+C. Non-Synthetic Data: Azimuth Estimation in Seismic Arrays
+In this section, we demonstrate the feasibility and the perfor-
+mance of DA-MUSIC in processing non-synthetic seismic data.
+The seismic data was recorded by the German Experimental
+Seismic System (GERES) array located in the Bavarian Forest,
+Germany. GERES is part of the Comprehensive nuclear-Test
+Ban Treaty Organization (CTBTO) international monitoring
+system, and is a well-maintained and calibrated station. Data
+from GERES is continuously streamed to the International Data
+Centre (IDC) of the CTBTO, where it is analyzed. The array is
+composed of 25 vertical seismometers with a minimal distance
+between the sites of 124 [m] and an aperture of approximately
+2.13 [km]. The seismic signal at each sensor is sampled at
+Fig. 18: RMSPE of varying frequency range for the carrier
+frequencies of Broadband Scenario 1 signals.
+Fig. 19: RMSPE of varying frequency range for the bandwidth
+of Broadband Scenario 2 signals.
+Fig. 20: RMSPE of varying frequency range for the carrier
+frequencies of Broadband Scenario 3 signals.
+40 [Hz]. Details about the GERES arrays and the exact array
+conﬁguration can be found in [61].
+We use data from October to December 2021, in which
+GERES detected arrivals for 2904 events of which 2816 were
+used during this analysis, 2534 for training, and 282 for testing.
+We employ sliding windows of length 100 seconds with a shift
+of 25 seconds around the signal arrival time as designated by
+the IDC analysis. The following parameters for each event are
+obtained from the IDC’s Reviewed Event Bulletin: the azimuth
+DoA angle θ, the slowness value u, and the sensor positions
+r1, ..., rM. Using these parameters, the steering vectors take
+the following form:
+a(f, u, ψ, α)=
+
+e−j2πfur1k(ψ,α), . . . , e−j2πfurMk(ψ,α)
+,
+12
+
+
+===== PAGE 13 =====
+TABLE V: RMSPE in [rad] of different DoA estimation
+algorithms for seismic data.
+DA-MUSIC
+Broadband
+MUSIC
+Classic
+MUSIC
+Beam-
+former
+Random
+RMSPE
+0.6269
+1.0075
+1.2475
+0.9383
+1.7097
+for some frequency f and with the wave vector for certain
+elevation α and azimuth ψ of interest,
+k(ψ, α) = [sin α cos ψ, sin α sin ψ, cos α].
+We compare DA-MUSIC with following DoA estimators for
+the setting settings α = −π/4 and f = 1 [Hz]:
+• Broadband MUSIC, corresponding to an incoherent broad-
+band extension of MUSIC [46], and instead of using the
+constant f = 1 [Hz] it utilizes 10 IFB with frequencies in
+[0, 20] [Hz].
+• The classic MUSIC algorithm, implemented in its narrow-
+band format as described in Section II-D with additionally
+ﬁltering the measurements with an experimentally cali-
+brated low-pass ﬁlter, allowing only frequencies within
+[0, 10] [Hz] to pass.
+• A conventional beamformer [8].
+• Choosing a DoA angle at random.
+The results, reported in Table V, show that DA-MUSIC
+manages to outperform the MB estimators by not only focusing
+the frequency component, but also by concurrently focusing
+the interdependent elevation angle to receive a stable azimuth
+estimation. On the other hand, the MB algorithms require
+further knowledge of the elevation and frequency at hand to
+operate reliably. While the errors in Table V may appear to be
+relatively large, it is noted that the average error achieved via
+expert analysis reported by the IDC Reviewed Event Bulletin
+is 0.4243 [rad]. This indicates the ability of DA-MUSIC to
+achieve comparable results and to notably outperform the MB
+estimators while operating with simpliﬁed and approximated
+model parameters.
+V. CONCLUSIONS
+We presented a hybrid MB/DD implementation of the
+MUSIC
+algorithm
+for
+DoA
+estimation.
+The
+proposed
+DA-MUSIC was shown to mitigate some of the limitations and
+drawbacks of the classic method. DA-MUSIC is operable with
+an unknown number of sources and with broadband signals
+while being adaptable to various scenarios and robust towards
+severe mismatches in the array geometry. The proposed hybrid
+MB/DD approach provides a viable alternative in both low
+and high snapshot domains and shows a remarkable resolution
+capability compared to both MB and DD benchmarks in various
+settings.
+VI. ACKNOWLEDGMENT
+We thank Dr. Yochai Ben Horin for constructive and valuable
+joint discussions on the seismic data, and for providing the
+data.
+REFERENCES
+[1] J. P. Merkofer, G. Revach, N. Shlezinger, and R. J. G. van Sloun, “Deep
+augmented music algorithm for data-driven DoA estimation,” in IEEE
+Internatioal Conference on Acoustics, Speech, and Signal Processing
+(ICASSP), 2022, pp. 3598–3602.
+[2] I. Bilik, O. Longman, S. Villeval, and J. Tabrikian, “The rise of radar
+for autonomous vehicles: Signal processing solutions and future research
+directions,” IEEE Signal Process. Mag., vol. 36, no. 5, pp. 20–31, 2019.
+[3] D. Rahamim, J. Tabrikian, and R. Shavit, “Source localization using
+vector sensor array in a multipath environment,” IEEE Trans. Signal
+Process., vol. 52, no. 11, pp. 3096–3103, 2004.
+[4] J. Foutz, A. Spanias, and M. K. Banavar, “Narrowband direction of
+arrival estimation for antenna arrays,” Synthesis Lectures on Antennas,
+vol. 3, no. 1, pp. 1–76, 2008.
+[5] H. Krim and M. Viberg, “Two decades of array signal processing research:
+the parametric approach,” IEEE Signal Process. Mag., vol. 13, no. 4, pp.
+67–94, 1996.
+[6] Z. Ahmad and I. Ali, “Three decades of development in DoA estimation
+technology,” Indonesian Journal of Electrical Engineering and Computer
+Science, vol. 12, pp. 6297–6312, 2014.
+[7] R. Schmidt, “Multiple emitter location and signal parameter estimation,”
+IEEE Trans. Antennas Propag., vol. 34, no. 3, pp. 276–280, 1986.
+[8] M. S. Bartlett, “Smoothing periodograms from time-series with continu-
+ous spectra,” Nature, vol. 161, no. 4096, pp. 686–687, May 1948.
+[9] J. Capon, “High-resolution frequency-wavenumber spectrum analysis,”
+Proc. IEEE, vol. 57, no. 8, pp. 1408–1418, 1969.
+[10] T. E. Tuncer, T. K. Yasar, and B. Friedlander, “Chapter 4 - narrowband
+and wideband DoA estimation for uniform and nonuniform linear arrays,”
+in Classical and Modern Direction-of-Arrival Estimation.
+Boston:
+Academic Press, 2009, pp. 125–160.
+[11] H. Wang and M. Kaveh, “Coherent signal-subspace processing for the
+detection and estimation of angles of arrival of multiple wide-band
+sources,” IEEE Trans. Acoust., Speech, Signal Process., vol. 33, no. 4,
+pp. 823–831, 1985.
+[12] G. Su and M. Morf, “The signal subspace approach for multiple wide-
+band emitter location,” IEEE Trans. Acoust., Speech, Signal Process.,
+vol. 31, no. 6, pp. 1502–1522, 1983.
+[13] P.-A. Grumiaux, S. Kiti´c, L. Girin, and A. Gu´erin, “A survey of sound
+source localization with deep learning methods,” The Journal of the
+Acoustical Society of America, vol. 152, no. 1, pp. 107–151, 2022.
+[14] S. Chakrabarty and E. A. Habets, “Multi-speaker DoA estimation using
+deep convolutional networks trained with noise signals,” IEEE J. Sel.
+Topics Signal Process., vol. 13, no. 1, pp. 8–21, 2019.
+[15] Z.-M. Liu, C. Zhang, and S. Y. Philip, “Direction-of-arrival estimation
+based on deep neural networks with robustness to array imperfections,”
+IEEE Trans. Antennas Propag., vol. 66, no. 12, pp. 7315–7327, 2018.
+[16] L. li Wu, Z. Liu, and Z. Huang, “Deep convolution network for direction
+of arrival estimation with sparse prior,” IEEE Signal Process. Lett.,
+vol. 26, pp. 1688–1692, 2019.
+[17] H. Hammer, S. E. Chazan, J. Goldberger, and S. Gannot, “Dynamically
+localizing multiple speakers based on the time-frequency domain,”
+EURASIP Journal on Audio, Speech, and Music Processing, vol. 2021,
+no. 1, pp. 1–10, 2021.
+[18] G. K. Papageorgiou, M. Sellathurai, and Y. C. Eldar, “Deep networks for
+direction-of-arrival estimation in low SNR,” IEEE Trans. Signal Process.,
+vol. 69, pp. 3714–3729, 2020.
+[19] A. Barthelme and W. Utschick, “A machine learning approach to DoA
+estimation and model order selection for antenna arrays with subarray
+sampling,” IEEE Trans. Signal Process., vol. 69, pp. 3075–3087, 2020.
+[20] D. Hu, Y. Zhang, L. He, and J. Wu, “Low-complexity deep-learning-
+based DOA estimation for hybrid massive MIMO systems with uniform
+circular arrays,” IEEE Wireless Commun. Lett., vol. 9, pp. 83–86, 2020.
+[21] M. L. L. de Oliveira and M. Bekooij, “Deep-MLE: Fusion between a
+neural network and MLE for a single snapshot DOA estimation,” IEEE
+International Conference on Acoustics, Speech and Signal Processing
+(ICASSP), pp. 3673–3677, 2022.
+[22] ——, “Resnet applied for a single-snapshot DOA estimation,” IEEE
+Radar Conference (RadarConf22), 2022.
+[23] N. Shlezinger, J. Whang, Y. C. Eldar, and A. G. Dimakis, “Model-based
+deep learning,” arXiv preprint arXiv:2012.08405, 2020.
+[24] N. Shlezinger, Y. C. Eldar, and S. P. Boyd, “Model-based deep learning:
+On the intersection of deep learning and optimization,” IEEE Access,
+2022.
+[25] A. M. Elbir, “DeepMUSIC: Multiple signal classiﬁcation via deep
+learning,” IEEE Sensors Letters, vol. 4, no. 4, pp. 1–4, 2020.
+13
+
+
+===== PAGE 14 =====
+[26] C. Liu, W. Feng, H. Li, and H. Zhu, “Single snapshot DOA estimation
+based on spatial smoothing MUSIC and CNN,” IEEE International
+Conference on Signal Processing, Communications and Computing
+(ICSPCC), 2021.
+[27] A. Barthelme and W. Utschick, “DoA estimation using neural network-
+based covariance matrix reconstruction,” IEEE Signal Process. Lett.,
+vol. 28, pp. 783–787, 2021.
+[28] D. T. Hoang and K. Lee, “Deep learning-aided coherent direction-of-
+arrival estimation with the ftmr algorithm,” IEEE Trans. Signal Process.,
+vol. 70, pp. 1118–1130, 2022.
+[29] W. Zhang, Y. Han, M. Jin, and X. Qiao, “Multiple-toeplitz matrices
+reconstruction algorithm for doa estimation of coherent signals,” IEEE
+Access, vol. 7, pp. 49 504–49 512, 2019.
+[30] S. Chakrabarty and E. A. Habets, “Broadband DoA estimation using
+convolutional neural networks trained with noise signals,” in Workshop
+on Applications of Signal Processing to Audio and Acoustics (WASPAA),
+2017, pp. 136–140.
+[31] W. Zhu and M. Zhang, “A deep learning architecture for broadband DoA
+estimation,” in International Conference on Communication Technology
+(ICCT), 2019, pp. 244–247.
+[32] L. li Wu and Z. Huang, “Coherent SVR learning for wideband direction-
+of-arrival estimation,” IEEE Signal Process. Lett., vol. 26, pp. 642–646,
+2019.
+[33] B. Friedlander, “Chapter 1 - wireless direction-ﬁnding fundamentals,” in
+Classical and Modern Direction-of-Arrival Estimation, T. E. Tuncer and
+B. Friedlander, Eds.
+Boston: Academic Press, 2009, pp. 1–51.
+[34] Z. Chen, G. Gokeda, and Y. Yu, Introduction to Direction-of-arrival
+Estimation.
+Artech House, 2010.
+[35] S. Ge, K. Li, and S. N. M. Rum, “Deep learning approach in DoA
+estimation: A systematic literature review,” Mob. Inf. Syst., vol. 2021,
+pp. 6 392 875:1–6 392 875:14, 2021.
+[36] O. Frost, “An algorithm for linearly constrained adaptive array processing,”
+Proc. IEEE, vol. 60, no. 8, pp. 926–935, 1972.
+[37] B. Van Veen and K. Buckley, “Beamforming: a versatile approach to
+spatial ﬁltering,” IEEE ASSP Mag., vol. 5, no. 2, pp. 4–24, 1988.
+[38] B. Friedlander, “The root-music algorithm for direction ﬁnding with
+interpolated arrays,” Signal Processing, vol. 30, no. 1, pp. 15–29, 1993.
+[39] Tie-Jun Shan, M. Wax, and T. Kailath, “On spatial smoothing for
+direction-of-arrival estimation of coherent signals,” IEEE Trans. Acoust.,
+Speech, Signal Process., vol. 33, no. 4, pp. 806–811, 1985.
+[40] Qing Chen and Ruolun Liu, “On the explanation of spatial smoothing
+in music algorithm for coherent sources,” in International Conference
+on Information Science and Technology, 2011, pp. 699–702.
+[41] A. Paulraj, R. Roy, and T. Kailath, “Estimation of signal parameters
+via rotational invariance techniques- esprit,” in Nineteeth Asilomar
+Conference on Circuits, Systems and Computers, 1985., 1985, pp. 83–89.
+[42] V. Vasylyshyn, “Direction of arrival estimation using esprit with sparse
+arrays,” in European Radar Conference (EuRAD), 2009, pp. 246–249.
+[43] M. Wax, T.-J. Shan, and T. Kailath, “Spatio-temporal spectral analysis by
+eigenstructure methods,” IEEE Trans. Acoust., Speech, Signal Process.,
+vol. 32, no. 4, pp. 817–827, 1984.
+[44] S. Chandran and M. Ibrahim, “DoA estimation of wide-band signals
+based on time-frequency analysis,” IEEE J. Ocean. Eng., vol. 24, no. 1,
+pp. 116–121, 1999.
+[45] S. Argentieri and P. Danes, “Broadband variations of the music high-
+resolution method for sound source localization in robotics,” in 2007
+IEEE/RSJ International Conference on Intelligent Robots and Systems,
+2007, pp. 2009–2014.
+[46] Y.-S. Yoon, L. M. Kaplan, and J. H. McClellan, “DoA estimation of
+wideband signals,” Advances in Direction-of-Arrival Estimation, 2006.
+[47] J. Krolik and D. Swingler, “Focused wide-band array processing by spatial
+resampling,” IEEE Trans. Acoust., Speech, Signal Process., vol. 38, no. 2,
+pp. 356–360, 1990.
+[48] T.-S. Lee, “Efﬁcient wideband source localization using beamforming
+invariance technique,” IEEE Trans. Signal Process., vol. 42, no. 6, pp.
+1376–1387, 1994.
+[49] B. Friedlander and A. Weiss, “Direction ﬁnding for wideband signals
+using an interpolated array,” in Asilomar Conference on Signals, Systems,
+and Computers, vol. 1, 1991, pp. 583–587.
+[50] E. di Claudio and R. Parisi, “WAVES: weighted average of signal
+subspaces for robust wideband direction ﬁnding,” IEEE Trans. Signal
+Process., vol. 49, no. 10, pp. 2179–2191, 2001.
+[51] Y.-S. Yoon, L. Kaplan, and J. McClellan, “TOPS: new DOA estimator
+for wideband signals,” IEEE Trans. Signal Process., vol. 54, no. 6, pp.
+1977–1989, 2006.
+[52] F. Ma and X. Zhang, “Wideband doa estimation based on focusing signal
+subspace,” Signal, Image and Video Processing, vol. 13, 06 2019.
+[53] S. Ge, K. Li, and S. N. M. Rum, “Deep learning approach in DOA
+estimation: A systematic literature review,” Mob. Inf. Syst., vol. 2021,
+pp. 6 392 875:1–6 392 875:14, 2021.
+[54] S. M. Kay, “Fundamentals of statistical signal processing: estimation
+theory,” Technometrics, vol. 37, p. 465, 1993.
+[55] H. Krim and J. Proakis, “Smoothed eigenspace-based parameter esti-
+mation,” Automatica, vol. 30, no. 1, pp. 27–38, 1994, special issue on
+statistical signal processing and control.
+[56] O. Solomon, R. Cohen, Y. Zhang, Y. Yang, Q. He, J. Luo, R. J. van
+Sloun, and Y. C. Eldar, “Deep unfolded robust PCA with application
+to clutter suppression in ultrasound,” IEEE Trans. Med. Imag., vol. 39,
+no. 4, pp. 1051–1063, 2019.
+[57] T. Routtenberg and J. Tabrikian, “Bayesian parameter estimation using
+periodic cost functions,” IEEE Trans. Signal Process., vol. 60, no. 3, pp.
+1229–1240, 2011.
+[58] ——, “Non-bayesian periodic Cram´er-Rao bound,” IEEE Trans. Signal
+Process., vol. 61, no. 4, pp. 1019–1032, 2013.
+[59] D. P. Kingma and J. Ba, “Adam: A method for stochastic optimization,”
+arXiv preprint arXiv:1412.6980, 2014.
+[60] S. B. Weinstein, “The history of orthogonal frequency-division multi-
+plexing [history of communications],” IEEE Commun. Mag., vol. 47,
+no. 11, pp. 26–35, 2009.
+[61] H.-P. Harjes, “Design and siting of a new regional array in central europe,”
+Bulletin of the Seismological Society of America, vol. 80, pp. 1801–1817,
+1990.
+14

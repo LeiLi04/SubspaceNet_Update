@@ -1,0 +1,556 @@
+
+
+===== PAGE 1 =====
+Tracking a Plane Wave Direction using Sparse
+Arrays with an Extended Kalman Filter
+Showrov Rahman
+University of Rhode Island
+Kingston, RI 02881 USA
+showrov rahman@uri.edu
+Kaushallya Adhikari
+University of Rhode Island
+Kingston, RI 02881 USA
+kadhikari@uri.edu
+Abstract—This work focuses on estimating the direction of
+arrival of a plane wave from a moving source using time domain
+snapshots captured by a linear array. We employ an extended
+Kalman ﬁlter by linearizing the time domain measurement
+model. We consider the performance of a full array, which
+serves as a benchmark for comparison with three popular sparse
+arrays: coprime, nested, and shift-invariant sparse arrays. The
+motivation for using such sparse arrays is to reduce overall cost,
+sensor count, and computation burden. The simulation results
+demonstrate that sparse arrays achieve comparable accuracy
+to full arrays of equivalent aperture. Among the sparse arrays
+studied, the coprime array exhibits the highest performance,
+with a mean squared error closest to that of the full array.
+Index Terms—Coprime array, direction of arrival (DOA), ex-
+tended Kalman ﬁlter(EKF), nested array, shift-invariant sparse
+array (SISA), sparse arrays
+I. INTRODUCTION
+A uniform linear array (ULA) is the most commonly
+studied array structure for estimating the direction of arrival
+(DOA) of plane waves [1]–[4]. In a ULA, sensors are posi-
+tioned along a straight line with an intersensor distance of
+λ/2, where λ is the wavelength of the impinging waves [1].
+When intersensor spacing exceeds λ/2, aliasing artifacts may
+occur. However, careful design of sparse arrays can mitigate
+these artifacts. Arrays with an average intersensor spacing
+greater than λ/2 are classiﬁed as sparse arrays. For this
+study, we focus exclusively on sparse arrays arranged on a
+uniform λ/2 grid along a line. These sparse linear arrays
+(SLAs) allow for a reduction in the number of sensors by
+increasing the spacing. Consequently, SLAs offer lower costs
+and require less data computation compared to ULAs [5], [6].
+Additionally, the sparse positioning of sensors in SLAs results
+in lower mutual coupling effects [7], [8]. These advantages
+make sparse arrays desirable for various applications [9]–[12],
+and they come in different types [2], [13], [14].
+Coprime and nested arrays are constructed by interleaving
+two undersampled ULAs (ULAs with an intersensor spacing
+greater than λ/2) [7], [15]. The design parameters for these
+arrays include sampling factors, number of sensors, and array
+lengths. By adjusting these parameters, various types of sparse
+linear arrays (SLAs) can be created. A recent addition to
+the category of sparse arrays is the shift-invariant sparse
+array (SISA), which encompasses both coprime and nested
+arrays [16]–[18]. In this study, we analyze and compare the
+performance of three types of sparse arrays: (1) coprime, (2)
+nested, and (3) SISA.
+For signal estimation and tracking, we apply the extended
+Kalman ﬁlter (EKF). The Kalman ﬁlter, introduced by R.E.
+Kalman in 1960, stands as one of the most prominent and
+widely used signal parameter estimators [19]. The Kalman
+ﬁlter is a sequential minimum mean squared error (MMSE)
+estimator and it allows the unknown parameters to evolve
+in time via a dynamical model [20], [21]. A Kalman ﬁlter
+can be regarded as a generalization of the Wiener ﬁlter
+since a Kalman ﬁlter does not require the signals to be
+stationary and scalar. Kalman ﬁlter provides the estimates of
+the parameters of interest by incorporating data from past
+and present [20]. When the signal and noise follow a jointly
+Gaussian distribution, the Kalman ﬁlter represents the optimal
+MMSE estimator. Even in scenarios where this assumption
+is not met, it remains the optimal linear MMSE (LMMSE)
+estimator. However, the Kalman ﬁlter is inherently limited to
+linear signal and measurement models, a constraint not met
+by many practical systems. In such cases, an extended version
+(i.e., EKF), is employed. The EKF leverages a ﬁrst-order
+Taylor series approximation to linearize non-linear signal and
+measurement models, thus extending the applicability of the
+traditional Kalman ﬁlter concept [21], [22]. In this study, we
+utilize time domain snapshots received by a linear array as
+measurements. Since these measurements are non-linear in
+the parameter of interest, we apply an EKF for direction of
+arrival (DOA) estimation.
+This paper conducts a comparative analysis of SLAs em-
+ploying an EKF for tracking the DOA of a plane wave. The
+study centers on three distinct SLAs (coprime, nested, and
+SISA), each with an identical number of sensors (6) and
+aperture. A full ULA comprising 10 sensors is the benchmark
+for comparison.
+The rest of this paper is structured as follows. Section II de-
+scribes the model of the signal and the estimator (EKF). Sec-
+tion III explains and illustrates the array models . Section IV
+presents and discusses the simulation results. Section V sums
+up the study.
+979-8-3503-6762-1/24/$31.00 ©2024 IEEE
+180
+NAECON 2024 - IEEE National Aerospace and Electronics Conference | 979-8-3503-6762-1/24/$31.00 ©2024 IEEE | DOI: 10.1109/NAECON61878.2024.10670645
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:32:06 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+II. SIGNAL MODEL AND ESTIMATOR
+We consider the received signal as a sinusoid with a known
+amplitude α and an unknown direction θ. We further assume
+that the signal direction changes over time, and therefore, we
+employ the EKF to track the evolving direction cosine cos(θ).
+In the following sections, the boldface lowercase symbols
+represent vectors, while boldface uppercase symbols denote
+matrices. Consistent with the notation style in reference [21],
+we denote s[n] as cos(θ[n]). Thus, the received signal at the
+ith sensor at time n is given by
+x[n] = α cos(ω0n + πs[n]i) + wi[n],
+(1)
+where ω0 is the temporal radian frequency and wi[n] is the
+white Gaussian noise (WGN) at sensor i and time n. We can
+also express (1) as
+x[n] = α
+
+
+cos(ω0n + πs[n]0)
+cos(ω0n + πs[n]1)
+...
+cos(ω0n + πs[n](L −1))
+
++ w[n],
+(2)
+where L is the number of sensors in the array. Since (2) is
+non-linear in the unknown s[n], an EKF needs to be applied
+instead of the traditional Kalman ﬁlter. Comparing (2) with
+(13.66) from [21], we can rewrite (2) as
+x[n] = h(s[n]) + w[n].
+(3)
+In this study, we assume that the unknown direction cosine
+s[n] is a scalar that can be modeled as an auto-regressive
+process of order 1:
+s[n] = As[n −1] + u[n],
+(4)
+where u[n] is WGN with variance Q. The state equation in
+(4) is linear and hence Taylor series approximation is not
+required for this equation.
+To linearize h(s[n]) in (3), we differentiate with respect to
+s[n] to obtain
+∂h(s[n])
+∂s[n]
+= −α
+
+
+π0
+π1
+...
+π(L −1)
+
+⊙
+
+
+sin(ω0n + πs[n]0)
+sin(ω0n + πs[n]1)
+...
+sin(ω0n + πs[n](L −1))
+
+
+(5)
+where ⊙represents the Hadamard or element-wise product.
+Denoting the sensor indices as i =
+0
+1
+. . .
+L −1T , we
+can rewrite (2) as x[n] = α cos(ω0n+πs[n]i)+w[n] and (5)
+as
+∂h(s[n])
+∂s[n]
+= −απi ⊙sin(ω0n + πs[n]i).
+(6)
+Setting i
+=
+0
+1
+. . .
+9T
+yields a full ULA with
+10 sensors. The SLAs can also be speciﬁed in a similar
+manner by changing the sensor indices. For instance, the
+coprime array, nested array, and SISA in Fig. 1 correspond to
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Sensor Position
+Full ULA
+Coprime Array
+Nested Array
+SISA Array
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Sensor Position
+Fig. 1.
+Sensor positions for the ULA, coprime, nested, and SISA arrays
+(blue and red colors indicate subarray 1 and subarry 2, respectively)
+i =
+0
+3
+4
+6
+8
+9T , i =
+0
+1
+2
+3
+6
+9T , and
+i =
+0
+1
+4
+5
+6
+9T , respectively.
+The linearized observation equation is [21]
+x[n] = H[n]s[n] + w[n] + (h(ˆs[n|n −1]) −H[n]ˆs[n|n −1]),
+(7)
+where H[n] = ∂h(s[n])
+∂s[n]
+
+s[n]=ˆs[n|n−1]
+and ˆs[n|n −1] is the
+predicted value of s[n] based on {x[0], x[1], . . . , x[N −1]}.
+The EKF equations are [21]
+• Prediction:
+ˆs[n|n −1] = Aˆs[n −1|n −1];
+(8)
+• Minimum Prediction MSE:
+M[n|n −1] = A2M[n −1|n −1] + Q;
+(9)
+• Kalman Gain Matrix:
+K[n] =M[n|n −1]HT [n]×
+C[n] + M[n|n −1]H[n]HT [n]
+−1;
+(10)
+• Correction:
+ˆs[n|n] = ˆs[n|n−1]+K[n](x[n]−h(ˆs[n|n−1])); (11)
+• Minimum MSE:
+M[n|n] = (I −K[n]H[n])M[n|n −1],
+(12)
+where C[n] is the covariance matrix of w[n], ˆs[n −1|n −1]
+and M[n|n −1] are the estimated value of s[n −1] and the
+MSE based on {x[0], x[1], . . . , x[N −1]} while M[n|n] is the
+MSE based on {x[0], x[1], . . . , x[N]}.
+III. SPARSE ARRAYS
+The full ULA considered in this work consists of 10 sensors
+positioned from 0 to 9, as illustrated in Fig. 1. Each sparse
+array considered in this study comprises 6 sensors and spans
+the same aperture as a full ULA with 10 sensors. We provide
+a brief description of the sparse arrays next.
+A. Coprime Array
+A linear coprime array is formed by interleaving two linear
+subarrays whose undersampling factors are coprime integers
+181
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:32:06 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+[6], [15], [23]–[25]. We denote the two subarrays as S1c and
+S2c, respectively. The subarray S1c has a total of Me sensors
+and an undersampling factor of N, while S2c has Ne sensors
+and an undersampling factor of M; and M and N are coprime
+integers. We set N = 3 and M = 4, Me = 4, and Ne = 3.
+The sensor positions of the coprime array are shown in Fig.
+1.
+B. Nested Array
+A linear nested array is also formed by interleaving two
+subarrays. In a nested array, the ﬁrst subarray S1n has a sam-
+pling factor of 1 and comprises M sensors, while the second
+subarray S2n consists of N sensors with an undersampling
+factor of M [6], [26]. The sensor positions of a nested array
+are also illustrated in Fig. 1.
+C. Shift-invariant Sparse Array (SISA)
+A shift-invariant sparse array is an array where one sub-
+array can be obtained by applying a spatial shift to another
+subarray. The two subarrays may partially overlap and the
+union of the two subarrays is the overall SISA. As illustarted
+in Fig.1, the ﬁrst subarray consists of the sensors at ψ1= [0
+1 4]; and applying a spatial shift of υ = 5 yields the second
+subarray with the sensors at ψ2= [5 6 9].
+IV. SIMULATION RESULTS
+We applied the EKF to track the direction cosine of a plane
+wave using the data measured by the full ULA and the sparse
+arrays described in Section III. In all experiments, we used
+ω0 = 0.6π, N = 200, A = 0.95, Q = 0.01, C[n] = 2I,
+ˆs[−1| −1] = E{s[n]} = 0.5, and M[−1| −1] = 100.
+Fig. 2, Fig. 3, Fig. 4, and Fig. 5 illustrate the simulation
+results for the ULA, coprime array, nested array, and SISA,
+respectively. The top panels in Fig. 2 to Fig. 5 depict the true
+and estimated values of the direction cosine in one trial. The
+bottom panels in the ﬁgures plot the corresponding Bayesian
+MSE (Bmse). We computed the average Bmse over 500
+trials for each array. Fig. 6 plots the average Bmse. All four
+arrays track the direction cosine reasonably well. As expected,
+the full ULA exhibits the highest accuracy as it has the
+lowest average Bmse. All sparse arrays exhibit degradation
+in performance compared to the full ULA. Among the three
+sparse arrays, the coprime array outperforms the other arrays.
+The nested array shows the highest average MSE.
+V. CONCLUSION
+We investigated the efﬁcacy of an EKF for tracking the di-
+rection cosine of a plane wave, modeled by an autoregressive
+process of order 1. We applied the EKF to data collected from
+a full array comprising 10 sensors and comparing its perfor-
+mance against sparse arrays with an equivalent aperture but
+comprising only 6 sensors. Speciﬁcally, we explored coprime,
+nested, and SISA sparse arrays, discerning varying levels
+of performance across these conﬁgurations. Comparison of
+the average MSEs revealed that the full ULA outperforms
+0
+50
+100
+150
+-1
+-0.5
+0
+0.5
+1
+Actual
+Predicted
+50
+100
+150
+0
+0.002
+0.004
+0.006
+0.008
+0.01
+0.012
+Fig. 2. Top: Actual and estimated values of the direction cosine for the full
+ULA. Bottom: MSE
+0
+50
+100
+150
+-1
+-0.5
+0
+0.5
+1
+Actual
+Predicted
+50
+100
+150
+0
+2
+4
+6
+8
+10 -3
+Fig. 3.
+Top: Actual and estimated values of the direction cosine for the
+coprime array. Bottom: MSE
+182
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:32:06 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+0
+50
+100
+150
+-1
+-0.5
+0
+0.5
+1
+Actual
+Predicted
+50
+100
+150
+0
+0.002
+0.004
+0.006
+0.008
+0.01
+0.012
+Fig. 4.
+Top: Actual and estimated values of the direction cosine for the
+nested array. Bottom: MSE
+0
+50
+100
+150
+-1
+-0.5
+0
+0.5
+1
+Actual
+Predicted
+50
+100
+150
+0
+0.002
+0.004
+0.006
+0.008
+0.01
+0.012
+Fig. 5.
+Top: Actual and estimated values of the direction cosine for the
+SISA. Bottom: MSE
+50
+100
+150
+200
+1
+1.5
+2
+2.5
+3
+10 -3
+Full
+Coprime
+Nested
+SISA
+Fig. 6. Comparison of the average MSE of the four arrays.
+the sparse arrays, as expected. Among the sparse arrays, the
+coprime array exhibited the lowest error while the nested
+array registered the highest error.
+Future directions include analyzing further sparse array
+geometries and extending the study to tracking both angles
+of elevation and azimuth using two-dimensional arrays.
+REFERENCES
+[1] H. Van Trees, Optimum Array Processing (Detection, Estimation and
+Modulation Theory, Part IV).
+John Wiley and Sons, Inc., New York,
+2002.
+[2] I. Aboumahmoud, A. Muqaibel, M. Alhassoun, and S. Alawsh, “A
+review of sparse sensor arrays for two-dimensional direction-of-arrival
+estimation,” IEEE Access, vol. 9, pp. 92 999–93 017, 2021.
+[3] J. Li, Y. Wang, Z. Ren, X. Gu, M. Yin, and Z. Wu, “Doa and
+range estimation using a uniform linear antenna array without a priori
+knowledge of the source number,” IEEE Transactions on Antennas and
+Propagation, vol. 69, no. 5, pp. 2929–2939, 2021.
+[4] S. Rahman, Y. Mandalam, and K. Adhikari, “Performance analysis of
+svm-based doa estimation for uniform linear arrays,” in 2023 IEEE 14th
+Annual Ubiquitous Computing, Electronics & Mobile Communication
+Conference (UEMCON), 2023, pp. 339–345.
+[5] S. Rahman and K. Adhikari, “Comparative analysis of svm and cnn for
+sonar signal classiﬁcation using sparse arrays,” IEEE Access, vol. 12,
+pp. 59 818–59 830, 2024.
+[6] K. Adhikari and B. Drozdenko, “Symmetry-imposed rectangular co-
+prime and nested arrays for direction of arrival estimation with multiple
+signal classiﬁcation,” IEEE Access, vol. 7, pp. 153 217–153 229, 2019.
+[7] P. Pal and P. Vaidyanathan, “Nested arrays: A novel approach to array
+processing with enhanced degrees of freedom,” IEEE Transactions on
+Signal Processing, vol. 58, no. 8, pp. 4167–4181, August 2010.
+[8] Z. Fu, D. Lv, and T. Liang, “From uniform linear array to sparse
+linear array: a review,” in Fourth International Conference on Signal
+Processing and Computer Science (SPCS 2023), vol. 12970.
+SPIE,
+2023, pp. 197–204.
+[9] K. Adhikari and K. E. Wage, “Sparse arrays for sonar,” Sparse Arrays
+for Radar, Sonar, and Communications, pp. 395–422, 2024.
+[10] Y. He and C. Wang, “Optimization design for sparse planar array in
+satellite communications,” Electronics, vol. 12, no. 8, p. 1763, 2023.
+[11] K. Adhikari and B. Drozdenko, “Comparison of music variants for
+sparse arrays,” 2019 IEEE National Aerospace and Electronics Confer-
+ence (NAECON), pp. 398–405, 2019.
+[12] R. Rajam¨aki and V. Koivunen, “Sparse sensor arrays for active sensing:
+Models, conﬁgurations, and applications,” Sparse Arrays for Radar,
+Sonar, and Communications, pp. 273–299, 2024.
+[13] A. H. Muqaibel and S. A. Alawsh, “Sparse sensor arrays for two-
+dimensional direction-of-arrival estimation,” Sparse Arrays for Radar,
+Sonar, and Communications, pp. 131–179, 2024.
+183
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:32:06 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+[14] R. K. Patra and A. S. Dhar, “A review of different sparse arrays for doa
+estimation using subspace based algorithm,” in 2021 2nd International
+Conference on Range Technology (ICORT), 2021, pp. 1–6.
+[15] P. Vaidyanathan and P. Pal, “Sparse sensing with co-prime samplers
+and arrays,” IEEE Transactions on Signal Processing, vol. 59, no. 2,
+pp. 573–586, February 2011.
+[16] K. Adhikari, R. J. Vaccaro, and D. D. Sartori, “Shift invariant
+sparse
+arrays
+and
+their
+optimal
+signal
+and
+noise
+subspaces,”
+Signal Processing, vol. 198, p. 108579, 2022. [Online]. Available:
+https://www.sciencedirect.com/science/article/pii/S0165168422001207
+[17] K. Adhikari, “Shift-invariant structure-imposed convolutional neural
+networks for direction of arrival estimation,” in 2022 IEEE World AI
+IoT Congress (AIIoT), 2022, pp. 179–186.
+[18] D. D. Sartori, K. Adhikari, and R. J. Vaccaro, “Second-order
+optimal subspace estimation for esprit-like doa estimation,” Signal
+Processing,
+vol.
+217,
+p.
+109323,
+2024.
+[Online].
+Available:
+https://www.sciencedirect.com/science/article/pii/S0165168423003973
+[19] R. E. Kalman, “A New Approach to Linear Filtering and Prediction
+Problems,” Journal of Basic Engineering, vol. 82, no. 1, pp. 35–45,
+03 1960. [Online]. Available: https://doi.org/10.1115/1.3662552
+[20] G. Welch, G. Bishop et al., “An introduction to the Kalman ﬁlter,”
+1995, chapel Hill, NC, USA.
+[21] S. Kay, Fundamentals of Statistical Signal Processing: Estimation
+Theory, Vol. I.
+Prentice Hall, Englewood Cliffs, NJ, 1993.
+[22] S. J. Julier and J. K. Uhlmann, “New extension of the kalman ﬁlter
+to nonlinear systems,” in Signal processing, sensor fusion, and target
+recognition VI, vol. 3068.
+Spie, 1997, pp. 182–193.
+[23] P. Vaidyanathan and P. Pal, “Theory of sparse coprime sensing in
+multiple dimensions,” IEEE Transactions on Signal Processing, vol. 59,
+no. 8, pp. 3592–3608, August 2011.
+[24] P. P. Vaidyanathan and P. Pal, “Sparse sensing with co-prime samplers
+and arrays,” IEEE Transactions on Signal Processing, vol. 59, no. 2,
+pp. 573–586, 2011.
+[25] K. Adhikari and B. Drozdenko, “Design and statistical analysis of
+tapered coprime and nested arrays for the min processor,” IEEE Access,
+vol. 7, pp. 139 601–139 615, 2019.
+[26] P. Pal and P. Vaidyanathan, “Nested arrays: A novel approach to array
+processing with enhanced degrees of freedom,” IEEE Transactions on
+Signal Processing, vol. 58, no. 8, pp. 4167 –4181, August 2010.
+184
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:32:06 UTC from IEEE Xplore.  Restrictions apply. 

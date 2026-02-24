@@ -1,0 +1,5 @@
+- +scenario=training
+- model=dcd_music
+- simulation.train_model=false
+- simulation.load_model=false
+- simulation.evaluate_model=false

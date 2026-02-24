@@ -1,0 +1,619 @@
+
+
+===== PAGE 1 =====
+Direction-of-Arrival Tracking
+of Multiple Fast-Moving Sources in
+Antenna Array based Access Networks
+Zhuqing Tang and Athanassios Manikas
+Department of Electrical and Electronics Engineering
+Imperial College London
+Abstract—This paper is concerned with the problem of si-
+multaneously tracking the direction-of-arrival (DOA) of multiple
+fast moving sources using the vector-signal received by a small
+aperture antenna array of N elements. The antenna array may
+be located at the Node-B, eNode-B or gNode-B of an access
+network and is used in conjunction with a novel trajectory
+tracking algorithm. The proposed algorithm incorporates a
+"manifold extender" together with a state space model and
+an arrayed extended Kalman ﬁlter (EKF). These provide a
+spatiotemporal tracking approach of the DOAs and angular
+velocities of multiple fast moving sources snapshot-by-snapshot.
+Furthermore, two different manifold extenders are employed
+in the proposed algorithm and their performance is evaluated
+using computer simulation studies and is compared with the
+case where the proposed algorithm is implemented without a
+"manifold extender".
+Index Terms—Array signal processing, source tracking, ex-
+tended Kalman ﬁlter, spatiotemporal, direction-of-arrival, array
+manifolds, extended manifolds
+NOTATION
+A, a
+Scalar
+A, a
+Column vector
+A, A, r
+Matrix
+(·)T
+Transpose
+(·)H
+Hermitian transpose
+E {·}
+Expectation operator
+IN
+N × N Identity matrix
+1N
+Column vector of N ones
+R
+Set of real numbers
+C
+Set of complex numbers
+exp(A)
+Element by element exponential of vector A
+
+Vector differential operator
+I. INTRODUCTION
+Tracking the direction-of-arrival (DOA) of multiple moving
+sources/users1 is a signiﬁcant research topic in array signal
+processing, due to its wide applications in sonar, radar, air
+trafﬁc control, mobile communications, remote sensing, etc.
+For static sources, it is well known that their DOA can be
+estimated using, for instance, signal-subspace algorithms (e.g.
+1In this paper, the terms "sources", "users", and "emitters" are considered
+equivalent and may be used interchangeably.
+[1], [2], [3]). If the motion of the sources is slow, then small
+time-frames can be used and, for each time-frame, apply a
+DOA estimation algorithm (i.e. repetitive DOA estimation)
+tracking small variations in DOA.
+However, if the source is moving too fast so that the
+source cannot be assumed stationary over a small time-
+frame, these high-resolution algorithms with repetitive DOA
+estimation begin to exhibit performance degradation. Thus,
+various iterative DOA algorithms have been proposed which
+however suffer from the data association problem. Several
+approaches ([4]-[8]) have been proposed to avoid this problem
+by maintaining the order of the DOA estimates for different
+iterations. However, these approaches suffer from spread array
+spatial spectrum effects caused by rapid source motion [9].
+To remedy the aforementioned problems, various algorithms
+based on state space models have been proposed. For exam-
+ple, a maximum likelihood (ML) approach combined with a
+multiple target state model has been proposed in [9]. In [10],
+a Bayesian model is utilised in conjunction with a particle
+ﬁlter to track the targets. However, these approaches have high
+computational complexity. In [11], a linear combiner matrix
+is constructed as a state variable, which is updated adaptively
+by an H-inﬁnity ﬁlter, to obtain the adaptive estimated noise
+subspaces for tracking the DOAs.
+Another widely adopted family of algorithm for source
+tracking is based on the Kalman ﬁlter (KF) which recursively
+tracks source parameters snapshot-by-snapshot with the use
+of a state space model. It has less computational complexity
+and been used in communication systems, e.g. [12]. However,
+KF cannot handle nonlinear estimation problems which can
+be solved by an extended Kalman ﬁlter (EKF), e.g. [13]-[15].
+The proposed algorithm presented in this paper belongs to the
+EKF family of algorithm.
+In particular, to track the DOA of multiple fast-moving
+sources, a novel tracking approach is proposed using a small
+aperture antenna array of N elements and a spatiotemporal
+state space model integrated with an arrayed EKF algorithm.
+This approach utilises a "manifold extender" to increase the
+signal observation space from N to NNext (where Next is
+a positive integer) and to construct (NNext × 1) extended
+manifold vectors. Then, the spatiotemporal state space model
+incorporates these extended manifold vectors to track the
+978-1-7281-5089-5/20/$31.00 ©2020 IEEE
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:46:21 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+DOAs of the sources snapshot-by-snapshot.
+The remainder of this paper is organised as follows. In
+Section II, the array system is presented and the received
+extended signal vector is modelled. In Section III, the mobility
+model of the multiple sources is described. Based on this,
+the proposed spatiotemporal state space model is constructed,
+and then it is combined with an arrayed EKF in Section
+IV. In Section V, the proposed approach is evaluated using
+computer simulation studies. Finally, this paper is concluded
+in Section VI.
+II. ARRAY SYSTEM MODEL
+Consider a Node-B, eNode-B or gNode-B that employs an
+array system of N antennas operating in the presence of M
+sources. Each source transmits a data sequence {a[n]} that
+is weighted by a PN-code of length Nc. That is, for the i-th
+source shown in Figure 1, the transmitted data sequence at
+point-A is {ai[n]} (with data symbol period Tcs) with each
+symbol weighted by the Nc × 1 weight-code vector
+wi
+= [wi [1] , wi [2] , ..., wi [q] , ..., wi [Nc]]T
+(1)
+with
+wi[q]  ±1, q  [1, Nc]
+(2)
+and
+wT
+i wj 
+1,
+for i = j
+0,
+for i = j
+(3)
+Then, each weighted data symbol is driven to a Digital-
+to-Analogue Converter (DAC) that produces at point-C (see
+Figure 1) a baseband transmitted signal mi(t).
+At the receiver, consider a fully calibrated array of N
+antennas whose locations are given by
+r = [r1, r2, ..., rm..., rN]  R3×N
+(4)
+where the vector rm  R3×1 denotes the Cartesian coordi-
+nates of the m-th array element.
+As the array operates in the presence of M narrowband
+far-ﬁeld sources/users, the (N × 1) received baseband vector
+signal x (t) at point-D can be modelled as follows
+x (t) =
+M
+
+i=1
+i(t) exp(j2Fit)Si(t)mi(t) + n(t)
+(5)
+where, for the i-th source, i(t) denotes the time varying path
+fading coefﬁcient, Fi represents the Doppler frequency and
+the vector n(t) denotes the additive white Gaussian noise of
+zero mean and covariance matrix given by
+Rnn = 2
+nIN
+(6)
+with 2
+n representing the noise power.
+In Eq. (5), Si(t)  CN×1 denotes the time-varying manifold
+vector which is given as follows
+Si(t) = exp
+
+j 2Fc
+c
+rT ui (t)
+
+(7)
+where Fc is the carrier frequency, c is the velocity of light and
+ui (t) is given by
+ui (t) =
+
+
+cos i (t) cos i (t)
+sin i (t) cos i (t)
+sin i (t)
+
+	
+(8)
+with i (t) and i (t) representing the azimuth and the ele-
+vation angles of the i-th source. In this paper, with no loss
+Figure 1.
+Baseband representation of the array system model consisting of M transmitters (Tx), a SIMO multiuser wireless channel and an array receiver.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:46:21 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+of generality, the elevation angle is assumed to be zero (i.e.
+i (t) = 0).
+Eq. (5) can also be written in a more compact form as
+follows
+x (t) = S(t)m(t) + n(t)
+(9)
+where
+S(t) = [S1(t), ..., Si(t), . . . , SM(t)]  CN×M
+(10)
+and
+m(t) =
+
+
+
+
+
+1(t) exp(j2F1t)m1(t)
+2(t) exp(j2F2t)m2(t)
+...
+M(t) exp(j2FMt)mM(t)
+
+	  CM×1
+(11)
+with its covariance matrix Rmm given as
+Rmm = E
+
+(m(t)  E {m(t)}) (m(t)  E {m(t)})H
+(12)
+The (N × 1) vector signal x (t) in Eq. (9) is then discretised
+and, at point-F, the (NNext × 1) vector signal x [n] can be
+expressed as follows
+x [n] = H [n] m [n] + n [n]
+(13)
+where the matrix H [n]  CNNext×M is given by
+H [n] = [h1 [n] , ..., hi [n] , . . . , hM [n]]
+(14)
+with hi [n]  CNNext×1 representing the time-varying ex-
+tended manifold vector of the i-th source given as follows
+hi [n] = Si [n]  wi
+(15)
+In addition, the vector n [n]  CNNext×1 denotes the discre-
+tised extended noise, at point-F in Figure 1, and Next = N c.
+It is important to point out that if the source to be tracked
+does not include the weight wi, then this corresponds to wi =
+1Nc, and the extended manifold vector of Eq. (15) is simpliﬁed
+to
+hi [n] = Si [n]  1Nc
+(16)
+That is, the extended manifold vector in Eq. (14) can be
+expressed as
+hi [n] =
+
+Si [n]  wi
+Si [n]  1Nc
+with PN-code weight at Tx
+without PN-code weight at Tx
+(17)
+III. MULTI-SOURCE MOBILITY MODEL
+The mobility model of the i-th source, for i = 1, 2, ..., M, is
+shown in Figure 2 relative to the array reference point. Figure
+2 shows that the i-th source moves in a particular direction
+with velocity vector vi  R3×1 given as follows
+vi = viuvi + viuvi
+(18)
+where the velocity vector vi is decomposed into two other
+vectors:
+Figure 2.
+Illustration of the mobility model of the i-th source/user. The
+velocity vector vi of the source is decomposed into its radial term viuvi
+and the orthoradial term viuvi , respectively. The sign of the unit vectors
+uvi and uvi can be either positive or negative. The direction i of the
+source is measured with respect to the array reference point.
+• the radial component viuvi, and
+• the orthoradial (i.e. angular) component viuvi,
+with vi denoting the radial velocity of the i-th source and
+vi representing its azimuthal velocity. The vectors uvi and
+uvi are unity norm vectors and they are orthogonal to each
+other. The radial velocity vi causes the Doppler frequency
+effects but only the azimuthal velocity vi affects the direction-
+of-arrival i. Thus, if the i-th source moves with a constant
+azimuthal velocity, its azimuth angle may be described as
+i (t) = i (t0) + vi (t0) T
+(19)
+where
+T = t  t0
+(20)
+is the time elapsed between t and t0. If T is assumed to be
+equal to the sampling period, i.e.
+t0
+=
+(n  1)T
+t
+=
+nT
+then Eq. (19) is discretised and becomes
+i[n] = i[n  1] + vi[n]T
+(21)
+Consequently, if we deﬁne the discrete-time state vector for
+the i-th source as zi[n], i.e.
+zi[n]
+=
+
+i[n]
+vi[n]
+
+(22)
+then the discrete time kinematic model for the i-th source for
+t = nT is given as
+zi[n] = Fizi[n  1] + zi[n]
+(23)
+where Fi  R2×2 is the state transition matrix given by
+Fi=
+
+1
+T
+0
+1
+
+(24)
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:46:21 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+In Eq. (23), zi[n]  R2×1 represents perturbations about the
+azimuth angle and the azimuthal velocity, and can be modelled
+as "noise" with zero mean and covariance matrix Qi  R2×2
+given by
+Qi = 2
+i
+
+T 3
+3 ,
+T 2
+2
+T 2
+2 ,
+T
+
+(25)
+where 2
+i denotes the continuous time model intensity for
+the azimuth-velocity. Then, the discrete time multi-source
+kinematic model of all the M sources can be expressed as
+a generalisation of Eq. (23) as follows
+z[n] = Fz[n  1] + z[n]
+(26)
+where
+z[n]
+=
+
+zT
+1 [n], zT
+2 [n], . . . , zT
+M[n]
+T  R2M×1
+(27)
+z[n]
+=
+
+zT
+1 [n], zT
+2 [n], . . . , zT
+M[n]
+T
+ R2M×1
+(28)
+F
+=
+IMFi  R2M×2M
+(29)
+Based on the above, the covariance matrix P[n]  R2M×2M
+of the discrete time state vector z[n] is
+P[n] = FP[n  1]FT + Q
+(30)
+where the matrix Q  R2M×2M is a block diagonal matrix
+containing the individual covariances Qi of all sources.
+IV. TRACKING USING SPATIOTEMPORAL STATE SPACE
+MODEL
+In this section, the proposed tracking algorithm is presented
+which employs a state space model that is based on the
+parametric modelling of the received antenna array signal
+and the mobility model presented in the previous section. In
+particular, based on the extended snapshot in Eq. (13) and the
+state vector in Eq. (26), this state space model is constructed
+as follows
+z [n]
+=
+Fz [n  1] + z [n]
+(31)
+x [n]
+=
+H (z [n]) m [n] + n [n]
+(32)
+describing the dynamics of the source motion and the vector
+signal received by the array.
+The proposed tracking algorithm is summarised in Table
+I using a simpliﬁed notation by redeﬁning the following
+parameters
+zn
+= z [n]
+
+R2M×1
+Pn
+= P[n]
+
+R2M×2M
+xn
+= x [n]
+
+CNNext×1
+mn
+= m [n]
+
+CM×1
+With reference to Table I, the initial state z0 can be provided
+by a priori guess and the initial covariance P0 can be set to
+TABLE I
+THE ARRAYED EXTENDED KALMAN FILTER TRACKING
+ALGORITHM
+Tracking Algorithm based on Arrayed-EKF
+Initialisation
+z0 = E {z0}
+P0 = E
+
+(z0  z0) (z0  z0)T 
+= I2M
+for n = 1,2,3...
+A Priori Estimation of States
+zn = Fzn1
+Pn = FPn1FT + Q
+Estimation of the Transmitter Baseband Signals
+mn = RmmHH(zn)
+
+2
+nINNext+H(zn)RmmHH(zn)
+1xn
+A Posteriori Estimation of States
+Dn = zn (H (zn) mn)zn=zn
+Kn = PnDH
+n
+
+DnPnDH
+n + 2
+nINNext
+1
+zn = zn + Re {Kn (xn  H(zn) mn)}
+Pn = (I2M  KnDn) Pn
+end
+I2M where  indicates the conﬁdence level in the accuracy
+of the initial estimates.
+In addition, please note that the extended manifold vector
+in this model has two forms/cases as described in Eq. (17)
+and the proposed algorithm can be applied for both cases
+using a manifold extender with Next = Nc. However, the
+proposed algorithm shown in Table I also can be used for
+the case that the manifold extender is not used. In this case,
+Next = 1 and H [n] = S [n], which implies that the i-th
+column of H [n] is hi[n] = Si[n]. Thus, Eq. (17) can be
+upgraded to include the absence of the "manifold extender"
+as follows
+hi [n] =
+
+
+
+Si [n]  wi
+Si [n]  1Next
+Si [n]
+ CNNext×1;
+ CNNext×1;
+ CN×1;
+case-1
+case-2
+case-3
+
+(33)
+V. COMPUTER SIMULATION STUDIES
+The performance of the proposed approach is evaluated in
+this section using computer simulation studies. The antenna
+array at the base station is assumed (without any loss of
+generality) to be a grid planar array of 9 elements as this is
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:46:21 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+Figure 3.
+The grid planar array of N = 9 antennas, used in Section V, and
+their Cartesian coordinates.
+Figure 4.
+Case-1: true (red line) and estimated (blue dashed line) azimuth
+trajectories using the extended manifold vector hi [n] = Si [n]  wi.
+(SNR = 10 dB)
+shown in Figure 3. Furthermore, it is assumed that the array
+operates in the presence of 3 far-ﬁeld moving sources/users
+transmitting at the same time on the same frequency band and
+their initial azimuthal velocities are assumed to be 0/T.
+The data sequence transmitted by each source/user is as-
+sumed to be a random sequence of ±1s of zero mean and
+unity variance. The weight-code vectors are gold codes and the
+length Nc is set to 15. The carrier frequency is set to 2.4 GHz.
+The source tracking is assumed to be carried out over a time
+interval of 10000 spatiotemporal snapshots x [n]  CNNc×1.
+The continuous time model intensity for the azimuth-velocity
+(see Eq. (25)) is set to 2
+i = 108(deg /T)2, i. The para-
+meter  of the initialisation stage of the proposed algorithm
+(see Table I) is set to 106.
+Figure 5.
+Case-2: true (red line) and estimated (blue dashed line) azimuth
+trajectories using the extended manifold vector hi [n] = Si [n]  1Next.
+(SNR = 10 dB)
+Figure 6.
+Case-3: true (red line) and estimated (blue dashed line) azimuth
+trajectories using the spatial manifold vector hi [n] = Si [n]. (SNR = 10 dB)
+Figure 4 shows the estimated DOA (azimuth) trajectories of
+the three moving sources using the proposed approach for the
+ﬁrst case in Eq. (33), i.e. for hi [n] = Si [n]  wi, assuming
+that SNR = 10 dB. It is clear that the proposed algorithm
+tracks the DOAs with high accuracy.
+Furthermore, Figures 5 and 6 illustrate the tracking capabil-
+ities of the proposed approach for the case-2 and the case-3
+in Eq. (33), under the same simulation environment. Similar
+results can be obtained if the SNR is reduced to 0 dB and
+Figure 7 shows the results of SNR = 0 dB for the case-1, as
+a representative result.
+Finally, the performance of the proposed approach for all
+the three cases of Eq. (33) is examined using Monte-Carlo
+computer simulation studies. The results are shown in Figure 8
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:46:21 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+Figure 7.
+Case-1: true (red line) and estimated (blue dashed line) azimuth
+trajectories for SNR = 0 dB.
+Figure 8.
+RMSE of the estimated source azimuth angles averaged over 5000
+spatiotemporal snapshots using the proposed approach for the three cases as
+a function of the SNR (100 iterations).
+where the root mean square error (RMSE) of the estimated
+azimuth angles (averaged over 5000 spatiotemporal snapshots)
+is plotted as a function of the SNR. It is evident in Figure 8 that
+the case-1 of the proposed approach has better source tracking
+performance over the whole SNR range than the case-2 and
+the case-3.
+By observing the results when the SNR is low (i.e. SNR =
+-10 dB), it is clear that the case-1 is the most robust to noise
+effects, followed by the case-2, and then by the case-3. This
+is because the "manifold extender" increases the degrees-of-
+freedom by increasing the dimensionality of the observation
+space of the data from N to NNext where Next is a positive
+integer.
+If there is no manifold extender, then Next = 1, and to
+increase the dimensionality of the observation space we need
+to increase the number of antenna elements N. However, this
+implies more hardware resources and consequently, higher
+cost.
+VI. CONCLUSIONS
+In this paper, a novel approach was proposed for tracking
+far-ﬁeld fast-moving sources using a small aperture antenna
+array. Initially, a spatiotemporal state space model was
+presented in conjunction with the concept of the extended
+manifold vector. Then, this model was integrated with an
+arrayed EKF to provide overall a powerful multi-source
+tracking
+algorithm.
+The
+performance
+of
+the
+proposed
+approach was examined using computer simulation studies
+under various noise levels and the results indicate high
+accuracy and robustness to noisy environments.
+REFERENCES
+[1] A. Masnadi-Shirazi and B. D. Rao, “A covariance-based superpositional
+CPHD ﬁlter for multisource DOA tracking,” IEEE Transactions on
+Signal Processing, vol. 66, no. 2, pp. 309–323, Jan. 2018.
+[2] G. Wang, J. Xin, J. Wang, N. Zheng, and A. Sano, “Subspace-based
+twodimensional direction estimation and tracking of multiple targets,”
+IEEE Transactions on Aerospace and Electronic Systems, vol. 51, no.
+2, pp. 1386–1402, Apr. 2015.
+[3] E. S. Baker and R. D. DeGroat, “A correlation-based subspace tracking
+algorithm,” IEEE Transactions on Signal Processing, vol. 46, no. 11,
+pp. 3112–3116, Nov. 1998.
+[4] H. Yan and H. Fan, “Signal-Selective DOA Tracking for Wideband
+Cyclostationary Sources,” IEEE Transactions on Signal Processing, vol.
+55, no. 5, pp. 2007–2015, May 2007.
+[5] C. R. Rao, C. R. Sastry, and B. Zhou, “Tracking the direction of arrival
+of multiple moving targets,” IEEE Transactions on Signal Processing,
+vol. 42, pp. 1133-1144, May 1994.
+[6] C. R. Sastry, E.W. Kamen, and M. Simaan, “An efﬁcient algorithm for
+tracking the angles of arrival of moving targets,” IEEE Transactions on
+Signal Processing, vol. 39, no. 1, pp. 242–246, Jan. 1991.
+[7] C. K. Sword, M. Simaan, and E. W. Kamen, “Multiple target angle
+tracking using sensor array outputs,” IEEE Transactions on Aerospace
+and Electronic Systems, vol. 26, no. 2, pp. 367–373, Mar. 1990.
+[8] S. B. Park, C. S. Ryu, and K. K. Lee, “Multiple target angle tracking
+algorithm using predicted angles,” IEEE Transactions on Aerospace and
+Electronic Systems, vol. 30, no. 2, pp. 643–648, Apr. 1994.
+[9] Y. Zhou, P. C. Yip, and H. Leung, “Tracking the direction-of-arrival of
+multiple moving targets by passive arrays: Algorithm,” IEEE Transac-
+tions on Signal Processing, vol. 47, no. 10, pp. 2655–2666, Oct. 1999.
+[10] M. Orton and W. Fitzgerald, “A Bayesian approach to tracking multiple
+targets using sensor arrays and particle ﬁlters,” IEEE Transactions on
+Signal Processing, vol. 50, no. 2, pp. 216–223, Feb. 2002.
+[11] A. Manikas and M. Sethi, "Joint multipath delay and direction tracking
+for CDMA array systems," Vehicular Technology Conference, May 2002,
+pp. 175-179
+[12] B. Balakumar, S. Shahbazpanahi, and T. Kirubarajan, “Joint MIMO
+channel tracking and symbol decoding using Kalman ﬁltering,” IEEE
+Transactions on Signal Processing, vol. 55, no. 12, pp. 5873 –5879,
+Dec. 2007.
+[13] V. Cevher, J. McClellan, “Sensor array calibration via tracking with the
+extended Kalman ﬁlter,” IEEE International Conference on Acoustics,
+Speech, and Signal Processing, May 2001, pp. 2817-2820
+[14] Y. Kamil and A. Manikas, “Multisource Spatiotemporal Tracking Using
+Sparse Large Aperture Arrays,” IEEE Transactions on Aerospace and
+Electronic Systems, vol. 53, no. 2, pp. 837 - 853, Feb. 2017.
+[15] A. Manikas, V. Sridhar and Y. I. Kmail, "Array of sensors: A
+spatiotemporal-state-space model for target trajectory tracking," IEEE
+Sensor Array and Multichannel Signal Processing Workshop, July 2016,
+pp. 1-5
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:46:21 UTC from IEEE Xplore.  Restrictions apply. 

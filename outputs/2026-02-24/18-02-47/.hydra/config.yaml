@@ -1,0 +1,73 @@
+legacy_config: configs/default_config.yaml
+system_model:
+  'N': 8
+  M: 3
+  T: 200
+  snr: 10
+dataset:
+  samples_size: 8
+training:
+  enabled: true
+  use_lightning: false
+  epochs: 1
+  batch_size: 2
+  optimizer: Adam
+  scheduler: ReduceLROnPlateau
+  learning_rate: 0.001
+  weight_decay: 1.0e-09
+  step_size: 50
+  gamma: 0.5
+  training_objective: angle
+  save_checkpoint: true
+simulation:
+  train_model: true
+  evaluate_model: false
+  load_model: false
+  save_model: true
+data:
+  _target_: src.data_module.lit_datamodule.DOADataModule
+model:
+  _target_: src.model_module.subspacenet_lightning.SubspaceNetLightning
+  tau: 8
+  diff_method: esprit
+  train_loss_type: rmspe
+  field_type: Far
+  regularization: null
+  variant: small
+  norm_layer: false
+  batch_norm: false
+  learning_rate: ${training.learning_rate}
+  weight_decay: ${training.weight_decay}
+  optimizer: ${training.optimizer}
+  scheduler: ${training.scheduler}
+  step_size: ${training.step_size}
+  gamma: ${training.gamma}
+  momentum: 0.9
+trainer:
+  _target_: pytorch_lightning.Trainer
+  max_epochs: ${training.epochs}
+  accelerator: auto
+  devices: auto
+  logger:
+    _target_: pytorch_lightning.loggers.CSVLogger
+    save_dir: ${hydra:runtime.output_dir}
+    name: lightning
+  callbacks:
+  - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    monitor: val_loss
+    mode: min
+    save_top_k: 1
+    save_last: true
+    filename: best-{epoch:02d}-{val_loss:.4f}
+  - _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: val_loss
+    mode: min
+    patience: 10
+callbacks:
+  model_checkpoint:
+    save_top_k: 1
+    monitor: val_loss
+runtime:
+  _target_: src.trainer_module.runtime_runner.SimulationRuntimeRunner
+  scenario: ${oc.select:scenario,training}
+scenario: training

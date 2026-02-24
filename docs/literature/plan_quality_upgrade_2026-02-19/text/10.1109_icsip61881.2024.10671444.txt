@@ -1,0 +1,807 @@
+
+
+===== PAGE 1 =====
+Direction of Arrival Tracking using Orthogonal
+Dipoles
+Miao Wang
+Dept. of Data Management
+Postal Savings Bank of China
+Beijing, China
+Abstract—In this paper, we propose a novel approach for
+tracking the direction of arrival (DOA) using a collocated
+microphone array equipped with double dipole microphones.
+Our method consists of two main steps. First, we employ a
+DOA estimation procedure based on a histogram-based wrapped
+Gaussian mixture model (Hist-WGMM). Second, we introduce a
+new Kalman filter based on the wrapped Gaussian distribution.
+The DOA estimation procedure is designed for real-time deploy-
+ment and exhibits robustness against reverberation and noise.
+Additionally, our proposed Kalman filter mitigates the issue of
+oscillations around 0◦, a common problem faced by conventional
+Kalman filters. Through numerical simulations, we validate the
+effectiveness of our entire tracking method, demonstrating its
+ability to accurately estimate and track DOA in a fast and precise
+manner.
+Index Terms—DOA estimation, DOA tracking, orthogonal
+dipoles, Kalman filter, mixture model
+I. INTRODUCTION
+Differential microphone arrays (DMAs) are extensively em-
+ployed in speech processing. In [1], [2], an adaptive DMA was
+devised to mitigate the interference of undesired speeches on
+the desired speech signal. Furthermore, DMAs are utilized to
+estimate the power spectral density (PSD) of ambient noise
+and improve speech quality by subtracting noisy spectra [3],
+[4]. Theoretical investigations have been conducted on the
+design and implementation of linear DMAs [5]. Over the
+past decade, a variant of DMA, the circular differential mi-
+crophone array (CDMA), has garnered increased attention in
+audio processing. A general approach to designing frequency-
+invariant beam patterns such as dipoles and cardioids has
+been developed using uniform CDMAs in [6]. Specifically,
+a uniform CDMA comprising 4 omni microphones distributed
+evenly on a circle with a radius of 2cm has been employed to
+create two orthogonal dipole beam patterns [7], [8]. Based on
+these two dipoles, a DOA estimation method utilizing error
+reduction functions, denoted as DOA-IOD, has been proposed
+to locate the speaker [9].
+However, the aforementioned uniform CDMA with a diam-
+eter of 4cm still requires a relatively large space for some edge
+devices like wearable sensors. Moreover, the relative position
+between sound sources and microphones usually changes in
+practice. Additionally, the aforementioned work [9] does not
+address the issues of tracking DOA estimates. On the other
+hand, benefiting from the development of microelectrome-
+0.1
+1.1
+2.1
+3.1
+4.1
+5
+Frequency (KHz)
+0
+0.5
+1
+Amplitude
+Fig. 1: The 40 bandpass filters
+chanical systems (MEMS), directional microphones can form
+frequency-independent dipole beam patterns [10]. This implies
+that the two orthogonal dipoles can be achieved by placing
+these collocated directional MEMS acoustic sensors together.
+However, there is a lack of investigations into how to estimate
+and track DOAs using such a collocated array.
+In this paper, by employing two collocated dipole mi-
+crophones, we design a more compact microphone array,
+requiring less space than the uniform DMA does. More-
+over, we propose corresponding methods for DOA estimation
+and tracking, utilizing a histogram-based wrapped Gaussian
+mixture model (Hist-WGMM) and a wrapped Kalman filter
+(WKF), respectively, under the presence of reverberation and
+white noise. Numerical simulations are conducted, with results
+demonstrating that the proposed DOA estimation method
+outperforms state-of-the-art methods like DOA-IOD, and the
+proposed WKF provides more precise tracking results than the
+conventional Kalman filter (CKF).
+II. PROPOSED DOA ESTIMATION METHOD
+A. Signal model
+Two collocated dipole microphones can form two collocated
+orthogonal dipoles (X-Dipole and Y-Dipole). The signals
+obtained from X-Dipole x(n) and that from Y-Dipole y(n)
+are, respectively, given by:
+x(n) = cosθ · s(n) + nx(n)
+(1)
+y(n) = sinθ · s(n) + ny(n)
+(2)
+where s(n) denotes the speech signal coming from angle θ;
+nx(n) and ny(n) represent the white noise signals in the
+sensors forming X-Dipole and Y-Dipole, respectively.
+By applying short time Fourier transform (STFT) to both
+x(n) and y(n), we obtain X(t, f) and Y (t, f), where t and f
+denotes time and frequency index respectively. As illustrated in
+ludlows@hotmail.com, miao.wang@mail.concordia.ca
+137
+2024 9th International Conference on Signal and Image Processing 
+979-8-3503-5092-0/24/$31.00 ©2024 IEEE
+2024 9th International Conference on Signal and Image Processing (ICSIP) | 979-8-3503-5092-0/24/$31.00 ©2024 IEEE | DOI: 10.1109/ICSIP61881.2024.10671444
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:34:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+Fig.1, by utilizing 40 rectangular bandpass filters to divided the
+whole frequency band and employing the energy ratio method
+[11], we can obtain the DOA estimate of the pth subband
+signal as
+θ(t, p) =
+tan−1(Q), xcor(x(n), y(n)) > 0
+π −tan−1(Q), otherwise
+(3)
+with Q =
+q
+EY (t,p)
+EX(t,p), where EY (t, p) and EX(t, p) denote
+the energy terms, as calculated by |Y (t, f)|2 · B(f, p) and
+|X(t, f)|2 · B(f, p), respectively; xcor represents the cross
+correlation function; B(f, p) denotes the pth bandpass filter
+implemented in frequency domain. The complete procedure
+to obtain these bandpass filters is outlined in Alg.1, where
+Fs is the sampling rate; Nfft is the number of points for
+fast Fourier transform (FFT); Nfilter is the number of filters;
+fmin and fmax are the minimal and maximal frequencies,
+respectively. Note that Eq.(3) introduces the phase ambiguity
+Algorithm 1 Rectangular bandpass filters [11]
+Input: Fs, Nfft, fmin, fmax,Nfilter
+Procedure:
+mmin ←2595log10(1 + fmin
+700 )
+mmax ←2595log10(1 + fmax
+700 )
+m ←linspace(mmin, mmax, Nfilter + 1)
+f ←700(10
+m
+2595 −1)
+b ←floor( f
+F sNfft) + 1
+fstart ←b(1 : end −1)
+fstop ←b(2 : end)
+B ←zeros(Nfft, Nfilter)
+p ←1
+while p ≤Nfilter do
+B(fstart(p) : fstop(p), p) ←1
+p ←p + 1
+end while
+return B
+problem between 0 and π, implying that the θ(t, p) can be
+either 0 or π if Q equals 0. Furthermore, due to the presence
+of noise and reverberation, the raw DOA estimates calculated
+by Eq.(3) are highly noisy. To mitigate this issue, we introduce
+a threshold ET (p), represented as a p-dimensional vector
+obtained through microphone calibration. Here, Eam(p) is
+computed by averaging the maximum values of EX(t, p) and
+EY (t, p) over t, following the recording of a speech signal.
+We set ET (p) to k · Eam(p), where k ∈[0, 1], to filter out
+unreliable DOA values θ(t, p). Specifically, θ(t, p) is discarded
+only if both EX(t, p) and EY (t, p) are less than ET (p).
+Subsequently, the remaining raw DOA values obtained by
+Eq.(3) are utilized to infer the ground truth DOA through a
+clustering method based on a probabilistic mixture model.
+B. Histogram-based mixture model
+The wrapped Gaussian mixture model (WGMM) [12] is
+widely used for clustering angular (circular) values. Since
+the DOA estimate possesses angular properties, the WGMM
+𝑏1
+𝑏2
+𝑏3
+𝑏𝑖
+𝑁𝑏1
+𝑁𝑏2
+𝑁𝑏3
+𝑁𝑏𝑖
+…
+Fig. 2: The histogram representation
+serves as a robust DOA estimation method [13]. However,
+the solving procedure for WGMM relies on the expectation-
+maximization (EM) algorithm [14], an iterative technique
+comprising E-step and M-step in each iteration to compute
+maximum likelihood estimates. From a time complexity per-
+spective, the EM algorithm can be bounded by O(Imax ·
+Nsample), where Imax and Nsample denote the maximal
+number of iterations and the number of samples, respectively.
+In this section, we employ a histogram to represent the
+distribution of samples and propose the Hist-WGMM, whose
+time complexity is bounded by O(Imax · Nbin), where Nbin
+is the number of bins in a histogram.
+1) Histogram representation: We utilize a histogram to
+represent the distribution of DOA samples, as illustrated in
+Fig.2, where bi denotes the ith bin in the histogram and Nbi
+denotes the number of samples in bi. In other words, there are
+Nbi samples, whose values are identical to θi, in the ith bin
+bi. Additionally, PNbin
+i=1 Nbi = Nsample.
+2) Wrapped Gaussian distribution (WGD): Given a DOA
+θi, the probability density function (PDF) of the WGD is
+defined as:
+f(θi; µ, σ2, T) ∝
+X
+w∈Z
+1
+√
+2πσ2 e
+−(θi−w·T −µ)2
+2σ2
+(4)
+where µ and σ2 denote the mean and variance, respectively;
+T represents the period, which is fixed as π in this paper due
+to the phase ambiguity introduced in Eq.(3).
+In the case of multiple sound sources present concurrently,
+we model the distribution of DOA samples from the kth source
+as a kth WGD. Then, assuming that there are K sound sources
+in total, the probability of θi based on the total probability rule
+is given by:
+P(θi; β, T) =
+K
+X
+k=1
+f(θi; µk, σ2
+k, T) · αk
+(5)
+where β represents the parameter set {αk, µk, σ2
+k};µk and σk
+are the mean and variance of the kth WGD, respectively; αk is
+the weight of the kth WGD. Now the DOA estimation problem
+can be reconfigured as an optimization problem to find the
+optimal parameter set β. More specifically, the mean µk can
+be regarded as as a good DOA estimate of the kth sound
+source.
+3) EM algorithm: Now we adapt the EM algorithm [14] to
+find the optimal β in a histogram-based approach. The cost
+138
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:34:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+function of maximum log-likelihood estimation is given by:
+L(β, θ) =
+Nbin
+X
+i=1
+Nbi ·
+K
+X
+k=1
+Ri
+k · [log(αk) + log(f(θi; µk, σ2
+k, T))]
+(6)
+where Nbin denotes the total number of bins in the histogram;
+and Ri
+k can be calculated by r(θi, β, T) = f(θi;µk,σ2
+k,T )·αk
+P (θi)
+,
+which represents the posterior probability in Bayesian statis-
+tics. More specifically, µk can be regarded as a good DOA
+estimate for the kth sound source. To find the optimal β,
+which includes αk, µk, σ2
+k, we first obtain two equations by
+setting the derivatives
+dL
+dµk and
+dL
+dσ2
+k to 0, respectively. Then,
+by solving these equations, we can derive the expressions for
+µk and σ2
+k as shown in Eq.(7) and Eq.(8), respectively.
+µk =
+PNbin
+i=1 Di
+P
+w∈Z e
+−(θi−w·T −µk)2
+2σ2
+k
+(θi −w · T)
+PNbin
+i=1 Di
+P
+w∈Z e
+−(θi−w·T −µk)2
+2σ2
+k
+(7)
+σ2
+k =
+PNbin
+i=1 Di
+P
+w∈Z e
+−(θi−w·T −µk)2
+2σ2
+k
+(θi −w · T −µk)2
+PNbin
+i=1 Di
+P
+w∈Z e
+−(θi−w·T −µk)2
+2σ2
+k
+(8)
+where Di =
+Nbi
+P (θi;β,T ). The procedure to obtain the expression
+of αk involves the Lagrange multiplier method [15] under
+PK
+i=1 αk = 1, which is omitted due to limited pages. Here,
+we directly provide the expression below:
+αk =
+PNbin
+i=1 Nbi · r(θi, β, T)
+PNbin
+i=1 Nbi
+.
+(9)
+Now, the proposed iterative procedure using the EM algo-
+rithm is listed in Alg.2, where Imax is the maximal number of
+iterations; n denotes the iteration step; m is the convergence
+flag; ϵ is the convergence criterion. There are two major
+steps during each iteration: E-Step and M-Step. In the E-
+Step, the probabilities are firstly computed by Eq.(5). Then,
+the parameter set β is updated by Eq.(7), Eq.(8) and Eq.(9) in
+the M-Step. Moreover, the iterations in both E-step and M-step
+only need to scan all bins in the histogram. The overall time
+complexity of Alg.2 is bounded by O(Imax · Nbin), which is
+suitable for real-time applications.
+III. PROPOSED DOA TRACKING METHOD
+In the context of Bayesian filters, the DOA estimates
+obtained in section II can be regarded as observations. This
+implies that the tracking procedures like the Kalman filter [16]
+can be applied to these observations to achieve better tracking
+results. However, due to the phase ambiguity introduced in
+Eq.(3), the assumption based on Gaussian distributions of
+conventional Kalman filter does not hold any more. Instead,
+the wrapped Kalman filter (WKF) [17] is the appropriate
+choice for tracking DOAs. In this section, we extend the theory
+of WKF, which can solve phase ambiguity between 0 and
+2π during tracking, and generalize it to be feasible in phase
+ambiguity between 0 and T. We fix T as π in this paper.
+Algorithm 2 Histogram-based EM algorithm to estimate β
+Input: ϵ, θ, K, β0
+Procedure:
+βn ←β0
+m ←false
+while n ≤Imax and !m do
+Ln ←L(βn, θ)
+P(θi; β, T) ←P(θi; βn, T)
+▷E-Step
+r(θi, β, T) ←r(θi, βn, T)
+▷E-Step
+βn+1 ←{α1, ..., αK, µ1, ..., µK, σ2
+1, ..., σ2
+K} ▷M-Step
+Ln+1 ←L(βn+1, θ)
+if |Ln −Ln+1| < ϵ then
+m ←true
+end if
+n ←n + 1
+end while
+A. Wrapped Kalman Dynamic (WKD)
+The hidden state variable xt =
+
+θt
+˙θt
+T at time step t
+follows the WKD, which is expressed as:
+xt = A · xt−1 + gt−1
+(10)
+yt = H · xt + mt
+(11)
+where A is the transition matrix
+1
+∆t
+0
+1
+
+; ∆t is the time
+interval between each observation; gt−1 is the process noise
+and gt−1 ∼N(0, G); G is the covariance matrix of gt−1; H is
+the measurement matrix H =
+1
+0
+; mt is the measurement
+noise and mt ∼N(0, σ2
+m); yt denotes the observation value in
+the measurement step. Note that yt is identical to the estimated
+DOA by the proposed Hist-WGMM at time step t.
+B. Wrapped Kalman Filter (WKF)
+Based on the WKD, the procedure of WKF, which includes
+prediction and correction steps, is listed in Alg.3, where Pt
+Algorithm 3 Wrapped Kalman filter
+Prediction Step:
+xt = A · xt−1
+Pt = A · Pt−1 · AT + G
+θt = ψT (θt), where θt in xt =
+
+θt
+˙θt
+T
+Correction Step:
+Kt = Pt · HT · S−1,where S = H · Pt · HT + σ2
+m
+Vt =
+P
+w∈Z(yt−w·T −H·xt)·e
+−(yt−w·T −H·xt)2
+2σ2m
+P
+w∈Z e
+−(yt−w·T −H·xt)2
+2σ2m
+xt = xt + Kt · Vt
+θt = ψT (θt), where θt in xt =
+
+θt
+˙θt
+T
+Pt = (I −Kt · H) · Pt
+denotes the state covariance matrix; I is the 2D identity matrix;
+Kt denotes the Kalman gain; Vt is the error term; ψT (θt) =
+mod(θt+0.5·T, T)−0.5·T is an unwrapping function mapping
+θt into the range from −T
+2 to T
+2 .
+139
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:34:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+)
+,
+(
+f
+t
+X
+)
+,
+(
+f
+t
+Y
+)
+,
+( p
+t
+EY
+)
+,
+( p
+t
+EX
+)
+,
+( p
+t
+MY
+)
+,
+( p
+t
+MX
+T
+E
+T
+E
+)
+,
+(
+p
+f
+B
+)
+,
+(
+p
+f
+B
+)
+,
+(
+p
+t
+
+)
+,
+(
+p
+t
+M
+1(keep)
+0(drop)
+)
+,
+(
+1
+p
+t
+
+)
+,
+(
+p
+t
+M
+
+Hist-
+WGMM
+t
+WKF
+Fig. 3: The entire proposed DOA tracking method
+TABLE I: The averaged running time (ms)
+number of samples
+WGMM
+Hist-WGMM
+500
+12.85
+2.01
+1000
+24.48
+2.12
+5000
+146.30
+5.76
+10000
+277.10
+7.47
+50000
+1245.10
+26.10
+IV. THE ENTIRE PROCEDURE
+We’ve consolidated all components of the proposed DOA
+tracking method into a diagram, depicted in Fig.3. Firstly,
+the bandpass filter B(f, p) is applied to the time-frequency
+representations, X(t, f) and Y (t, f), resulting in EX(t, p)
+and EY (t, p) respectively. Next, the threshold value ET (p),
+derived from microphone calibration, is applied to EX(t, p)
+and EY (t, p) to obtain the masks MX(t, p) and MY (t, p),
+respectively. These masks are combined using the logical OR
+operator to produce the final mask M(t, p), i.e., M(t, p) =
+MX(t, p)||MY (t, p). This mask, M(t, p), is then applied to
+θ(t, p), calculated from EX(t, p) and EY (t, p) based on
+Eq.(3), to derive θ1(t, p), serving as the input for the Hist-
+WGMM. The DOA estimate, θ, from the Hist-WGMM is
+treated as an observation value by the WKF, which yields the
+tracking result, θt.
+V. EXPERIMENTS
+A. Performance of the proposed Hist-WGMM
+1) time complexity: We first construct 5 synthesized DOA
+datasets containing 500, 1000, 5000, 10000 and 50000 sam-
+ples, respectively. In each dataset, DOA samples are synthe-
+sized using the parameters:K = 2, α1 = 0.4, α2 = 0.6,
+µ1
+= 135◦, µ2
+= 0◦, σ1
+= σ2
+= 5◦. We run the
+WGMM and proposed Hist-WGMM 200 times, respectively,
+on each dataset and record the corresponding running time.
+The averaged running time is listed in Table.I. The resolution
+and maximal number of iterations in the Hist-WGMM are set
+to 1◦and 200, respectively. As shown in Table.I, compared
+with the WGMM, the proposed Hist-WGMM exhibits stable
+running time as the size of the synthesized dataset grows. This
+property demonstrate that the Hist-WGMM is suitable for use
+in real-time applications.
+2) performance: Numerical simulations are conducted by
+simulating Room Impulse Responses (RIRs) using the image
+method [18], [19]. We selected the clean speech segments from
+the TIMIT [20] dataset as the signals of sound source. These
+clean speech signals were resampled to a frequency of 8 kHz.
+Gaussian noise was added to obtain different signal-to-noise
+ratios (SNRs). We obtained the time-frequency representation
+X(t, f) and Y (t, f) by using STFT with a 256-point Fast
+Fourier Transform (FFT), a Hamming window, and a frame
+shift of 128 points to achieve 50% frame-wise overlapping.
+The root mean square error (RMSE) is used as the metric to
+evaluate the performance of DOA estimation.To gather enough
+raw DOA samples, at the tth frame, we use the current θ(t, p)
+and that of the previous 24 frames to make a prediction
+using Hist-WGMM, where the resolution between bins in the
+histogram is 1◦.
+-5
+0
+5
+10
+15
+20
+SNR(dB)
+0
+10
+20
+30
+40
+50
+RMSE(degree)
+DOA-OD[9]
+DOA-IOD[9]
+proposed
+(a)
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+Angle(degree)
+0
+2
+4
+6
+8
+10
+12
+14
+16
+18
+RMSE(degree)
+DOA-OD[9]
+DOA-IOD[9]
+proposed
+(b)
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0
+10
+20
+30
+40
+50
+60
+70
+RMSE(degree)
+DOA-OD[9]
+DOA-IOD[9]
+proposed
+(c)
+Fig. 4: The frame-wise performance comparison: (a)The aver-
+aged RMSEs under different SNRs (b)The RMSEs under dif-
+ferent DOAs (c)The averaged RMSEs under different RT60s
+Firstly, we evaluate the performance under different SNRs,
+ranging from -5dB to 20dB. The speech comes from 0◦to 90◦
+with 1◦resolution. We averaged the RMSEs of the DOAs per
+140
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:34:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+0
+50
+100
+150
+200
+250
+Frame Index
+-50
+0
+50
+100
+150
+200
+DOA(degree)
+Hist-WGMM
+Ground Truth
+CKF
+WKF
+Fig. 5: Tracking performance comparison
+SNR condition and plotted the results in Fig.4(a). Clearly, the
+Hist-WGMM outperforms the DOA-OD [9] and DOA-IOD [9]
+regardless of changes in SNR.
+Secondly, we varied the speech incoming angle from 0◦to
+90◦and calculated the frame-wise RMSEs under SNR=20dB.
+The resulted curves are shown in Fig.4(b), where the Hist-
+WGMM achieves better estimation regardless of the speech
+incoming angle and does not suffer dramatic performance loss
+around 0◦and 90◦as the DOA-OD [9] does.
+Thirdly, to test the robustness of our proposed method to
+different reverberation intensities, we varied the RT60 from
+0.2s to 0.8s under SNR=5dB and conducted simulations. The
+RMSE value averaged over 0◦to 90◦is also used as the
+performance metric. We plot the results in Fig.4(c). It is clear
+that the DOA-OD and DOA-IOD suffer much larger errors
+as the reverberation intensity becomes stronger. However, the
+Hist-WGMM demonstrates an extremely stable performance
+even in the strongest reverberation condition. This result shows
+our method is robust to reverberation in the presence of
+white noise. The robustness of our method to reverberation
+is attributed to the parameter σ2
+k in Eq.(5), which can serve as
+an indicator of reverberation. Stronger reverberation yields a
+larger σ2
+k, but µk, as the DOA estimate, is not influenced to
+the same extent.
+B. Performance of proposed DOA tracking method
+A virtual acoustic room with dimensions of 6m × 5m × 4m
+is constructed using the image method [18]. The collocated
+dipoles and the speaker are placed at (2m,1.5m,1.7m) and
+(3.25m,1.5m,1.7m), respectively. And the RT60 and SNR are
+set to 0.2s and 15dB, respectively, while the sound speed is
+fixed as 340m/s. The speaker is assumed to walk along a
+circle with (2m,1.5m,1.7m) as the center point and 1.25m as
+the radius. At each time frame, we regard the DOA estimate
+obtained by the Hist-WGMM as the observations, while using
+WKF and CKF to track the DOAs, respectively. The tracking
+result of this simulation is depicted in Fig.5. From the 0th to
+150th time frame, the WKF and CKF obtain the same tracking
+performance. However, the phase ambiguity problem occurs
+around the 160th time frame, where the CKF produces large
+oscillations while the proposed WFK gives a stable and precise
+result. It is evident that the proposed WKF provides a better
+tracking result in the presence of phase ambiguity.
+VI. CONCLUSIONS & FUTURE WORK
+We propose a DOA tracking method for double collocated
+dipole microphones. This method includes two steps: DOA
+estimation and the WKF. To estimate DOA, the Hist-WGMM
+is proposed to provide fast and robust estimation. We use the
+DOA estimated by Hist-WGMM as the input for the pro-
+posed WKF. The simulated results demonstrate that the entire
+tracking approach can provide accurate results. Additionally,
+the proposed Hist-WGMM supports locating multiple sound
+sources simultaneously, but the WKF does not support tracking
+multiple DOAs simultaneously. Tracking multiple DOAs using
+orthogonal dipoles is listed as a focus area for our future work.
+REFERENCES
+[1] Gary W Elko, “Microphone array systems for hands-free telecommuni-
+cation,” Speech communication, vol. 20, no. 3-4, pp. 229–240, 1996.
+[2] Heinz Teutsch and Gary W Elko,
+“First-and second-order adaptive
+differential microphone arrays,” in Proc. IWAENC. Citeseer, 2001, vol. 1.
+[3] Marc Ihle, “Differential microphone arrays for spectral subtraction,” in
+Proc. IWAENC, 2003, pp. 259–262.
+[4] Dipl-Ing Hannes Pessentheiner, “Differential microphone arrays,” M.S.
+thesis, Graz University of Technology, 2013.
+[5] Jingdong Chen, Jacob Benesty, and Chao Pan,
+“On the design and
+implementation of linear differential microphone arrays,” The Journal
+of the Acoustical Society of America, vol. 136, no. 6, pp. 3097–3113,
+2014.
+[6] Gongping Huang, Jacob Benesty, and Jingdong Chen, “On the design
+of frequency-invariant beampatterns with uniform circular microphone
+arrays,”
+IEEE/ACM Transactions on Audio, Speech, and Language
+Processing, vol. 25, no. 5, pp. 1140–1153, 2017.
+[7] Feng Guo, Yuhang Cao, Zheng Liu, Jiaen Liang, Baoqing Li, and
+Xiaobing Yuan,
+“Speaker direction-of-arrival estimation based on
+frequency-independent beampattern.,”
+in INTERSPEECH, 2017, pp.
+1899–1903.
+[8] Lei Li, Linfeng Wang, Jie Dong, Jintao Fu, Yang Gao, Yingying Qiao,
+and Mingfu Zhu, “Supersoundcompass: a high-accuracy acoustic local-
+ization sensor using a small-aperture microphone array,” Measurement
+Science and Technology, vol. 32, no. 10, pp. 105106, 2021.
+[9] Feng Guo, Yuhang Cao, Zhaoqiong Huang, Xing You, Haixing Guan,
+Jiaen Liang, and Baoqing Li, “Speaker direction-of-arrival estimation
+based on orthogonal dipoles,” Circuits, Systems, and Signal Processing,
+vol. 38, no. 5, pp. 2320–2334, 2019.
+[10] Jian Zhou and Ronald N Miles, “Sensing fluctuating airflow with spider
+silk,” Proceedings of the National Academy of Sciences, vol. 114, no.
+46, pp. 12120–12125, 2017.
+[11] Miao Wang, “Speech enhancement using fiber acoustic sensor,” M.S.
+thesis, Concordia University, 2020.
+[12] Yannis Agiomyrgiannakis and Yannis Stylianou,
+“Wrapped gaussian
+mixture models for modeling and high-rate quantization of phase data
+of speech,”
+IEEE Transactions on Audio, Speech, and Language
+Processing, vol. 17, no. 4, pp. 775–786, 2009.
+[13] Andreas Brendel, Chengyu Huang, and Walter Kellermann, “Stft bin
+selection for localization algorithms based on the sparsity of speech
+signal spectra,” ratio, vol. 2, pp. 6, 2018.
+[14] Geoffrey J McLachlan and Thriyambakam Krishnan, The EM algorithm
+and extensions, vol. 382, John Wiley & Sons, 2007.
+[15] Dimitri P Bertsekas, Constrained optimization and Lagrange multiplier
+methods, Academic press, 2014.
+[16] Greg Welch, Gary Bishop, et al., “An introduction to the kalman filter,”
+1995.
+[17] Johannes Traa and Paris Smaragdis,
+“A wrapped kalman filter for
+azimuthal speaker tracking,” IEEE Signal Processing Letters, vol. 20,
+no. 12, pp. 1257–1260, 2013.
+[18] Jont B Allen and David A Berkley,
+“Image method for efficiently
+simulating small-room acoustics,” The Journal of the Acoustical Society
+of America, vol. 65, no. 4, pp. 943–950, 1979.
+[19] Emanu¨el Habets, “ehabets/rir-generator: Rir generator,” Oct. 2020.
+[20] John S Garofolo, Lori F Lamel, William M Fisher, Jonathan G Fiscus,
+and David S Pallett, “Darpa timit acoustic-phonetic continous speech
+corpus cd-rom. nist speech disc 1-1.1,” NASA STI/Recon technical report
+n, vol. 93, pp. 27403, 1993.
+141
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:34:42 UTC from IEEE Xplore.  Restrictions apply. 

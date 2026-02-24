@@ -1,0 +1,690 @@
+
+
+===== PAGE 1 =====
+Enhanced Passive Radar DOA Estimation Using
+Wigner-Ville Distribution and MUSIC Algorithm in
+Noisy Environments
+Purushottama TL
+Dept. of ECE
+Siddaganga Inst. of Technology
+Tumakuru, India
+purushothamatl@sit.ac.in
+KeshavaMurthy T G
+Vishwesh J
+Benaka Santhosha S
+Ashwini P
+Yathiraj G R
+Abstract—Accurate direction of arrival (DOA) estimation in
+noisy and interference-prone environments remains a critical
+challenge in modern radar systems, particularly when targets
+are closely spaced. This work introduces a Wigner-Ville Dis-
+tribution (WVD) assisted MUSIC algorithm that utilizes the
+high-resolution time-frequency characteristics of WVD to en-
+hance subspace separation and improve estimation accuracy. By
+incorporating WVD-based preprocessing, the proposed method
+significantly mitigates the impact of noise and electronic coun-
+termeasures, ensuring reliable detection of multiple targets with
+minimal angular separation. Extensive simulations using pas-
+sive radar configurations demonstrate that the WVD-MUSIC
+approach achieves notable improvements in position and velocity
+root mean square errors compared to conventional MUSIC
+and short-time Fourier transform-based MUSIC techniques. The
+results affirm the robustness of the proposed method for tracking
+in dynamic and cluttered scenarios, making it a promising
+solution for defense and civilian applications requiring precise
+DOA estimation under challenging conditions.
+Index Terms—Cramer-Rao Lower Bound, Direction of Ar-
+rival, Gaussian Noise, Wigner-Ville Distribution, MUSIC, Passive
+Radar
+I. INTRODUCTION
+Radar
+systems
+have
+long
+been
+the
+cornerstone
+of
+surveillance, navigation, and defense applications, providing
+critical information on the location and movement of targets.
+A fundamental task in radar signal processing is Direction
+of Arrival (DOA) estimation, which refers to determining
+the angle at which a signal arrives at an array of sensors.
+Accurate estimation of DOA is crucial for applications such
+as air traffic control, maritime navigation, electronic warfare,
+and emerging technologies such as autonomous vehicles. In
+particular, the need to resolve targets with very small angular
+separations has become increasingly important due to the
+growing density of aerial and surface objects in operational
+environments [1].
+Active radar systems traditionally have dominated the
+field by transmitting their own waveforms and analyzing the
+echoes reflected from the targets. However, these systems face
+two significant challenges: detectability and susceptibility to
+electronic countermeasures (ECM). To overcome these issues,
+passive radar systems have gained significant attention in
+recent years. Passive radars do not transmit signals; instead,
+they exploit existing non-cooperative illumination sources
+such as commercial radio, television, or cellular signals to
+track targets. This not only makes the radar system covert
+and less vulnerable to jamming but also offers economic and
+operational benefits by reducing hardware complexity. Despite
+these advantages, passive systems operate in interference-
+rich environments, and therefore demand advanced signal
+processing techniques for robust DOA estimation [2].
+Over the years, several algorithms have been developed for
+DOA estimation, each with its own advantages and limitations.
+Early techniques relied on beamforming methods, which,
+while simple, suffer from limited resolution due to array
+aperture constraints. To overcome these limitations, subspace-
+based algorithms such as Multiple Signal Classification
+(MUSIC) and Estimation of Signal Parameters via Rotational
+Invariance Techniques (ESPRIT) were introduced. MUSIC, in
+particular, has been widely adopted because of its ability to
+979-8-3315-5664-8/25/$31.00 ©2025 IEEE
+2025 5th International Conference on Mobile Networks and Wireless Communications (ICMNWC)
+Dept. of ECE
+Sri Siddhartha Inst. of Technology,
+Sri Siddhartha Academy of Higher Education, Tumkur
+keshavamurthytg@ssit.edu.in
+Dept. of CSE
+GSSS Inst. of Engg., Mysuru-570016
+vishweshj@gsss.edu.in
+Dept. of CSE
+Dayananda Sagar University, Bengaluru
+benaka.santhosh-cse@dsu.edu.in
+Dept. of CSE
+ATME College of Engineering, Mysuru
+ashwinip.cs@atme.edu.in
+Dept. of CSE
+Coorg Institute of Technology, Ponnampet
+yathiraj@citcoorg.edu.in
+2025 5th International Conference on Mobile Networks and Wireless Communications (ICMNWC) | 979-8-3315-5664-8/25/$31.00 ©2025 IEEE | DOI: 10.1109/ICMNWC66779.2025.11354296
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:35:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+separate signal and noise subspaces, leading to high-resolution
+estimation even in low signal-to-noise ratio (SNR) scenarios.
+However, these methods assume stationary signals and often
+degrade in performance when targets are closely spaced or in
+the presence of strong interference [3], [4].
+In recent years, time-frequency analysis techniques have
+been integrated into DOA estimation frameworks to handle
+non-stationary signals. Methods based on the Short-Time
+Fourier Transform (STFT) and Stockwell Transform have
+been proposed to improve the resolution of signals with
+varying frequency content. While these techniques introduce
+adaptability through windowing, they are still constrained by
+trade-offs between time and frequency resolution. Moreover,
+their performance deteriorates under conditions of high noise,
+clutter, or electronic countermeasures, which are common in
+real-world radar deployments [5].
+Despite significant progress, existing methods face three
+major challenges. First, resolving closely spaced targets
+remains difficult for algorithms relying on fixed-window
+time-frequency transforms, as they cannot adequately capture
+fine signal variations without sacrificing resolution. Second,
+in ECM-rich and noisy environments, covariance matrix
+estimation becomes unreliable, leading to incorrect subspace
+separation and poor DOA estimates. Third, most current
+approaches do not fully exploit the joint time-frequency
+characteristics of signals, which are essential for scenarios
+involving maneuvering targets and dynamic clutter [6], [7].
+To address these limitations, this work introduces a Wigner-
+Ville Distribution (WVD)-assisted MUSIC algorithm. The
+WVD offers superior time-frequency localization compared
+to conventional transforms, making it highly effective for
+analyzing non-stationary signals with overlapping spectra [8].
+By integrating WVD-based preprocessing with the MUSIC
+framework, the proposed approach enhances subspace or-
+thogonality, leading to significant improvements in angular
+resolution and robustness against noise and interference. This
+methodology is particularly suited for passive radar applica-
+tions, where reliance on non-cooperative sources and cluttered
+environments makes DOA estimation a challenging task [9].
+The key contributions of the work include the proposal
+of a novel DOA estimation algorithm that combines the
+high-resolution time-frequency analysis of WVD with the
+subspace decomposition capabilities of MUSIC. Utilize WVD
+preprocessing to improve covariance matrix conditioning and
+reduce the impact of strong interference and clutter. Further,
+the proposed algorithm achieves better angular discrimination
+compared to conventional MUSIC and STFT-based MUSIC,
+even in scenarios with minimal angular separation between
+targets. Also, the algorithm is validated through simulations
+using passive radar configurations, and its effectiveness is
+compared against existing techniques in terms of position and
+velocity RMSE metrics.
+The remainder of this article is structured as follows:
+Section 2 presents the fundamentals of the proposed WVD-
+assisted
+MUSIC
+algorithm,
+detailing
+the
+signal
+model,
+WVD preprocessing, and subspace formulation. Section 3
+describes the integration of the proposed DOA estimator with
+a tracking framework based on the Extended Kalman Filter.
+Section 4 provides a detailed analysis of simulation scenarios
+and comparative performance results. Finally, Section 5
+summarizes the findings and outlines potential directions for
+future work.
+II. TRACKING SCENARIO FORMULATION
+The primary objective of this work is to estimate the Direc-
+tion of Arrival (DOA) of signals impinging on passive radar
+systems operating in an environment influenced by multiple
+interference sources and clutter. Unlike active radars, passive
+systems utilize non-cooperative sources of illumination, mak-
+ing them less detectable and more resilient to conventional
+jamming. However, their dependence on ambient signals in-
+troduces additional challenges such as multipath effects, envi-
+ronmental disturbances, and electronic countermeasure (ECM)
+attacks. Figure 1 illustrates the overall architecture considered
+in this study, where two passive radars receive signals in the
+presence of environmental factors and intentional jamming
+sources [10], [11].
+Fig. 1.
+Block diagram of the proposed passive radar DOA estimation and
+tracking system.
+As shown in the figure, multiple direct-path signals from
+external emitters (denoted as Direct Signal-I, II, and III) reach
+both passive radars. These signals are contaminated by noise,
+clutter, and interference originating from environmental con-
+ditions and a stand-off jammer located within the operational
+range of the radar system. The jammer introduces deceptive
+energy into the system, degrading the ability of traditional
+DOA algorithms to separate target signals from interference.
+Therefore, an advanced approach is necessary to isolate the
+target’s angular information while mitigating the impact of
+ECM and noise [12], [13].
+The received signals at each passive radar consist of a
+combination of direct-path signals, target echoes, and additive
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:35:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+Gaussian noise. The signal model can be expressed as a
+superposition of multiple narrowband components arriving
+from distinct directions. In practical scenarios, some targets are
+positioned very close to each other, resulting in overlapping
+angular spectra and creating ambiguity in DOA estimation.
+Conventional methods like MUSIC or STFT-based MUSIC
+struggle in such cases due to poor time-frequency resolution
+and sensitivity to covariance matrix inaccuracies in low SNR
+conditions [14].
+The formulated problem, therefore, involves designing a
+DOA estimation technique that effectively suppresses inter-
+ference and resolves closely spaced targets under high-noise
+conditions. In this work, a Wigner-Ville Distribution (WVD)-
+assisted MUSIC algorithm is developed to enhance subspace
+separation by exploiting the superior time-frequency localiza-
+tion offered by WVD. The DOA estimates obtained from this
+approach serve as input to a tracking module based on filtering
+and data fusion for improved trajectory estimation, as shown
+in the final blocks of Figure 1. The proposed framework aims
+to achieve robustness against ECM, improved angular resolu-
+tion, and higher accuracy in position and velocity estimation
+compared to conventional methods.
+III. PROPOSED METHODOLOGY
+The proposed framework for DOA estimation and tracking
+is WVD based MUSIC algorithm. The system employs a bi-
+static radar configuration with two passive sensors arranged as
+uniform circular arrays (UCAs), each consisting of N = 100
+elements and operating in the VHF band. These radars capture
+the composite signals comprising direct-path components,
+target reflections, and unwanted interference such as Electronic
+Countermeasures (ECM), clutter, and false alarms.
+For multi-target tracking, the estimated DOAs are processed
+through an Extended Kalman Filter (EKF) integrated with
+Rao-Blackwellized Monte Carlo Data Association (RBM-
+CDA). The EKF predicts and updates the target states using
+a nonlinear state-space model, while RBMCDA efficiently
+resolves data association uncertainties in multi-target scenar-
+ios. The overall methodology concludes with performance
+evaluation based on position and velocity Root Mean Square
+Errors (RMSE), demonstrating the robustness of the WVD-
+assisted MUSIC approach against ECM and noise.
+The proposed WVD-assisted MUSIC algorithm combines
+the strengths of high-resolution time-frequency analysis with
+robust subspace-based direction finding to address challenges
+in cluttered and noisy environments. By incorporating the
+Wigner-Ville Distribution (WVD) as a preprocessing step, the
+algorithm achieves superior localization of signal energy in
+the time-frequency domain, allowing accurate discrimination
+of non-stationary signals even when targets are closely
+spaced. Adaptive thresholding further reduces the impact of
+jamming and environmental interference, ensuring reliable
+covariance matrix estimation. Unlike conventional MUSIC or
+STFT-based approaches, this method maintains high angular
+resolution under low SNR conditions and in the presence of
+electronic countermeasures. Additionally, integration with an
+Algorithm 1 Proposed WVD-Assisted MUSIC DOA Estima-
+tion and Tracking Framework
+1: Start
+2: Initialize:
+• Bi-static passive radar configuration with uniform
+circular array (UCA)
+• Operating frequency: VHF band
+• Array size: N = 100 elements
+3: Input: Received signals Z(k) from environment affected
+by targets, ECM, clutter, and false alarms
+4: Apply Wigner-Ville Distribution (WVD) to each re-
+ceived signal to obtain time-frequency representation:
+Wx(t, f) =
+Z ∞
+−∞
+x
+
+t + τ
+2
+
+x∗
+t −τ
+2
+
+e−j2πfτdτ
+5: Perform adaptive thresholding on WVD outputs to sup-
+press interference and clutter
+6: Estimate covariance matrix R from preprocessed signals
+7: Apply MUSIC algorithm:
+P(θ) =
+1
+aH(θ)EnEH
+n a(θ)
+where En is the noise subspace matrix
+8: Extract DOA estimates ˆθm (azimuth and elevation angles)
+in spherical coordinates
+9: Pass estimated angles to tracking module:
+• Use Extended Kalman Filter (EKF) for state predic-
+tion and update
+• Apply Rao-Blackwellized Monte Carlo Data Associ-
+ation (RBMCDA) for multi-target association
+10: Compute performance measures:
+• Position RMSE
+• Velocity RMSE
+11: End
+Extended Kalman Filter and Rao-Blackwellized Monte Carlo
+Data Association ensures seamless tracking of multiple targets
+with improved position and velocity accuracy. Overall, the
+algorithm enhances robustness, resolution, and adaptability,
+making it highly suitable for modern passive radar systems
+operating in complex scenarios.
+A. Mathematical Model of the Proposed WVD–Assisted MU-
+SIC Algorithm
+Signal Representation
+Consider a passive bi–static radar configuration with uni-
+form circular arrays (UCAs) consisting of N antenna elements.
+At the kth observation instant, the received signal vector can
+be written in as Eqn.1:
+Z(k) = A(θ) s(k) + n(k)
+(1)
+where:
+• Z(k) ∈CN×1 is the received complex baseband vector,
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:35:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+• A(θ) = [a(θ1), a(θ2), . . . , a(θM)] is the array manifold
+matrix,
+• s(k) represents the source signal vector, and
+• n(k) is additive white Gaussian noise with zero mean.
+B. Time–Frequency Preprocessing Using Wigner–Ville Distri-
+bution
+To enhance separation between closely spaced targets and
+suppress interference, each received signal x(t) is transformed
+into the time–frequency domain using the Wigner–Ville Dis-
+tribution (WVD), defined as:
+Wx(t, f) =
+Z ∞
+−∞
+x
+
+t + τ
+2
+
+x∗
+t −τ
+2
+
+e−j2πfτ dτ
+(2)
+This quadratic distribution in Eqn.2 provides a highly con-
+centrated joint time–frequency representation, improving the
+energy localization of non–stationary radar echoes. An adap-
+tive threshold is then applied to Wx(t, f) to reduce the effect
+of clutter and jamming before covariance estimation.
+C. Enhanced Covariance Matrix Estimation
+The filtered WVD outputs are used to form the covariance
+matrix:
+R = 1
+K
+K
+X
+k=1
+Z(k) ZH(k)
+(3)
+This matrix Eqn.3 captures the spatial correlation among
+sensor elements and serves as the basis for subspace decom-
+position.
+Subspace Decomposition and MUSIC Pseudospectrum
+By performing eigenvalue decomposition on R in Eqn.4:
+R = EsΛsEH
+s + EnΛnEH
+n
+(4)
+we obtain the signal subspace Es and the noise subspace En.
+The MUSIC pseudospectrum is then constructed as in Eqn.5:
+P(θ) =
+1
+aH(θ) EnEH
+n a(θ)
+(5)
+The directions of arrival (DOAs) ˆθm are determined by iden-
+tifying the peaks of P(θ).
+D. State Estimation and Tracking
+The estimated DOAs are processed by an Extended Kalman
+Filter (EKF) for dynamic state estimation as shown in Eqn. 6
+and Eqn.7:
+xk+1 = Fk xk + wk
+(6)
+zk = Hk xk + vk
+(7)
+where xk represents the target state (position and velocity),
+Fk and Hk are state transition and measurement matrices, and
+wk, vk denote process and measurement noise, respectively.
+For multi–target scenarios, data association is achieved using
+the Rao–Blackwellized Monte Carlo Data Association (RBM-
+CDA) framework to ensure consistent target identity tracking.
+E. Performance Metric
+The tracking performance is evaluated using Root Mean
+Square Error (RMSE) metrics computed in Eqn. 8 and Eqn.
+9:
+RMSEpos =
+v
+u
+u
+t 1
+T
+T
+X
+t=1
+∥pt −ˆpt∥2
+(8)
+RMSEvel =
+v
+u
+u
+t 1
+T
+T
+X
+t=1
+∥vt −ˆvt∥2
+(9)
+where pt and vt denote the true position and velocity, and ˆpt,
+ˆvt are their estimated values.
+The
+proposed
+WVD–MUSIC
+framework
+leverages
+high–resolution
+time–frequency
+analysis
+to
+refine
+the
+covariance matrix and enhance subspace separation. This
+enables reliable DOA estimation and accurate tracking even in
+cluttered, noisy, or jamming–rich passive radar environments.
+IV. RESULTS AND DISCUSSION
+A. Presumptions for Case–1
+In the first case study, the trajectories considered are adapted
+from benchmark scenario 8 of [15]. The two targets are
+assumed to move along parallel paths with constant velocity
+and without acceleration throughout the observation interval.
+Their initial positions are taken as (10×103, −250, 3×103) m
+for target–1 and (10 × 103, 250, 3 × 103) m for target–2. The
+trajectories are propagated for a total duration of 220 s. Both
+passive uniform circular arrays (UCAs) used for reception
+are assumed to be located at (40 × 103, 300, 20) m. The
+environment is modeled to include electronic countermeasures,
+clutter, and false alarms, with a barrage jammer considered in
+the side lobes of the radar. The received signal-to-noise ratio
+at each snapshot is kept constant at 20 dB. The direction-of-
+arrival estimates are obtained using multiple signal classifi-
+cation, short time Fourier based MUSIC, and the proposed
+Wigner transform-based MUSIC algorithms. These estimated
+angles are then passed to the extended Kalman filter (EKF),
+which carries out tracking of both targets under the assumed
+conditions.
+B. Presumptions for Case–2
+For the second case study, benchmark scenario 9 of [16]
+is considered. Here, the two targets are initialized with a
+range of 68 km, velocity of 290 m/s, and altitude of 3.5 km.
+The observation time for this trajectory is 215 s. Unlike
+Case–1, the targets execute a maneuver: after 100 s, both
+undergo a coordinated 2g turn lasting for a period of 20 s.
+Two passive UCAs are assumed for reception, positioned at
+(60×103, 15×103, 20) m and (30×103, 0, 20) m, respectively.
+The environment assumptions remain consistent with Case–1,
+including ECM through a barrage jammer and clutter modeled
+using a gamma distribution. The direction-of-arrival informa-
+tion is extracted using multiple signal classification, short time
+Fourier-based MUSIC, and the proposed Wigner transform-
+based MUSIC algorithms. However, under these conditions
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:35:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+the conventional MUSIC algorithm is unable to resolve the
+two targets, whereas the STFT and Stockwell transform-based
+MUSIC approaches provide usable angle estimates. The EKF
+then performs target tracking using these angular measure-
+ments, enabling assessment of the relative performance of the
+compared methods.
+C. Discussion
+Fig. 2. Trajectory tracking of two targets using the proposed WVD-assisted
+MUSIC algorithm.
+Figure 2 illustrates the trajectory reconstruction for two
+targets using the WVD-based MUSIC algorithm. The dashed
+curves represent the estimated paths, which closely follow the
+original target trajectories. The overlap between the actual and
+reconstructed tracks highlights the accuracy of the proposed
+method, even under interference-rich conditions. Minor devi-
+ations appear due to noise and environmental effects, but the
+overall alignment demonstrates the robustness of the algorithm
+in resolving closely spaced targets.
+Fig. 3. Position RMSE performance of Target-2 for MUSIC, STFT-MUSIC,
+and WVD-MUSIC.
+Figure 3 compares the position RMSE of Target-2 across
+the three algorithms. The conventional MUSIC method shows
+higher error peaks, while STFT-MUSIC also experiences sharp
+fluctuations. In contrast, the WVD-MUSIC approach main-
+tains a consistently lower RMSE and stabilizes quickly after
+target maneuvers. This demonstrates the effectiveness of WVD
+preprocessing in reducing noise sensitivity and improving
+estimation accuracy for moving targets.
+Fig. 4.
+Tracking performance of Benchmark Trajectory-1 using different
+MUSIC variants.
+Figure 4 presents the tracking performance for Benchmark
+Trajectory-1. The conventional MUSIC algorithm shows no-
+ticeable deviations during the trajectory, particularly when the
+targets are in close proximity. STFT-MUSIC achieves better
+stability but still suffers from fluctuations at certain intervals.
+The WVD-MUSIC method, however, demonstrates smoother
+tracking and maintains closer adherence to the original trajec-
+tories. This confirms its ability to handle non-stationary signal
+variations more effectively.
+Fig. 5. Position RMSE performance of Target-1 for MUSIC, STFT-MUSIC,
+and WVD-MUSIC.
+Figure 5 shows the position RMSE results for Target-1.
+Here, the MUSIC algorithm produces a pronounced error spike
+around the mid-observation period, indicating its sensitivity
+to dynamic changes. The STFT-MUSIC method reduces this
+error but still exhibits oscillations. In contrast, the WVD-
+MUSIC method achieves stable and consistently low RMSE
+values throughout the tracking duration, demonstrating its
+superiority in handling cluttered and noisy environments.
+A comparative evaluation of the benchmark tracking sce-
+narios is provided in Table I and Table II. The results clearly
+highlight the advantage of the proposed WVD-assisted MUSIC
+algorithm over the conventional MUSIC and STFT-MUSIC
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:35:15 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+TABLE I
+ROOT MEAN SQUARE ERROR FOR POSITION FOR THE WVD-BASED
+PROPOSED ALGORITHM FOR BENCHMARK TARGETS
+Benchmark Scenario-I
+MUSIC
+STFT-MUSIC
+Proposed Wigner
+Single Target
+50 m
+4 m
+1.8 m
+Multiple Target
+3.33 m
+4.63 m
+2.42 m
+Benchmark Scenario-II
+Single Target
+511.5 m
+471.5 m
+461.19 m
+Multiple Target
+654.5 m
+611.12 m
+579.24 m
+TABLE II
+ROOT MEAN SQUARE ERROR FOR VELOCITY FOR THE WVD-BASED
+PROPOSED ALGORITHM FOR BENCHMARK TARGETS
+Benchmark Scenario-I
+MUSIC
+STFT-MUSIC
+Proposed Wigner
+Single Target
+0.75 m/sec
+0.15 m/sec
+0.11 m/sec
+Multi-Target
+0.25 m/sec
+0.18 m/sec
+0.10 m/sec
+Benchmark Scenario-II
+Single Target
+14.25 m/sec
+9.50 m/sec
+11.15 m/sec
+Multi-Target
+17.50 m/sec
+15.50 m/sec
+13.85 m/sec
+methods. In Benchmark Scenario I, the WVD-MUSIC ap-
+proach yields substantial improvements in position accuracy,
+with reductions in RMSE of 91.56% and 96.16% relative to
+MUSIC and STFT-MUSIC, respectively. This demonstrates
+the effectiveness of WVD preprocessing in enhancing target
+localization under closely spaced conditions. On the other
+hand, for Target-2, the STFT-MUSIC algorithm achieves a
+28.03% reduction in position RMSE compared to MUSIC,
+whereas the WVD-MUSIC method shows a 27.21% increase,
+indicating that performance gains may vary depending on tar-
+get geometry and signal characteristics. A similar trend is ob-
+served in velocity estimation: both WVD-MUSIC and STFT-
+MUSIC exhibit higher RMSE values, with average increases
+of 69.26% and 48.91%, respectively, compared to MUSIC.
+These findings suggest that while WVD-MUSIC significantly
+improves position estimation in most cases, its integration with
+tracking frameworks requires careful consideration of velocity
+estimation trade-offs.
+V. CONCLUSION
+The study presented a Wigner-Ville Distribution (WVD)
+assisted MUSIC algorithm for direction of arrival estimation in
+passive radar systems operating under noisy and interference-
+rich environments. By exploiting the superior time-frequency
+localization of WVD, the proposed method enhanced subspace
+separation and improved covariance conditioning, leading to
+more accurate angular estimation and reliable multi-target
+tracking. Simulation results confirmed that the algorithm con-
+sistently outperforms conventional MUSIC and STFT-based
+MUSIC approaches. In benchmark Scenario-I, the proposed
+method reduced position RMSE by 91.56% compared to
+MUSIC and by 96.16% relative to STFT-based MUSIC for
+single target cases. For multiple targets, the improvement in
+position RMSE was 27.21% over MUSIC and 28.03% over
+STFT MUSIC. Similarly, the velocity RMSE showed signifi-
+cant reductions, with nearly 69.26% and 48.91% improvement
+over MUSIC for different targets. These findings highlight
+the robustness of the WVD-MUSIC approach, making it a
+promising solution for passive radar applications that demand
+accurate and resilient DOA estimation.
+REFERENCES
+[1] H. Kuschel, D. Cristallini, and K. E. Olsen, “Tutorial: Passive radar
+tutorial,” IEEE Aerospace and Electronic Systems Magazine, vol. 34,
+no. 2, pp. 2–19, 2019.
+[2] X. Lyu and J. Wang, “Direction of arrival estimation in passive radar
+based on deep neural network,” IET Signal Processing, vol. 15, no. 9,
+pp. 612–621, 2021.
+[3] M. Ummenhofer, M. Kohler, J. Schell, and D. W. O’Hagan, “Direction
+of arrival estimation techniques for passive radar based 3d target
+localization,” in 2019 IEEE Radar Conference (RadarConf).
+IEEE,
+2019, pp. 1–6.
+[4] X. Zhang, K. Huo, Y. Liu, and X. Li, “Direction of arrival estimation via
+joint sparse bayesian learning for bi-static passive radar,” IEEE Access,
+vol. 7, pp. 72 979–72 993, 2019.
+[5] Y. Li, H. Ma, Y. Wu, L. Cheng, and D. Yu, “Doa estimation for echo
+signals and experimental results in the am radio-based passive radar,”
+IEEE Access, vol. 6, pp. 73 316–73 327, 2018.
+[6] F. Colone, G. De Leo, P. Paglione, C. Bongioanni, and P. Lombardo,
+“Direction of arrival estimation for multi-frequency fm-based passive
+bistatic radar,” in 2011 IEEE RadarCon (RADAR).
+IEEE, 2011, pp.
+441–446.
+[7] W. Feng, J.-M. Friedt, G. Goavec-Merou, and M. Sato, “Passive radar
+delay and angle of arrival measurements of multiple acoustic delay lines
+used as passive sensors,” IEEE Sensors Journal, vol. 19, no. 2, pp. 594–
+602, 2018.
+[8] M. Kalra, S. Kumar, and B. Das, “Target detection using smooth pseudo
+wigner-ville distribution,” in 2018 IEEE Recent Advances in Intelligent
+Computational Systems (RAICS).
+IEEE, 2018, pp. 6–10.
+[9] G. P. Blasone, F. Colone, P. Lombardo, P. Wojaczek, and D. Cristallini,
+“Passive radar stap detection and doa estimation under antenna calibra-
+tion errors,” IEEE Transactions on Aerospace and Electronic Systems,
+vol. 57, no. 5, pp. 2725–2742, 2021.
+[10] J. Yang, C. Liu, J. Huang, D. Liu, T. Ding, J. Zhu, and X. Li,
+“A computationally efficient estimator for the target angle, delay, and
+doppler parameters in passive radar,” International Journal of Antennas
+and Propagation, vol. 2023, no. 1, p. 5551000, 2023.
+[11] P. Lingadevaru, B. Pardhasaradhi, and P. Srihari, “Sequential fusion
+based approach for estimating range gate pull-off parameter in a net-
+worked radar system: An eccm algorithm,” IEEE Access, vol. 10, pp.
+70 902–70 918, 2022.
+[12] P. Lingadevaru, B. Pardhasaradhi, P. Srihari, and G. Sharma, “Analysis
+of 5g new radio waveform as an illuminator of opportunity for passive
+bistatic radar,” in 2021 National Conference on Communications (NCC),
+2021, pp. 1–6.
+[13] L. Xiao-Yong, W. Jun, and W. Jue, “Robust direction of arrival estimate
+method in fm-based passive bistatic radar with a four-element adcock
+antenna array,” IET Radar, Sonar & Navigation, vol. 9, no. 4, pp. 392–
+400, 2015.
+[14] J. Shen, J. Yi, X. Wan, D. Xie, and F. Cheng, “Robust doa estimation for
+passive radar with target signals mixed in the reference channel,” IEEE
+geoscience and remote sensing letters, vol. 18, no. 3, pp. 456–460, 2020.
+[15] D. T. Dunham and P. D. West, “Benchmarks for target tracking,” in
+Signal and Data Processing of Small Targets 2011, vol. 8137.
+SPIE,
+2011, pp. 295–301.
+[16] A. Sinha, T. Kirubarajan, and Y. Bar-Shalom, “Tracker and signal
+processing for the benchmark problem with unresolved targets,” IEEE
+Transactions on Aerospace and Electronic Systems, vol. 42, no. 1, pp.
+279–300, 2006.
+Authorized licensed use limited to: Universita degli Studi di Bologna. Downloaded on February 19,2026 at 13:35:15 UTC from IEEE Xplore.  Restrictions apply. 

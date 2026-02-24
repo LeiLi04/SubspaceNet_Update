@@ -1,0 +1,1561 @@
+
+
+===== PAGE 1 =====
+Received 15 December 2025, accepted 2 January 2026, date of publication 14 January 2026, date of current version 26 January 2026.
+Digital Object Identifier 10.1109/ACCESS.2026.3654100
+DOA Tracking Combining Compressive Sampling
+and Kalman Filtering for MIMO Radars Operating
+in Cluttered Environment
+SOHEIL SALARI
+1, (Member, IEEE), AND FRANCOIS CHAN
+2, (Senior Member, IEEE)
+1Calian Group, Ottawa, ON K2V 1C8, Canada
+2Department of Electrical and Computer Engineering, Royal Military College of Canada, Kingston, ON K7K 7B4, Canada
+Corresponding author: Francois Chan (chan-f@rmc.ca)
+ABSTRACT
+Taking into account the off-grid effect and clutter, a tailored compressive sampling
+(CS)-based algorithm is developed to estimate the Direction of Arrival (DOA) in radars that use Multiple-
+Input Multiple-Output (MIMO) technology and operate at sub-Nyquist rates. To enhance the performance
+of DOA estimation without resorting to denser sampling grids, which often entail expensive computational
+costs and robust sparse signal recovery issues, we incorporate the DOA estimates derived from the CS-based
+method into the state space of a Kalman filter. This integration eliminates the need for dense sampling
+grids, enhances computational efficiency, and improves robustness against clutter. Numerical experiments
+demonstrate that the proposed method consistently outperforms state-of-the-art techniques, achieving lower
+DOA error and superior receiver operating characteristic (ROC) performance.
+INDEX TERMS Clutter, compressive sampling (CS), direction of arrival (DOA), Kalman filter, multiple-
+input multiple-output (MIMO) radar, sparse Bayesian learning (SBL).
+I. INTRODUCTION
+Radar employing Multiple-Input Multiple-Output (MIMO)
+technology have recently gained significant attention because
+of their enhanced performance and capabilities over tradi-
+tional radar systems. MIMO radars typically operate in two
+main antenna configurations: widely separated [1], [2] and
+collocated [3], [4]. Widely separated MIMO radars observe
+targets from different directions simultaneously, leveraging
+spatial diversity for enhanced performance. On the other
+hand, collocated MIMO radars exploit phase differences
+introduced by various transmit and receive antenna pairs. This
+configuration provides superior resolution and performance
+in target detection compared to traditional phased-array
+radars. This work specifically aims to investigate the capabil-
+ity of the collocated MIMO radar in estimating the directions
+of arrival (DOAs) of several unidentified sources.
+Compressive sampling (CS) [5], [6], [7] has emerged
+as a powerful framework for signal acquisition, enabling
+the reconstruction of signals from far fewer samples than
+The associate editor coordinating the review of this manuscript and
+approving it for publication was Jolanta Mizera-Pietraszko
+.
+required by the Nyquist criterion. According to CS theory,
+a signal s ∈RN that is K-sparse can be accurately recovered
+from a small number of linear measurements
+r = 2s + n,
+(1)
+where 2 ∈RM×N represents the dictionary (sensing) matrix,
+n ∈RM is noise, and K < M ≪N [8]. This sampling
+paradigm has proven particularly effective in radar signal
+processing tasks, including DOA estimation, because of its
+capacity to overcome the constraints imposed by Nyquist
+sampling theory. In CS methods for DOA estimation, the
+spatial domain is discretized into a grid, and estimates are
+restricted to the nearest grid points [9]. Physically, the sparse
+vector s represents the spatial reflectivity of the scene sam-
+pled on this discrete angular grid, with nonzero entries
+indicating directions that carry signal energy from unknown
+targets. Consequently, the support of the estimated vector
+ˆs directly corresponds to the DOAs. From a radar-practical
+perspective, any error in recovering the support or amplitudes
+of s results in missed or false detections and higher DOA
+errors.
+VOLUME 14, 2026
+ 2026 The Authors. This work is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License.
+For more information, see https://creativecommons.org/licenses/by-nc-nd/4.0/
+12435
+
+
+===== PAGE 2 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+In CS formulations, achievable angular accuracy depends
+on the grid resolution, the mutual coherence of the sens-
+ing matrix, and the effective SNR. While finer grids reduce
+discretization bias and are essential for accurately resolving
+closely spaced targets, they also increase column correla-
+tion, which can degrade sparse-support recovery and amplify
+sensitivity to noise. Denser grids further introduce higher
+computational cost and longer processing times, posing
+challenges for real-time implementations [10]. To enhance
+DOA estimation performance without relying on denser
+sampling grids, various approaches have been proposed.
+Recently, a grid refinement strategy was implemented. Ini-
+tially, a coarse grid was employed to estimate unknown
+DOAs, followed by the construction of a finer grid around
+DOA estimates to improve accuracy, as discussed in [9] and
+[11], and the references therein. Furthermore, off-grid DOA
+estimation techniques have been developed to address basis
+mismatch problems, as discussed in [12] and [13], and related
+works. Specifically, [12] proposes a framework that models
+off-grid deviations using a first-order Taylor expansion to
+enhance CS-based DOA estimation, while [13] introduces
+a CS-based algorithm that simultaneously estimates DOAs
+and compensates for unknown mutual coupling in MIMO
+radar systems. The limitations of [12] primarily stem from
+its reliance on first-order approximations, which can cause
+modeling errors when DOAs deviate significantly from grid
+points; it is also sensitive to the initial grid design and tends
+to underperform in the presence of clutter and non-Gaussian
+noise. Similarly, [13] suffers from high computational com-
+plexity due to matrix-intensive operations, sensitivity to grid
+resolution, and reduced reliability in low SNR conditions.
+The limitations of conventional grid-based DOA estima-
+tion have motivated ongoing research into methods that
+are more accurate, computationally efficient, and robust.
+A key challenge remains the off-grid distance—the mismatch
+between actual DOAs and their nearest grid points—which
+can severely degrade performance, particularly when DOAs
+fall between adjacent grid points. This problem is especially
+pronounced in practical scenarios where target locations are
+unknown and optimal grid design is infeasible. Moreover, off-
+grid DOA estimation has not been thoroughly explored for
+radar systems operating in cluttered environments.
+In this work, we address these challenges by integrating
+sparse Bayesian learning (SBL) with Kalman filtering to
+develop an advanced algorithm that eliminates the reliance
+on dense sampling grids. This integration enhances computa-
+tional efficiency and significantly improves DOA estimation
+accuracy, particularly in dynamic and complex scenarios
+where the true DOAs may lie between predefined grid
+points.
+While SBL and Kalman filtering are well-established tech-
+niques whose combination has been studied in the dynamic
+compressed sensing literature, the central contribution of our
+work is not the isolated use of these methods, nor a mere
+reiteration of their combination. Instead, our originality lies
+in the careful adaptation and extension of the SBL–Kalman
+framework for DOA tracking in MIMO radar systems oper-
+ating under clutter—a setting that introduces nontrivial
+methodological challenges. In particular, we explicitly tackle
+off-grid discretization errors, a primary source of angular
+bias in grid-based DOA estimation, while simultaneously
+accounting for the additional complexity of clutter, which
+is both practically significant and technically demanding.
+To the best of our knowledge, this scenario has not been
+systematically addressed in prior work and requires novel
+modeling and algorithmic strategies.
+It is worth mentioning that several previous works have
+combined Kalman filtering with compressed sensing for
+tasks such as video reconstruction, streaming signal recov-
+ery, and dynamic sparse signal tracking; see [14], [15], and
+the references therein. However, these methods have not
+been applied to DOA estimation and generally overlook the
+off-grid scenario, in which the true target angles deviate from
+the discretized grid. This mismatch introduces angular bias
+and can substantially degrade estimation performance.
+While CS and Kalman filtering have been independently
+explored in the dynamic CS literature, we emphasize that
+the contribution of this work is not the generic combination
+of these tools. Rather, the novelty lies in a radar-tailored
+SBL–KF framework that: (i) jointly estimates the DOAs,
+noise variance, and full clutter covariance matrix; (ii) models
+clutter as a structured and dynamically varying interference
+component instead of merging it with noise; (iii) mitigates
+off-grid discretization errors by embedding the SBL posterior
+into a physically meaningful Kalman state model linked to
+target kinematics; and (iv) achieves sub-grid angular resolu-
+tion without requiring dense grids or multi-stage refinement.
+To the best of our knowledge, no prior work has devel-
+oped an SBL–KF framework that simultaneously handles
+sub-Nyquist sampling, correlated clutter, and off-grid DOA
+tracking in collocated MIMO radar. This tailored integration
+produces an inference pipeline fundamentally different from
+existing CS-based DOA or dynamic CS approaches, yielding
+substantial improvements in accuracy, robustness, and ROC
+performance under challenging cluttered conditions where
+existing methods typically degrade.
+The primary contributions of this paper are:
+• We employ sub-Nyquist samples collected from MIMO
+radars operating in cluttered environments for DOA
+estimation. Sub-Nyquist sampling enables us to capture
+signals at lower rates than the traditional Nyquist rate,
+which reduces data processing requirements and com-
+putational load.
+• We initially frame the DOA estimation as a sparse
+signal recovery problem within the CS framework,
+while explicitly accounting for the presence of clut-
+ter. To better capture the practical scenario in MIMO
+radar systems, we extend the standard CS model by
+introducing an additional term in equation (1) to rep-
+resent the clutter component. This modification allows
+the compressed measurements to more accurately reflect
+12436
+VOLUME 14, 2026
+
+
+===== PAGE 3 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+the combined contributions of the target signal, clutter,
+and noise. Solving the sparse recovery problem in (1)
+is known to be computationally intractable (NP-hard)
+[7], [16], [17], [18]. The challenge becomes even greater
+when unknown clutter is present, as it introduces addi-
+tional uncertainty without prior information. A common
+workaround is to either treat interference and noise
+as a single aggregated disturbance or to neglect the
+weaker component—typically the noise. However, these
+simplistic treatments often degrade estimation accuracy.
+In this paper, we demonstrate that a probabilistic mod-
+eling approach offers a more effective and principled
+solution for handling the combined impact of noise and
+interference.
+• Subsequently, a SBL-based algorithm is specifically
+designed to simultaneously estimate the DOAs of
+unknown targets along with the noise variance and the
+clutter covariance matrix. The sparse vector s encodes
+target DOAs on a discrete angular grid, but grid-based
+discretization inherently causes off-grid errors. While
+finer grids reduce bias, they increase correlation and
+noise sensitivity, making recovery unstable. Existing
+methods therefore struggle, particularly when DOAs fall
+between adjacent grid points.
+• To address the challenges of off-grid DOA estimation
+and tracking, we tightly integrate SBL with a Kalman
+filter. The Kalman update propagates a predictive prior
+and fuses it with the SBL posterior, (i) imposing tem-
+poral dynamics on the DOAs, (ii) interpolating between
+grid points, and (iii) accumulating measurements over
+time to reinforce accuracy. By directly incorporating
+SBL-based DOA estimates into the Kalman filter’s state
+space, this synergy mitigates off-grid errors, produces
+robust and continuous DOA tracks, and enhances overall
+estimation performance. Beyond methodological nov-
+elty, this framework delivers clear operational benefits in
+realistic MIMO radar scenarios: higher detection proba-
+bility at fixed false-alarm rates, lower DOA errors, and
+more stable tracks in dynamic, cluttered environments.
+Compared with conventional methods that rely on dense
+sampling grids, our approach offers a more efficient,
+accurate, and reliable solution for off-grid DOA estima-
+tion and tracking.
+• We conduct extensive simulations across a range of
+operating conditions to evaluate and compare our
+method against existing off-grid DOA estimation tech-
+niques. The results demonstrate that our proposed
+approach provides a robust and computationally effi-
+cient solution for off-grid DOA estimation and tracking.
+Notably, it achieves superior accuracy compared to
+state-of-the-art methods, even in scenarios with substan-
+tial clutter.
+The remainder of this paper unfolds as follows. Section II
+lays the groundwork by introducing the system model and
+reformulating the DOA estimation task as a sparse signal
+recovery problem within the CS framework. Section III builds
+on this by detailing a probabilistic model and developing a
+SBL algorithm capable of jointly inferring source directions,
+noise variance, and clutter covariance. To further improve
+estimation accuracy, the SBL-derived DOA estimates are
+seamlessly integrated into a Kalman filtering framework,
+and an enhanced variant of the algorithm is proposed to
+tackle real-world implementation challenges. Section IV
+reports the algorithmic complexity of the proposed method
+in closed form, compares its asymptotic cost with representa-
+tive baseline techniques, and discusses memory requirements
+alongside practical low-complexity implementation strate-
+gies. Section V presents simulation results that validate the
+algorithm’s performance, followed by concluding remarks in
+Section VI.
+Notation: Bold uppercase letters (e.g., A) denote matri-
+ces and bold lowercase letters (e.g., a) denote vectors. The
+operators (·)T , (·)H, and (·)∗represent transpose, Hermitian
+(conjugate) transpose, and complex conjugation, respec-
+tively. All other symbols are defined when they are first
+introduced.
+II. MIMO RADAR MODEL FOR MOVING TARGETS
+This section models how each moving target contributes a
+structured space–time signal at the MIMO radar receivers,
+and how noise and clutter are incorporated. The resulting
+formulation captures both angular information (DOAs) and
+temporal pulse-to-pulse dynamics, making it suitable for
+CS-based sparse recovery and subsequent tracking.
+In this paper, we investigate a collocated MIMO radar
+system consisting of P transmitting antennas and Q receiv-
+ing antennas. The probing signals in MIMO radars typically
+consist of a train of D equally spaced pulses [19], i.e.,
+xp(t)
+=
+PD
+d=1 ˜xp
+t −(d −1)T
+
+, 0≤t≤DT, where xp(t)
+(p = 1, . . . , P) represents the transmitted signal by p-th trans-
+mitting antenna and T denotes the pulse repetition interval
+(PRI).
+With K far-field targets in the area of observation, the
+signal received at the q-th antenna can be formulated as [3]
+and [20]:
+yq(t)=
+K
+X
+k=1
+D
+X
+d=1
+γk,d exp
+j2πfc ˜τq(θk,d)
+
+aT(θk,d)˜x
+t−(d−1)T
+
+,
+q = 1, . . . , Q,
+(2)
+where γk,d represents the complex amplitude, which is
+proportional to the radar cross section (RCS) of the k-
+th target with respect to the d-th pulse, fc is the car-
+rier frequency of the radar, and ˜τq(θk,d) indicates the
+propagation time delay between the k-th target, relative
+to the d-th pulse, and the q-th receive antenna. Also,
+a(θk,d) ≜
+
+exp(j2πfcτ1(θk,d)), . . . , exp(j2πfcτP(θk,d))
+T
+P×1,
+where τp(θk,d) denotes the propagation time delay between
+the p-th transmit antenna and the k-th target with respect
+to the d-th pulse, and ˜x(t −(d −1)T) ≜[˜x1(t −(d −
+1)T), . . . , ˜xP(t −(d −1)T)]T
+P×1. Notice that θk,d represents
+VOLUME 14, 2026
+12437
+
+
+===== PAGE 4 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+the DOA of the k-th moving target during the d-th pulse. It is
+assumed that γk,d and θk,d stay fixed during the PRI T but
+vary independently from one pulse to the next.
+The received data vector y(t) ≜[y1(t), . . . , yQ(t)]T
+Q×1 can
+be represented as:
+y(t) =
+K
+X
+k=1
+D
+X
+d=1
+γk,db(θk,d)aT (θk,d)˜x
+t −(d −1)T
+
+,
+(3)
+where
+b(θk,d)
+≜
+
+exp(j2πfc ˜τ1(θk,d), . . . ,
+exp(j2πfc ˜τQ(θk,d))
+T
+Q×1. Suppose that each receiving antenna
+collects LTs-spaced samples within d −th (d = 1, ..., D)
+pulse. Then, the collected samples during the d-th pulse, i.e.,
+Yd =
+
+y((d −1)T +0Ts), . . . , y((d −1)T +(L −1)Ts)
+
+Q×L,
+can be expressed as1:
+Yd =
+K
+X
+k=1
+γk,db(θk,d)aT (θk,d)X, d = 1, . . . , D,
+(4)
+where X =
+˜x(0), . . . , ˜x((L −1)Ts)
+
+P×L.
+In real-world applications, the received signal is affected
+by noise and clutter, which greatly hinder the performance of
+practical radar systems. Let A ⊗B represent the Kronecker
+product of the matrices A and B. Taking into account the noise
+(denoted by ed) and clutter (denoted by wd) components, the
+output vector can be formed as [4]
+yd =
+K
+X
+k=1
+γk,d
+XT a(θk,d)
+
+⊗b(θk,d) + wd + ed,
+d = 1, . . . , D,
+(5)
+where yd is a vector of size QL × 1, vec
+
+Yd
+
+=
+KP
+k=1
+γk,d
+XT a(θk,d)
+
+⊗b(θk,d), wd
+∼CN(0QL, 6w), and
+ed
+∼
+CN(0QL, σ 2 × IQL). Here, CN(µ, 6) represents
+the circularly symmetric complex Gaussian distribution with
+mean µ and covariance 6. Assuming Gaussian noise is
+standard in CS-based MIMO radar research, justified by the
+Central Limit Theorem, which approximates the combined
+effect of multiple independent noise sources as Gaussian.
+This assumption enables analytical tractability, computa-
+tional efficiency, and provides a common framework for
+performance comparison.
+To adapt (5) for the context of CS, we define g
+≜
+[g1, g2, . . . , gN], where N ≫K, and sparse vector sd ≜
+[s1,d, . . . , sN,d]T
+N×1 such that [20]
+sn,d =
+(
+γk,d,
+if the k-th target is located at gn
+0,
+otherwise.
+(6)
+Also,
+9≜
+hXT a(g1)
+
+⊗b(g1), . . . ,
+XT a(gN)
+
+⊗b(gN)
+i
+QL×N. (7)
+Substituting (6) and (7) in (5) results in the following
+equation [4], [19]:
+yd = 9sd + wd + ed, d = 1, . . . , D.
+(8)
+1Notice that the sampling interval Ts satisfies the Nyquist requirement.
+Finally, exploiting the sparsity of sd enables us to express the
+CS measurements as:
+rd = 8yd = 2sd + 8wd + nd, d = 1, . . . , D,
+(9)
+in which, 2 ≜89 is a matrix with dimensions M ×N (K <
+M ≪N), where 8 denotes a M × QL measurement matrix
+(M < QL), and nd = 8ed.
+III. DOA ESTIMATION STRATEGY
+Before presenting the detailed SBL-based derivations,
+we provide a brief high-level overview to help readers follow
+the probabilistic modeling steps introduced in this section.
+This section introduces the core SBL probabilistic model:
+a Gaussian likelihood for the measurements and a Gaussian
+prior with adjustable variances to promote sparsity. These
+elements form the foundation for deriving the posterior dis-
+tribution of the sparse vector and for enabling EM-based
+hyperparameter learning.
+Denote the Euclidean norm of a vector a by ∥a∥2.
+We express the probability density function (pdf) of the
+random variable S as p(s), distinguishing between random
+variables and deterministic parameters in the pdf using a
+semicolon notation. Specifically, we write p(s; α), where α
+is a deterministic vector. Adopting the standard assumption
+of white (circularly symmetric) complex Gaussian noise,
+we reframe the signal model given in (9) within the SBL
+framework, as described in [21]:
+p(rd|sd; 6w, β) =
+1
+(πβ)M exp
+
+−1
+β
+rd −2sd −8wd
+2
+2
+
+,
+d = 1, . . . , D,
+(10)
+where β denotes the variance of the noise and 6w represents
+the covariance matrix of clutter. Estimating unknown param-
+eters using ML from (10) can lead to significant overfitting
+challenges [22]. To mitigate this, we adopt a prior distribution
+for the sparse vector sd, following the strategy commonly
+used in SBL methodologies:
+p(sd; α) =
+N
+Y
+n=1
+1
+παn
+exp
+
+−|sn,d|2
+αn
+
+, d = 1, . . . , D, (11)
+where the vector α = [α1, . . . , αN]T
+N×1 consists of indepen-
+dent hyperparameters that govern the sparsity characteristics
+of (9). Let diag(α) denote a diagonal matrix whose diagonal
+elements are given by the components of α. Defining A ≜
+diag(α), (11) can be rewritten as:
+p(sd; α) =
+1
+πN|A| exp
+
+−sH
+d A−1sd
+
+, d = 1, . . . , D,
+(12)
+where |A| represents the determinant of the matrix A. The
+probabilistic prior above plays a key role in promoting spar-
+sity by allowing each coefficient to adaptively shrink through
+its corresponding hyperparameter αn.
+12438
+VOLUME 14, 2026
+
+
+===== PAGE 5 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+The conditional posterior distribution of sd given rd is
+modeled as a complex Gaussian distribution [23], expressed
+as:
+p(sd|rd; α, 6w, β) = CN(µd, 6), d = 1, . . . , D,
+(13)
+in which, µd
+≜
+E
+
+sd|rd; α, 6w, β
+
+=
+A2H6−1
+r rd
+(E[·] denotes the statistical expectation) and 6
+≜
+Cov
+
+sd|rd; α, 6w, β
+
+= A −A2H6−1
+r 2A, where 6r ≜
+2A2H + 86w8H + βIM.
+Similar to typical SBL framework, we choose µd as the
+sparse vector estimate, i.e.,
+ˆsd ≜µd = A2H6r
+−1rd, d = 1, . . . , D.
+(14)
+Additionally, the SBL framework proposes estimating the
+unknown parameters by maximizing the marginal likelihood
+p(rd; α, 6w, β) [24], i.e.,
+ˆα, ˆ6w, ˆβ
+
+= arg max
+α,6w,β
+Z
+p(rd|sd; 6w, β)p(sd; α)dsd,
+d = 1, . . . , D,
+(15)
+which is central to the evidence maximization strategy. How-
+ever, obtaining a closed-form solution for (15) is highly
+challenging. To address this, we develop an EM algorithm
+that iteratively solves (15) through the following two steps:
+1-E-step: Compute Q(α, 6w, β|α(i), 6(i)
+w , β(i))
+= Eu|rd;α(i),6(i)
+w ,β(i)
+
+log p(u; α, 6w, β)
+
+(16)
+2-M-step: Solve
+α(i+1), 6(i+1)
+w
+, β(i+1)
+= arg max
+α,6w,β Q
+α, 6w, β|α(i), 6(i)
+w , β(i)
+,
+(17)
+where i represents the EM iteration number and u
+=
+
+sH
+d , wH
+d , nH
+d
+H for d
+=
+1, . . . , D. The EM algorithm
+alternates between estimating the hidden variables (E-step)
+and updating the model parameters (M-step). This iterative
+refinement enables SBL to jointly learn the sparse DOA
+coefficients, clutter covariance, and noise variance directly
+from the data, without requiring closed-form optimization.
+Considering the Bayes’ rule and recalling the indepen-
+dence of signal, noise, and clutter terms, the E-step is
+expressed as:
+Q
+α, 6w, β|α(i), 6(i)
+w , β(i)
+= Q
+α|α(i)
++ Q
+6w|6(i)
+w
+
++ Q
+β|β(i)
+,
+(18)
+where
+Q
+α|α(i)
+= Esd|rd;α(i)
+h
+log p
+sd; α
+i
+(19)
+Q
+6w|6(i)
+w
+
+= Ewd|rd;6(i)
+w
+h
+log p
+wd; 6w
+i
+(20)
+Q
+β|β(i)
+= End|rd;β(i)
+h
+log p
+nd; β
+i
+.
+(21)
+Based on (18)–(21), the M-step (17) can be simplified as:
+α(i+1) = arg max
+α
+Q
+α|α(i)
+(22)
+6(i+1)
+w
+= arg max
+6w
+Q
+6w|6(i)
+w
+
+(23)
+β(i+1) = arg max
+β
+Q
+β|β(i)
+.
+(24)
+These E/M-step expressions summarize the full probabilistic
+refinement process: the E-step computes expected signal,
+clutter, and noise contributions, while the M-step updates the
+hyperparameters that shape sparsity and statistical structure.
+This interpretation is provided to guide readers through the
+otherwise dense mathematical derivations.
+In the appendices, we derive the relevant learning rules
+for (22) to (24). Let trace(A) denote the trace of the matrix A.
+By combining the learning rules outlined in the appendices,
+we can estimate the unknown parameters effectively. The
+algorithmic representation of the developed strategy is pre-
+sented below.
+Description of Algorithm I
+1. Initialization:
+Set i = 0 and initialize α(0), β(0), and 6(0)
+w .
+2. Iteration:
+2.1) E-step: Let A(i) = diag(α(i)). Then, compute
+6(i)
+r = 2A(i)2H + 86(i)
+w 8H + β(i)IM
+(25)
+5(i) =
+6(i)
+r
+−1rdrH
+d
+6(i)
+r
+−1 −
+6(i)
+r
+−1
+(26)
+2.2) M-step: Update the learning rules:
+α(i+1)
+n
+= α(i)
+n +
+α(i)
+n
+22H
+.n5(i)2.n,
+(27)
+6(i+1)
+w
+= 6(i)
+w + 6(i)
+w 8H5(i)86(i)
+w ,
+(28)
+β(i+1) = β(i) + 1
+M
+β(i)2trace
+5(i)
+.
+(29)
+2.3) Set α(i+1)
+n
+= 0, n = 1, . . . , N, if α(i+1)
+n
+< εp.
+2.4) Increase i by one and proceed to step 2.1 until
+∥α(i+1) −α(i)∥2
+2 < ε or until i reaches imax.
+Note: The values ε, εp and imax are specified by the user.
+3. Final approximation:
+ˆsd = A(i+1)2H6(i+1)
+r
+−1rd, d = 1, . . . , D.
+The effectiveness of the proposed method in Table 1
+heavily depends on the selection of initial values for the
+parameters α(0), β(0), and 6(0)
+w . According to [25], set-
+ting α(0) to a uniform vector often yields robust results.
+Nevertheless, when dealing with realistic environments con-
+taining noise and clutter, accurate initialization of β(0), and
+6(0)
+w becomes more challenging. In such cases, reliable esti-
+mates of the underlying noise and clutter statistics—typically
+derived from measurements taken in the absence of signal—
+are essential to achieve satisfactory performance.
+Through comprehensive simulations, we observe that in
+an ideal, noise- and clutter-free environment, the major-
+ity of the estimated hyperparameters αn, n = 1, . . . , N,
+rapidly converge toward zero within a limited number of
+EM iterations. However, under practical conditions involving
+measurement noise and environmental clutter, the estimated
+αn, n = 1, . . . , N, values asymptotically approach small
+but nonzero magnitudes due to residual uncertainty and
+VOLUME 14, 2026
+12439
+
+
+===== PAGE 6 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+model mismatch. To enforce sparsity and enhance numerical
+stability—particularly in avoiding ill-conditioning of covari-
+ance matrices—we introduce a hard-thresholding operation
+between successive EM updates. Specifically, any αn, n =
+1, . . . , N, satisfying α(i+1)
+n
+< εp, where εp is a predefined
+sparsity threshold, is truncated to zero. This pruning heuristic
+functions as an implicit regularizer, yielding improved con-
+vergence characteristics without compromising estimation
+fidelity.
+Based on our simulation results, setting the threshold εp
+approximately equal to the noise variance enables the system
+to achieve a high detection probability.
+To enhance the accuracy of Algorithm 1, increasing the
+grid size N is an option. However, generating dense grids is
+computationally expensive. To address this issue, we intro-
+duce a modified version, Algorithm 2, which utilizes the KF.
+Algorithm 2 achieves lower computational cost compared
+to building a dense grid, while also delivering improved
+performance. Additionally, it mitigates errors associated with
+off-grid targets.
+Before presenting the detailed KF-based formulation,
+we provide a brief high-level summary to clarify its purpose.
+Algorithm 2 integrates Kalman filtering to exploit the tem-
+poral evolution of DOAs across pulses, enabling accurate
+tracking without requiring a densely sampled angle grid. This
+significantly reduces computational cost while mitigating
+off-grid errors that affect purely grid-based sparse recovery.
+Using the same approach as that given in [26], the state
+of the k-th moving target at the d-th pulse is described as
+θk,d
+≜
+
+θk,d, ˙θk,d
+T
+2×1, where ˙θk,d represents the angu-
+lar velocity (rate of change of DOA). The Kalman filter
+assumes the true state at time instant d + 1, θd+1
+≜
+h
+θT
+1,d+1, . . . , θT
+K,d+1
+iT
+2K×1 is evolved from the state at time
+instant d, θd ≜
+h
+θT
+1,d, . . . , θT
+K,d
+iT
+2K×1, according to:
+θd+1 = Fθd + ud,
+(30)
+where F = IK ⊗
+1 T
+0 1
+
+represents the state transition model
+which is applied to the previous state θd and ud = N(0, Qd)
+is the noise process.2 Suppose that a new DOA estimate
+˜θd+1 ≜
+h
+˜θ1,d+1, . . . , ˜θK,d+1
+iT
+K×1 arrives from Algorithm 1
+at time instant d + 1. The Kalman filter assumes a measure-
+ment model of the form [28]:
+˜θd+1 = Hθd+1 + vd+1,
+(31)
+where HK×2K =
+
+
+1 0 . . . 0
+. . .
+0 . . . 1 0
+
+serves as the observation
+model, which translates the true state space into the observed
+space and vd+1 = N(0, Rd+1) is the observation noise.
+Notice that ud and vd+1 are independent Gaussian random
+variables.
+2For further details, we direct interested readers to [26], [27], and the
+references cited within those works.
+The Kalman filter operates in two sequential steps over
+time: the prediction step and the update step [27], [28]. Dur-
+ing the prediction phase, the estimate ˆθd+1|d is computed,
+accompanied by an uncertainty measurement represented by
+the prediction error covariance ˆPd+1|d. Following this, the
+update step takes place when a new estimate, ˜θd+1, becomes
+available. This new information is used to refine ˆθd+1|d and
+generate the updated estimate ˆθd+1. Concurrently, ˆPd+1|d is
+adjusted to yield ˆPd+1, reflecting the uncertainty associated
+with ˜θd+1. The key steps of the modified scheme are summa-
+rized below.
+Algorithm II: Modified Algorithm
+1. Initialization: Same as step 1 in Algorithm 1.
+2. Iteration: Same as step 2 in Algorithm 1.
+3. Final Approximation: Same as step 3 in Algorithm 1.
+4. Coarse DOA Estimation: Determine non-zero elements
+of ˆsd to obtain ˜θd ≜
+h
+˜θ1,d, . . . , ˜θK,d
+iT
+.
+5. KF Prediction:
+ˆθd+1|d = Fθd,
+(32)
+ˆPd+1|d = Qd + FˆPdFT .
+(33)
+6. KF Correction:
+Gd+1≜ˆPd+1|dHT (HˆPd+1|dHT + Rd+1)−1,
+(34)
+θd+1=ˆθd+1|d + Gd+1(˜θd −Hˆθd+1|d),
+(35)
+ˆPd+1=ˆPd+1|d −Gd+1HˆPd+1|d.
+(36)
+Increment d and go to step 1 until d reaches D.
+7. Fine DOA Estimation: State Extraction: HθD
+A. PRACTICAL INTERPRETATION AND RADAR
+IMPLICATIONS
+Physically, the sparse vector sd represents the spatial reflec-
+tivity of the scene sampled on a discrete angular grid: nonzero
+entries correspond to directions that carry signal energy from
+unknown targets. Consequently, the support of the estimated
+vector ˆsd directly maps to the DOAs. From a radar-practical
+perspective, any error in recovering the support or amplitudes
+of sd translates immediately into missed or false detections
+and angular bias. In compressed sensing formulations, the
+achievable angular accuracy depends on the grid resolu-
+tion, the mutual coherence of the sensing matrix, and the
+effective SNR; very fine grids reduce discretization bias
+but increase column correlation (coherence), which degrades
+sparse-support recovery and heightens sensitivity to noise.
+In our algorithm, the EM iterations implement a Type-II
+(SBL) estimation strategy: the E-step produces posterior
+means and covariances for sd, providing a soft detection
+with uncertainty information, while the M-step updates the
+hyperparameters and the clutter/noise covariance by maxi-
+mizing the expected complete-data log-likelihood. From a
+radar-practical viewpoint, this alternation has two impor-
+tant consequences. First, the M-step’s explicit estimation of
+12440
+VOLUME 14, 2026
+
+
+===== PAGE 7 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+the clutter covariance and noise variance provides adaptive
+whitening and environment adaptation, increasing the effec-
+tive SNR for subsequent sparse recovery and reducing bias
+caused by correlated interference. Second, the SBL hyperpri-
+ors concentrate energy on a small number of angular locations
+while providing posterior variances that can be leveraged to
+control false alarms.
+Remaining discretization (off-grid) errors are a primary
+source of angular bias in grid-based methods: when a true
+DOA falls between grid points, its estimate is biased toward
+the nearest grid columns, and increasing grid density aggra-
+vates mutual coherence. To mitigate this, we couple SBL
+with a Kalman filter that imposes simple temporal dynamics
+on the DOAs. The Kalman update propagates a predictive
+prior and fuses it with the SBL posterior, effectively inter-
+polating between grid points, reducing off-grid bias, and
+smoothing estimates across pulses. Operationally, this inte-
+gration improves track continuity, enhances track stability,
+and reduces spurious track initiations and dropouts, leading
+to higher probability of detection at a fixed false alarm rate
+and lower DOA error.
+IV. COMPUTATIONAL COMPLEXITY AND SCALABILITY
+This section presents the algorithmic complexity of Algo-
+rithms 1 and 2 in closed form, compares their asymptotic cost
+with representative baseline methods such as MUSIC [29]
+and Orthogonal Matching Pursuit (OMP) [30], and discusses
+memory requirements along with practical low-complexity
+implementation strategies.
+A. ASYMPTOTIC COST
+Before proceeding, let P denote the number of transmit anten-
+nas, Q the number of receive antennas, K the number of
+targets, D the number of pulses, L the number of samples, N
+the grid size (angular dictionary), and M the number of com-
+pressed measurements per snapshot (M < QL). Throughout
+this section, the notation O(·) is used to denote the asymp-
+totic order of computational complexity with respect to the
+problem parameters.
+Algorithm 1 (SBL-EM): A naïve implementation requires
+inversion of an N × N posterior covariance at each EM iter-
+ation, with complexity O(IN 3). Using the Woodbury identity
+reduces this to an M ×M inversion, giving a per-iteration cost
+of
+O(M2N + M3),
+dominated by M2N when N ≫M. Over I EM iterations, the
+per-pulse complexity becomes
+O
+
+I(M2N + M3)
+
+,
+with memory cost O(MN) from storing the sensing dictio-
+nary.
+Algorithm 2 (SBL + Kalman Filtering): Adding a
+Kalman recursion for K targets incurs O(K 3) per pulse. Since
+K ≪N in practice, this overhead is negligible relative to the
+SBL update, yielding
+O
+
+I(M2N + M3) + K 3
+.
+MUSIC: Eigen-decomposition of the PQ×PQ covariance
+costs O((PQ)3), while the angular search adds O(N(PQ)2).
+OMP (Greedy CS): Each iteration requires correlations of
+cost O(MN), and with ∼K non-zero elements in the sparse
+vector, the total cost is O(KMN).
+Table 1 summarizes the asymptotic complexity and mem-
+ory requirements. SBL-based methods, when implemented in
+measurement space, scale linearly in N and cubically in M,
+with memory O(MN). In contrast, MUSIC scales cubically
+with PQ and requires quadratic memory, which becomes
+prohibitive for large arrays. Greedy CS (OMP) scales as
+O(KMN) and is efficient for small K, but its performance
+degrades in cluttered or highly correlated scenarios where
+SBL remains robust.
+TABLE 1. Asymptotic complexity (big-O).
+B. SCALABILITY TRENDS
+• Increasing P or Q raises M and sensing matrix coher-
+ence. Woodbury-based SBL remains feasible since the
+required inversions are of size M × M, not N × N.
+• Increasing N improves resolution but increases the com-
+putational cost linearly with M2N. Active-set pruning
+reduces this to O(M2Nact), with Nact ∝K.
+• The number of targets K mainly affects the O(K 3)
+Kalman update, typically negligible compared to SBL.
+C. IMPLEMENTATION NOTES
+Scalability is further improved by:
+1) Woodbury reformulation to avoid N × N inversions,
+2) active-set pruning of the dictionary, and
+3) GPU/FPGA acceleration for dense linear algebra.
+These strategies make the methods scalable for realistic
+radar settings with large P, Q, L, and dense grids N.
+V. SIMULATION RESULTS
+This section details the numerical examples used to evaluate
+the performance of our proposed algorithm.3 The perfor-
+mance metrics are averaged over 1,000 independent Monte
+Carlo simulations. In each simulation, the elements of the
+3The present study is limited to numerical experiments and does not
+include field measurements; incorporating real measurements in future work
+could serve to confirm the consistent performance gains our algorithm
+achieves over baseline methods.
+VOLUME 14, 2026
+12441
+
+
+===== PAGE 8 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+measurement matrix 8 are randomly sampled from a Gaus-
+sian distribution.4 Additionally, the covariance matrix 6w for
+clutter is randomly drawn at each trial. It is important to
+highlight that the proposed algorithm is capable of estimating
+DOAs using significantly fewer samples—only M
+QL × 100%
+of the total—compared to conventional approaches. The spe-
+cific values for the simulation parameters are provided in
+Table 2.
+In all simulations, each performance point is averaged over
+N = 1000 independent Monte–Carlo trials. For the DOA
+RMSE curves, the resulting 95% confidence intervals are
+extremely small—far below the scale of the plotted axes.
+Accordingly, these intervals are omitted from the figures for
+clarity, which is consistent with standard practice in the signal
+processing and radar literature.
+To quantify statistical reliability where it is most informa-
+tive, we report 95% binomial confidence intervals for the
+probability of detection PD of the proposed method in the
+ROC curve. For a given operating point, if k out of N =
+1000 trials result in successful detection of all targets, the
+empirical detection probability is ˆp = k/N, and the corre-
+sponding 95% confidence interval is
+CI95 = ˆp ± 1.96
+r
+ˆp(1 −ˆp)
+N
+.
+(37)
+These intervals are shown as vertical error bars in Fig. 6, while
+CIs for the baseline methods (MUSIC and OMP) are omitted
+to avoid clutter.
+To evaluate DOA estimation accuracy, we use the
+well-established expression from [12]:
+v
+u
+u
+t 1
+KD
+D
+X
+d=1
+K
+X
+k=1
+θk,d −ˆθk,d
+2,
+(38)
+where θk,d is the true DOA of the k-th target at pulse d, and
+ˆθk,d is its estimate.
+Following [31], interference strength is expressed in terms
+of the signal-to-interference ratio (SIR):
+SIR =
+Ps
+Pc + Pn
+=
+SNR
+1 + Pc/Pn
+,
+(39)
+where Ps, Pn, and Pc denote signal, noise, and clutter powers,
+and SNR = Ps/Pn.
+We also evaluate detection performance through the prob-
+ability of detection (PD) and the probability of false alarm
+(PFA). As in [8] and [32], PD denotes the fraction of trials in
+which all targets are successfully detected, and PFA denotes
+the fraction producing any false target. The clutter-to-noise
+ratio is fixed at Pc/Pn = 10 dB unless otherwise stated.
+Before presenting the main simulation examples, we exam-
+ine two factors that strongly influence the behavior of the
+proposed algorithm: (i) the number of EM iterations needed
+4For CS to achieve successful signal recovery, it is essential for the mea-
+surement matrix 8 to be incoherent with the basis matrix 9. According to the
+recommendations in [5], one straightforward way to ensure this incoherence
+is to choose 8 as a randomly generated matrix.
+TABLE 2. Simulation parameters.
+for convergence, and (ii) the impact of the angular grid reso-
+lution.
+Our simulation results show that the proposed algorithm
+typically converges within a fixed number of EM iterations.
+Figure 1 plots DOA estimation error versus iteration index
+i for multiple SIR levels. Convergence is reliably achieved
+within 20–25 iterations for all cases. Thus, all subsequent
+simulations terminate when either ∥α(i+1) −α(i)∥2 < 10−8
+or the iteration count reaches 25.
+FIGURE 1. DOA estimation performance versus EM iteration index i for
+different SIR values.
+Next, we assess the impact of the angular grid resolution
+on DOA estimation accuracy. Figure 2 shows the DOA esti-
+mation error as a function of the grid spacing for different SIR
+levels. In these simulations, the angular grid spacing is varied
+over
+1θ ∈{0.25◦, 0.5◦, 1◦, 1.5◦, 2◦},
+which correspond to grid sizes ranging from N = 160 down
+to N = 16. For each value of 1θ, the dictionary grid is
+constructed as g = [−20◦, −20◦+ 1θ, . . . , 20◦], while all
+other simulation parameters remain unchanged.
+Figure 2 shows that when 1θ
+< 0.5◦, the dictionary
+becomes highly coherent, degrading sparse reconstruction,
+while for 1θ > 2◦the off-grid mismatch dominates and
+the DOA error increases. A spacing of 1θ = 1◦offers the
+most favorable trade-off between accuracy, dictionary size,
+and computational load.
+12442
+VOLUME 14, 2026
+
+
+===== PAGE 9 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+Based on this analysis, a grid spacing of 1θ = 1◦is used
+in all subsequent simulation examples, as it provides a reli-
+able and computationally efficient operating point. We now
+proceed to the main performance evaluations.
+FIGURE 2. DOA estimation error versus grid resolution 1θ.
+Example 1: This experiment involves a performance com-
+parison between Algorithm 2 and Algorithm 1. We assume
+that three moving targets with constant velocity are present in
+the area of interest, located at angles of −6.5o, 0o, 7.5o (two
+off-grid targets and one on-grid target).
+Fig. 3 illustrates the DOA estimation performance against
+SIR for various percentages of M/QL values. Remark-
+ably, Algorithm 2 demonstrates better accuracy compared to
+Algorithm 1 across the entire SIR range and for all M/QL
+values. This improvement of approximately 5 dB for 90 per-
+cent of samples is attributed to the utilization of the Kalman
+Filter in conjunction with the SBL technique. Additionally,
+Table 3 presents a comparison of the average running times of
+Algorithms 1 and 2 for different percentages of M/QL values.
+The implementation cost of Algorithm 2 is nearly the same,
+with only a slight increase compared to Algorithm 1 while
+offering better performance. This result is consistent with the
+computational complexity reported in Section IV (Table 1).
+TABLE 3. Comparison of average running times.
+Example 2: To further validate the effectiveness of
+Algorithm 2, its performance is compared with that of the
+proposed DOA estimator presented in [11], since both algo-
+rithms are designed to operate in cluttered environments.
+In Fig. 4, we present the DOA estimation performance against
+SIR for M/QL = 75%. It is seen that our proposed scheme
+demonstrates superior accuracy compared to [11] across the
+entire SIR range. The performance improvement of almost
+FIGURE 3. DOA estimation performance for different sampling
+ratios M/QL.
+10 dB occurs because existing algorithms, such as [11],
+produce the best DOA estimate as the grid point nearest
+to the true DOA (e.g., 7.77o is mapped to 8o). In con-
+trast, our scheme achieves a resolution smaller than the
+off-grid distance by leveraging the Kalman Filter to mitigate
+off-grid errors. Both methods are shown to perform well
+in cluttered environments. However, [11] struggles with the
+off-grid distance—the discrepancy between actual DOAs and
+their nearest grid points—which can significantly degrade
+performance, particularly when the true DOA lies exactly
+midway between two adjacent grid points (e.g., −6.5o being
+mapped to either −6o or −7o). This condition is especially
+relevant in real-world scenarios, where the precise target loca-
+tion is unknown and optimal grid placement is impractical.
+Remarkably, our proposed technique maintains significantly
+better performance even under this worst-case condition.
+FIGURE 4. DOA estimation performance for off-grid targets in a cluttered
+environment.
+Example 3: As a performance benchmark, we also compare
+our proposed algorithm with the method developed in [12],
+VOLUME 14, 2026
+12443
+
+
+===== PAGE 10 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+as shown in Fig. 5. It is important to note that the other related
+works such as [12] and [13] limited their investigations to an
+ideal, clutter-free environment. Consequently, their accuracy
+experiences a significant decrease in the presence of clutter.
+To ensure a fair comparison, we eliminate the effect of clutter
+by setting Pc = 0 in (39), while keeping all other parameters
+identical to those used in Example 2. Under these conditions,
+Fig. 5 illustrates that our proposed algorithm achieves consis-
+tently higher DOA estimation accuracy than [12] across the
+entire SNR range. This result highlights the effectiveness of
+our approach in handling off-grid targets, even in scenarios
+where conventional methods like [12] typically perform well.
+FIGURE 5. DOA estimation performance comparison between the
+proposed algorithm and the off-grid approach presented in [12].
+Finally, to validate the effectiveness of the proposed
+algorithm, Fig. 6 presents the ROC performance in compar-
+ison with the MUSIC [29] and OMP [30] algorithms. The
+proposed scheme achieves a consistently higher probability
+of detection across the entire range of false alarm probabili-
+ties, as confirmed by the 95% binomial confidence intervals
+(vertical bars) computed over 1000 Monte–Carlo trials. This
+performance gain arises from the fact that the proposed
+algorithm explicitly estimates both the clutter covariance
+matrix and the noise variance, thereby providing a more
+accurate characterization of the interference environment.
+By exploiting this additional knowledge of the clutter statis-
+tics, the method significantly reduces the impact of structured
+interference, which explains the noticeable performance gap
+relative to MUSIC and OMP, both of which rely on less com-
+prehensive interference modeling. Another key advantage is
+that the proposed approach enables reliable target detection
+from a markedly reduced number of samples compared to
+standard CS (Nyquist-sampled) techniques.
+Example 4: We next examine the robustness of the pro-
+posed method under different clutter conditions by varying
+the clutter-to-noise ratio Pc/Pn, which directly controls the
+strength of structured interference in the received data. This
+analysis complements the previous examples by evaluating
+FIGURE 6. ROC performance of the proposed algorithm versus
+MUSIC [29] and OMP [30]. The proposed method includes 95% binomial
+confidence intervals (vertical bars) computed over 1000 Monte–Carlo
+trials, while CIs for the baseline methods are omitted for clarity.
+FIGURE 7. DOA estimation error versus SNR for different clutter-to-noise
+and sampling ratios.
+whether the performance advantages observed earlier persist
+when the clutter environment becomes more or less severe.
+Figure 7 plots the DOA estimation error versus SNR for
+three representative clutter levels, Pc/Pn ∈{5, 10, 15} dB,
+and for two sampling ratios, M/QL
+=
+70% and 90%.
+As expected, increasing the clutter power leads to higher
+estimation error since a larger fraction of the received energy
+is dominated by interference. This behavior is consistent
+with practical radar scenarios, where clutter strength may
+vary significantly due to terrain, weather, foliage, or platform
+motion.
+An important feature of the proposed framework is its
+operational flexibility. The sampling ratio M/QL can be
+adjusted based on clutter severity: in heavy clutter, using
+a larger sampling ratio improves robustness by providing
+more informative measurements, while in mild clutter the
+operator may safely lower M/QL to reduce sampling load
+12444
+VOLUME 14, 2026
+
+
+===== PAGE 11 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+and computational cost without sacrificing accuracy. This
+adaptability offers a clear advantage over existing approaches
+that typically require full-rate sampling.
+Even
+under
+the
+most
+challenging
+condition
+(Pc/Pn = 15 dB), Figure 7 shows that the proposed algorithm
+maintains stable and accurate DOA estimates over all SNR
+values and sampling ratios. These results demonstrate strong
+resilience to structured interference and confirm the effec-
+tiveness of the proposed method in both moderate and
+clutter-intensive environments.
+VI. CONCLUSION
+This work introduces an efficient framework for estimat-
+ing the DOAs of potential targets in cluttered environments
+using CS-based MIMO radars operating at sub-Nyquist rates.
+We first employ a SBL approach tailored to jointly estimate
+the DOAs of unknown targets together with the noise variance
+and clutter covariance matrix. The estimated DOAs are then
+incorporated into the state space of a Kalman filter, enabling
+dynamic tracking. The integration of SBL with Kalman fil-
+tering offers a robust solution to the off-grid target problem
+in DOA estimation. From an operational standpoint, this
+joint strategy enhances track continuity and stability while
+suppressing spurious initiations and track dropouts. Conse-
+quently, it achieves a higher probability of detection at a
+fixed false alarm rate and yields lower DOA error. Numerical
+experiments confirm that our proposed approach offers an
+efficient and robust framework for off-grid DOA estima-
+tion and tracking. It consistently outperforms state-of-the-art
+methods in estimation accuracy, achieves superior ROC per-
+formance, and maintains robustness even in the presence of
+significant clutter. In future work, we plan to extend our
+analysis to non-Gaussian interference models and confirm the
+clear performance advantages our method demonstrates over
+baseline techniques.
+APPENDIX A
+UPDATE RULE FOR α
+We begin by substituting (11) in (22), i.e.,
+α(i+1) = arg min
+α Esd|rd;α(i)
+h N
+X
+n=1
+
+log π + log αn
++ α−1
+n |sn,d|2i
+.
+(A.1)
+The derivative of (A.1) concerning αn can be formulated as:
+∂Q(α|α(i))
+∂αn
+= 1
+αn
+−1
+α2n
+Esd|rd;α(i)
+h
+|sn,d|2i
+, n = 1, . . . , N.
+(A.2)
+The learning rule can be obtained by setting (A.2) to zero, i.e,
+α(i+1)
+n
+= α(i)
+n +
+α(i)
+n
+22H
+.n5(i)2.n, n = 1, . . . , N,
+(A.3)
+where
+5(i) ≜
+6(i)
+r
+−1rdrH
+d
+6(i)
+r
+−1 −
+6(i)
+r
+−1.
+(A.4)
+APPENDIX B
+UPDATE RULE FOR 6W
+Using (20) and (23) and recalling that wd ∼CN(0QL, 6w),
+it can be proven that:
+6(i+1)
+w
+= arg min
+6w
+
+log |6w| + trace
+
+6−1
+w
+h
+6(i)
+w + 6(i)
+w 8H5(i)86(i)
+w
+i
+,
+(B.1)
+where
+wH
+d 6−1
+w wd
+=
+trace
+6−1
+w wdwH
+d
+
+.
+Applying
+Lemma 1 of [33], the learning rule presented in (B.1) can
+be articulated as:
+6(i+1)
+w
+= 6(i)
+w + 6(i)
+w 8H5(i)86(i)
+w .
+(B.2)
+APPENDIX C
+UPDATE RULE FOR β
+Considering (24) and recalling that nd
+∼CN(0M, βIM)
+results in
+β(i+1)=arg min
+β End|rd;β(i)M
+h
+log π +log β+ β−1
+M nH
+d nd
+i
+.
+(C.1)
+To find the derivative of (C.1) concerning β, that is,
+∂Q(β|β(i))
+∂β
+= M
+β −1
+β2 End|rd;β(i)
+h
+nH
+d nd
+i
+.
+(C.2)
+By equating (C.2) to zero, we arrive at the following learning
+rule:
+β(i+1) = β(i) + 1
+M
+β(i)2trace
+5(i)
+.
+(C.3)
+Notice that (C.3) was derived based on the fact that
+nH
+d nd = trace
+ndnH
+d
+
+.
+REFERENCES
+[1] E. Fishler, A. Haimovich, R. S. Blum, L. J. Cimini, D. Chizhik, and
+R. A. Valenzuela, ‘‘Spatial diversity in radars—Models and detection
+performance,’’ IEEE Trans. Signal Process., vol. 54, no. 3, pp. 823–838,
+Mar. 2006.
+[2] A. Haimovich, R. Blum, and L. Cimini, ‘‘MIMO radar with widely sepa-
+rated antennas,’’ IEEE Signal Process. Mag., vol. 25, no. 1, pp. 116–129,
+May 2008.
+[3] J. Li, P. Stoica, L. Xu, and W. Roberts, ‘‘On parameter identifiability of
+MIMO radar,’’ IEEE Signal Process. Lett., vol. 14, no. 12, pp. 968–971,
+Dec. 2007.
+[4] L. Xu, J. Li, and P. Stoica, ‘‘Target detection and parameter estimation for
+MIMO radar systems,’’ IEEE Trans. Aerosp. Electron. Syst., vol. 44, no. 3,
+pp. 927–939, Jul. 2008.
+[5] R. Baraniuk, ‘‘Compressive sensing,’’ IEEE Signal Process. Mag., vol. 24,
+no. 4, pp. 118–121, Jul. 2007.
+[6] E. J. Candès and M. B. Wakin, ‘‘An introduction to compressive sampling
+(A sensing/sampling paradigm that goes against the common knowledge
+in data acquisition),’’ IEEE Signal Process. Mag., vol. 25, no. 2, pp. 21–30,
+Mar. 2008.
+[7] S. Gleichman and Y. C. Eldar, ‘‘Blind compressed sensing,’’ IEEE Trans.
+Inf. Theory, vol. 57, no. 10, pp. 6958–6975, Oct. 2011.
+[8] Y. Yu, A. P. Petropulu, and H. V. Poor, ‘‘CSSF MIMO RADAR:
+Compressive-sensing and step-frequency based MIMO radar,’’ IEEE
+Trans. Aerosp. Electron. Syst., vol. 48, no. 2, pp. 1490–1504, Apr. 2012.
+[9] S. Salari, I.-M. Kim, F. Chan, and S. Rajan, ‘‘Blind compressive-sensing-
+based electronic warfare receiver,’’ IEEE Trans. Aerosp. Electron. Syst.,
+vol. 53, no. 4, pp. 2014–2030, Aug. 2017.
+VOLUME 14, 2026
+12445
+
+
+===== PAGE 12 =====
+S. Salari, F. Chan: DOA Tracking Combining Compressive Sampling and Kalman Filtering
+[10] S. Salari, F. Chan, Y.-T. Chan, and R. Guay, ‘‘DOA estimation using com-
+pressive sampling-based sensors in the presence of interference,’’ IEEE
+Trans. Aerosp. Electron. Syst., vol. 56, no. 6, pp. 4395–4405, Dec. 2020.
+[11] S. Salari, F. Chan, Y.-T. Chan, I.-M. Kim, and R. Cormier, ‘‘Joint DOA and
+clutter covariance matrix estimation in compressive sensing MIMO radar,’’
+IEEE Trans. Aerosp. Electron. Syst., vol. 55, no. 1, pp. 318–331, Feb. 2019.
+[12] Z. Yang, L. Xie, and C. Zhang, ‘‘Off-grid direction of arrival estimation
+using sparse Bayesian inference,’’ IEEE Trans. Signal Process., vol. 61,
+no. 1, pp. 38–43, Jan. 2013.
+[13] P. Chen, Z. Cao, Z. Chen, and X. Wang, ‘‘Off-grid DOA estimation using
+sparse Bayesian learning in MIMO radar with unknown mutual coupling,’’
+IEEE Trans. Signal Process., vol. 67, no. 1, pp. 208–220, Jan. 2019.
+[14] J. Ziniel and P. Schniter, ‘‘Dynamic compressive sensing of time-varying
+signals via approximate message passing,’’ IEEE Trans. Signal Process.,
+vol. 61, no. 21, pp. 5270–5284, Nov. 2013.
+[15] K. Naruka and O. P. Sahu, ‘‘An improved speech enhancement approach
+based on combination of compressed sensing and Kalman filter,’’ in Proc.
+IEEE Int. Conf. Comput. Intell. Comput. Res. (ICCIC), Dec. 2015, pp. 1–5.
+[16] E. J. Candès and T. Tao, ‘‘Decoding by linear programming,’’ IEEE Trans.
+Inf. Theory, vol. 51, no. 12, pp. 4203–4215, Dec. 2005.
+[17] M. Niu, S. Salari, I.-M. Kim, F. Chan, and S. Rajan, ‘‘Recovery probability
+analysis for sparse signals via OMP,’’ IEEE Trans. Aerosp. Electron. Syst.,
+vol. 51, no. 4, pp. 3475–3479, Oct. 2015.
+[18] R. Prasad and C. R. Murthy, ‘‘Cramér-Rao-type bounds for sparse
+Bayesian learning,’’ IEEE Trans. Signal Process., vol. 61, no. 3,
+pp. 622–632, Feb. 2013.
+[19] M. Rossi, A. M. Haimovich, and Y. C. Eldar, ‘‘Spatial compressive sensing
+for MIMO radar,’’ IEEE Trans. Signal Process., vol. 62, no. 2, pp. 419–430,
+Jan. 2014.
+[20] L. Ding, W. Chen, W. Zhang, and H. V. Poor, ‘‘MIMO radar imaging with
+imperfect carrier synchronization: A point spread function analysis,’’ IEEE
+Trans. Aerosp. Electron. Syst., vol. 51, no. 3, pp. 2236–2247, Jul. 2015.
+[21] D. P. Wipf and B. D. Rao, ‘‘An empirical Bayesian strategy for solving
+the simultaneous sparse approximation problem,’’ IEEE Trans. Signal
+Process., vol. 55, no. 7, pp. 3704–3716, Jul. 2007.
+[22] K. Hwang and S. Choi, ‘‘Blind equalization method based on sparse
+Bayesian learning,’’ IEEE Signal Process. Lett., vol. 16, no. 4,
+pp. 315–318, Apr. 2009.
+[23] Z. Zhang and B. D. Rao, ‘‘Sparse signal recovery with temporally corre-
+lated source vectors using sparse Bayesian learning,’’ IEEE J. Sel. Topics
+Signal Process., vol. 5, no. 5, pp. 912–926, Sep. 2011.
+[24] M. E. Tipping, ‘‘Sparse Bayesian learning and the relevance vector
+machine,’’ J. Mach. Learn. Res., vol. 1, no. 7, pp. 211–244, Jan. 2001.
+[25] R. Prasad, C. R. Murthy, and B. D. Rao, ‘‘Joint approximately sparse
+channel estimation and data detection in OFDM systems using sparse
+Bayesian learning,’’ IEEE Trans. Signal Process., vol. 62, no. 14,
+pp. 3591–3603, Jul. 2014.
+[26] D. Kong and J. Chun, ‘‘A fast DOA tracking algorithm based on the
+extended Kalman filter,’’ in Proc. IEEE Nat. Aerosp. Electron. Conf.,
+Oct. 2000, pp. 235–238.
+[27] R. Mahler, Statistical Multisource-multitarget Information Fusion, vol. 11.
+Norwood, MA, USA: Artech House, 2007, p. 65.
+[28] H. Fang, N. Tian, Y. Wang, M. Zhou, and M. A. Haile, ‘‘Nonlin-
+ear Bayesian estimation: From Kalman filtering to a broader horizon,’’
+IEEE/CAA J. Autom. Sinica, vol. 5, no. 2, pp. 401–417, Mar. 2018.
+[29] W. Wu, B. Tang, and R. Tao, ‘‘Performance bound optimization for MIMO
+radar direction finding with MUSIC,’’ IEEE Trans. Aerosp. Electron. Syst.,
+vol. 59, no. 6, pp. 8845–8858, Dec. 2023.
+[30] W. Xing, C. Zhou, and C. Wang, ‘‘Modified OMP method for multi-target
+parameter estimation in frequency-agile distributed MIMO radar,’’ J. Syst.
+Eng. Electron., vol. 33, no. 5, pp. 1089–1094, Oct. 2022.
+[31] P. B. Tuuk and S. L. Marple, ‘‘Compressed sensing radar amid noise and
+clutter using interference covariance information,’’ IEEE Trans. Aerosp.
+Electron. Syst., vol. 50, no. 2, pp. 887–897, Apr. 2014.
+[32] Y. Yu, A. P. Petropulu, and H. V. Poor, ‘‘Measurement matrix design for
+compressive sensing–based MIMO radar,’’ IEEE Trans. Signal Process.,
+vol. 59, no. 11, pp. 5338–5352, Nov. 2011.
+[33] M. Hurtado, C. H. Muravchik, and A. Nehorai, ‘‘Enhanced sparse Bayesian
+learning via statistical thresholding for signals in structured noise,’’ IEEE
+Trans. Signal Process., vol. 61, no. 21, pp. 5430–5443, Nov. 2013.
+SOHEIL SALARI (Member, IEEE) received the
+B.Sc. degree in electrical engineering from Shahid
+Bahonar University, Kerman, Iran, in 1998, and the
+M.Sc. and Ph.D. degrees in electrical engineering
+from the K. N. Toosi University of Technol-
+ogy, Tehran, Iran, in 2002 and 2007, respectively.
+He has served several teaching/research appoint-
+ments with the related departments in K. N. Toosi
+University of Technology, University of Ontario
+Institute of Technology (UOIT), University of
+Toronto, and Queen’s University. He also collaborated in several indus-
+trial projects. His research interests include wireless communications,
+compressed sensing, digital signal processing, machine learning, and
+optimization theory.
+FRANCOIS
+CHAN
+(Senior Member, IEEE)
+received the B.Eng. degree in electrical engineer-
+ing from McGill University, Montreal, Canada,
+and the M.Sc.A. and Ph.D. degrees in electri-
+cal engineering from the Ecole Polytechnique
+de Montréal, Canada. He is currently a Pro-
+fessor with the Department of Electrical and
+Computer Engineering, Royal Military College of
+Canada, Kingston, ON, Canada. He was a Visit-
+ing Researcher with the University of California,
+Irvine, from 2002 to 2005. His research interests include digital communi-
+cations, wireless communications, and digital signal processing.
+12446
+VOLUME 14, 2026
