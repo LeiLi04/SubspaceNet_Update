@@ -22,48 +22,32 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
             logger.error("No model available for online learning")
             return {"status": "error", "message": "No model available for online learning"}
 
-        # Initialize online model as copy of trained model using the same factory function
         from copy import deepcopy
 
-        # Create a new model instance using the same factory function that created the trained model
-        try:
-            # Method 1: Use the same factory function to ensure identical architecture
-            from config.factory import create_model
-            self.online_model = create_model(self.config, self.system_model)
-            self.online_model.load_state_dict(self.trained_model.state_dict())
-            self.online_model.eval()  # Set to eval mode like the trained model
-            logger.info("Initialized online model as copy of trained model using factory function")
-        except Exception as e:
-            logger.warning(f"Factory function copy failed ({e}), trying clone approach")
+        def _clone_trained_model(train_mode: bool) -> torch.nn.Module:
+            cloned = deepcopy(self.trained_model.cpu())
             try:
-                # Method 2: Use torch.clone() for parameters
-                self.online_model = deepcopy(self.trained_model.cpu())
-                if torch.cuda.is_available() and next(self.trained_model.parameters()).is_cuda:
-                    self.online_model = self.online_model.cuda()
-                logger.info("Initialized online model using CPU deepcopy then moved to GPU")
-            except Exception as e2:
-                logger.error(f"All model copying methods failed: {e2}")
-                raise RuntimeError(f"Failed to create online model copy. Factory function failed: {e}, Deepcopy failed: {e2}. Cannot proceed with online learning.")
+                has_cuda_params = torch.cuda.is_available() and next(self.trained_model.parameters()).is_cuda
+            except StopIteration:
+                has_cuda_params = False
+            if has_cuda_params:
+                cloned = cloned.cuda()
+            if train_mode:
+                cloned.train()
+            else:
+                cloned.eval()
+            return cloned
 
-        # Create supervised trained model as copy of trained model (same approach as online model)
         try:
-            # Method 1: Use the same factory function to ensure identical architecture
-            self.supervised_trained_model = create_model(self.config, self.system_model)
-            self.supervised_trained_model.load_state_dict(self.trained_model.state_dict())
-            self.supervised_trained_model.train()  # Set to training mode for supervised learning
-            logger.info("Initialized supervised trained model as copy of trained model using factory function")
-        except Exception as e:
-            logger.warning(f"Factory function copy failed for supervised model ({e}), trying clone approach")
-            try:
-                # Method 2: Use torch.clone() for parameters
-                self.supervised_trained_model = deepcopy(self.trained_model.cpu())
-                if torch.cuda.is_available() and next(self.trained_model.parameters()).is_cuda:
-                    self.supervised_trained_model = self.supervised_trained_model.cuda()
-                self.supervised_trained_model.train()  # Set to training mode for supervised learning
-                logger.info("Initialized supervised trained model using CPU deepcopy then moved to GPU")
-            except Exception as e2:
-                logger.error(f"All supervised model copying methods failed: {e2}")
-                raise RuntimeError(f"Failed to create supervised trained model copy. Factory function failed: {e}, Deepcopy failed: {e2}. Cannot proceed with supervised learning.")
+            self.online_model = _clone_trained_model(train_mode=False)
+            logger.info("Initialized online model as deepcopy of trained model")
+            self.supervised_trained_model = _clone_trained_model(train_mode=True)
+            logger.info("Initialized supervised trained model as deepcopy of trained model")
+        except Exception as clone_error:
+            logger.error(f"Failed to clone trained model for online learning: {clone_error}")
+            raise RuntimeError(
+                "Failed to create online learning model copies from trained model."
+            ) from clone_error
 
         # Reset dual model state for new trajectory
         self.drift_detected = False

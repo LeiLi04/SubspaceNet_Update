@@ -2,82 +2,44 @@
 
 ## Metadata
 - Created At: 2026-02-24T20:00:00
-- Last Updated At: 2026-02-24T21:00:00
+- Last Updated At: 2026-02-24T22:03:17+01:00
 
 ## Key Findings
 
-### 1. Directory Layout Already Renamed
+### 1. Baseline completion status
 
-The active repository layout already uses renamed packages:
-- `src/model_module`
-- `src/data_module`
-- `src/trainer_module`
-- `src/eval_module`
+- Phase 1/2/3/6 were already complete before this pass.
+- This session completed Phase 4, Phase 7, and Phase 5.
 
-Phase 6 (directory reorganization) was already done before this refactoring started. All work uses the `*_module` paths.
+### 2. Phase 4 result
 
-### 2. Model Wrappers Are Now Explicit and Direct (Phase 1)
+- `src/trainer_module/simulation/eval_pipeline.py` reduced from 446 to 292 lines.
+- New `src/trainer_module/simulation/eval_reporting.py` (167 lines) now hosts evaluation report aggregation/printing.
+- File-size policy is now satisfied for this module split.
 
-New wrappers added for direct Hydra model instantiation:
-- `src/model_module/subspacenet_lightning.py`
-- `src/model_module/dcd_music_lightning.py`
+### 3. Phase 7 result
 
-Both wrappers:
-- expose explicit constructor params (Hydra-injectable)
-- call `save_hyperparameters()`
-- build internal DCD_MUSIC model objects
-- provide optimizer/scheduler via `configure_optimizers()`
+- `src/train_entry.py` reduced from 224 to 52 lines.
+- Removed bridge helpers `_build_legacy_overrides` and `_build_native_config`.
+- Replaced legacy import with `from config.utils import create_system_model`.
+- Added Hydra-native config compatibility in `config/utils.py` (supports `DictConfig` and pydantic-style objects).
 
-### 3. Config Groups Moved to Direct _target_ Path (Phase 2)
+### 4. Phase 5 result
 
-Direct targets now used for model/data/trainer:
-- model: `configs/model/subspacenet.yaml`, `configs/model/dcd_music.yaml`
-- data: `configs/data/default.yaml` -> `src.data_module.lit_datamodule.DOADataModule`
-- trainer: `configs/trainer/default.yaml` -> `pytorch_lightning.Trainer`
+- Deleted `config/factory.py`.
+- Deleted `src/trainer_module/component_factories.py`.
+- Removed remaining runtime dependency on factory functions from `src/trainer_module/online_learning_parts/pipeline_run.py` by switching model-copy init to deepcopy.
+- `config/loader.py` remains intentionally because `Simulation.run_scenario()` still imports `apply_overrides`; loader was updated to support `DictConfig` for compatibility.
 
-### 4. Entry and Training Orchestration Updated (Phase 3)
+### 5. Verification status
 
-`src/train_entry.py` now:
-- builds `Config` from composed Hydra config
-- creates `system_model`
-- instantiates datamodule/model/trainer directly with `hydra.utils.instantiate`
-- passes components into `Simulation`
+- `PYTHONPATH=. python -m pytest -q tests/integration/test_hydra_bridge.py` -> `5 passed` after Phase 7.
+- `PYTHONPATH=. python -m pytest -q tests/integration/test_hydra_bridge.py` -> `5 passed` after Phase 5.
 
-`src/trainer_module/simulation/training_pipeline.py` now uses:
-- `trainer.fit(lightning_model, datamodule=datamodule)` when Lightning components present.
+## Append Sync Update
 
-### 5. DCD-MUSIC Initialization Constraint
+### 2026-02-24T22:07:06+01:00
 
-DCD-MUSIC wrapper needed near-field semantics at construction time. Setting:
-- `system_model.params.field_type = "Near"`
-inside `DCDMusicLightning.__init__` avoided initialization failure in MUSIC range-grid setup.
-
-### 6. Logger Adjustment
-
-`TensorBoardLogger` failed due to missing `tensorboard` package.
-Trainer logger switched to `CSVLogger` for dependency-light runtime.
-
-### 7. Legacy Layers Still Present (Phase 4-5 scope)
-
-Deprecated but not yet removed:
-- `src/trainer_module/component_factories.py` — marked deprecated, no longer in active path
-- `config/factory.py` (433 lines) — manual if/elif factory, replaced by `_target_`
-- `config/loader.py` — redundant conversion logic between Pydantic and Hydra
-- `src/train_entry.py` still has legacy bridge code (~170 lines of overhead)
-
-### 8. File Size Status
-
-| File | Lines | Status |
-|------|-------|--------|
-| `src/trainer_module/training.py` | ~998 | Likely deprecated by Phase 3, needs verification |
-| `config/factory.py` | 433 | To be deleted (Phase 5) |
-| `config/schema.py` | 306 | Keep — valuable Pydantic validation |
-| `src/train_entry.py` | 217 | To be simplified (Phase 7) |
-
-### 9. Architecture Decision (from prior session)
-
-- **Hydra `_target_` only** — no Registry, no Factory
-- `hydra.utils.instantiate` is the sole instantiation mechanism
-- Model `__init__` uses explicit params (injected by Hydra), not `cfg` object
-- `self.save_hyperparameters()` + `self.hparams.*` for accessing params
-- Documented in `~/.claude/skills/architecture-design/SKILL.md` v2.0.0
+- Applied append-only synchronization without rewriting prior findings.
+- Current conclusion remains unchanged: Phase 4, Phase 7, and Phase 5 are complete.
+- config/loader.py remains intentionally due to active Simulation.run_scenario() override path.

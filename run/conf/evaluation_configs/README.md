@@ -37,13 +37,13 @@ Evaluation configurations have the following key differences:
 To evaluate a model with a specific configuration:
 
 ```bash
-python main.py evaluate -c configs/evaluation_configs/default_eval_config.yaml -m <path_to_model>
+python main.py evaluate -c run/conf/evaluation_run/conf/default_eval_config.yaml -m <path_to_model>
 ```
 
 or 
 
 ```bash
-python main.py run -c configs/evaluation_configs/default_eval_config.yaml -s evaluation
+python main.py run -c run/conf/evaluation_run/conf/default_eval_config.yaml -s evaluation
 ```
 
 ### Parameter Sweeps
@@ -51,13 +51,13 @@ python main.py run -c configs/evaluation_configs/default_eval_config.yaml -s eva
 For parameter sweep evaluations, you can use the `--scenario` and `--values` options:
 
 ```bash
-python main.py evaluate -c configs/evaluation_configs/snr_sweep_config.yaml -m <path_to_model> --scenario snr --values -10 --values -5 --values 0 --values 5 --values 10 --values 15 --values 20
+python main.py evaluate -c run/conf/evaluation_run/conf/snr_sweep_config.yaml -m <path_to_model> --scenario snr --values -10 --values -5 --values 0 --values 5 --values 10 --values 15 --values 20
 ```
 
 Alternatively, you can specify the sweep parameters in the configuration file (under `evaluation.sweep_parameter` and `evaluation.sweep_values`) and run:
 
 ```bash
-python main.py evaluate -c configs/evaluation_configs/snr_sweep_config.yaml -m <path_to_model> --scenario snr
+python main.py evaluate -c run/conf/evaluation_run/conf/snr_sweep_config.yaml -m <path_to_model> --scenario snr
 ```
 
 This will automatically evaluate the model across all specified parameter values and generate comparative performance plots.
@@ -66,17 +66,17 @@ This will automatically evaluate the model across all specified parameter values
 
 1. **SNR Sweep**:
    ```bash
-   python main.py evaluate -c configs/evaluation_configs/snr_sweep_config.yaml -m <path_to_model> --scenario snr
+   python main.py evaluate -c run/conf/evaluation_run/conf/snr_sweep_config.yaml -m <path_to_model> --scenario snr
    ```
 
 2. **Calibration Error Sweep**:
    ```bash
-   python main.py evaluate -c configs/evaluation_configs/calibration_error_config.yaml -m <path_to_model> --scenario eta
+   python main.py evaluate -c run/conf/evaluation_run/conf/calibration_error_config.yaml -m <path_to_model> --scenario eta
    ```
 
 3. **Source Count Sweep**:
    ```bash
-   python main.py evaluate -c configs/evaluation_configs/source_count_config.yaml -m <path_to_model> --scenario M
+   python main.py evaluate -c run/conf/evaluation_run/conf/source_count_config.yaml -m <path_to_model> --scenario M
    ```
 
 ## Creating Custom Evaluation Configurations
