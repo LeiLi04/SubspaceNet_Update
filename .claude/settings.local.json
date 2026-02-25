@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Get-Item ''C:\\\\Users\\\\Administrator\\\\.claude'' | Select-Object FullName, LinkType, Target\")",
+      "Bash(powershell -Command \":*)",
+      "Bash(powershell -Command \"$a=525360; [System.Enum]::GetValues\\([System.IO.FileAttributes]\\) | Where-Object { \\($a -band [int]$_ -ne 0 }\")",
+      "Bash(python -c \"from src.model_module import SubspaceNetLightning, DCDMusicLightning; print\\(''✓ Lightning wrappers import successfully''\\)\")",
+      "Bash(python -m yaml)",
+      "Bash(python -c \"import yaml; yaml.safe_load\\(open\\(''configs/model/subspacenet.yaml''\\)\\)\")"
+    ]
+  }
+}

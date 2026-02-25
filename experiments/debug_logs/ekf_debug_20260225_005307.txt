@@ -1,0 +1,17 @@
+2026-02-25 00:53:07,438 - INFO - EKF debug logging enabled. Logs will be saved to: experiments\debug_logs\ekf_debug_20260225_005307.txt
+2026-02-25 00:53:07,445 - DEBUG - Initialized Extended Kalman Filter for source 0 with R=0.1, P0=1.0, device=cpu
+2026-02-25 00:53:07,445 - DEBUG - Initialized state to x0=10.0 with covariance P0=1.0
+2026-02-25 00:53:07,446 - INFO - Using Kalman filter process noise: <MagicMock name='mock.kalman_filter.process_noise_std_dev' id='1873723546592'>
+2026-02-25 00:53:07,478 - DEBUG - Initialized Extended Kalman Filter for source 0 with R=0.1, P0=1.0, device=cpu
+2026-02-25 00:53:07,478 - DEBUG - Initialized state to x0=10.0 with covariance P0=1.0
+2026-02-25 00:53:07,478 - INFO - Using Kalman filter process noise: <MagicMock name='mock.kalman_filter.process_noise_std_dev' id='1873723551968'>
+2026-02-25 00:53:07,479 - INFO - Using random walk model with ¦Ò=<MagicMock name='mock.kalman_filter.process_noise_std_dev' id='1873723551968'>
+2026-02-25 00:53:07,507 - DEBUG - Initialized Extended Kalman Filter for source 0 with R=0.1, P0=1.0, device=cpu
+2026-02-25 00:53:07,507 - DEBUG - Initialized state to x0=10.0 with covariance P0=1.0
+2026-02-25 00:53:07,507 - INFO - Using Kalman filter process noise: <MagicMock name='mock.kalman_filter.process_noise_std_dev' id='1873723543232'>
+2026-02-25 00:53:07,512 - DEBUG - Initialized Extended Kalman Filter for source 0 with R=0.1, P0=1.0, device=cpu
+2026-02-25 00:53:07,512 - DEBUG - Initialized state to x0=10.0 with covariance P0=1.0
+2026-02-25 00:53:07,513 - DEBUG - Initialized Extended Kalman Filter for source 0 with R=0.1, P0=1.0, device=cpu
+2026-02-25 00:53:07,513 - DEBUG - Initialized state to x0=10.0 with covariance P0=1.0
+2026-02-25 00:53:07,540 - DEBUG - Initialized Extended Kalman Filter for source 0 with R=0.1, P0=1.0, device=cpu
+2026-02-25 00:53:07,540 - DEBUG - Initialized state to x0=10.0 with covariance P0=1.0

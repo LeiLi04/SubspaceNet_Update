@@ -1,0 +1,6 @@
+- +scenario=training
+- simulation.load_model=false
+- simulation.train_model=false
+- simulation.evaluate_model=false
+- training.enabled=false
+- dataset.samples_size=8

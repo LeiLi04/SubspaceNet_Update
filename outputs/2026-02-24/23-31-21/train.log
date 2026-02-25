@@ -1,0 +1,11 @@
+[2026-02-24 23:31:21,854][SubspaceNet.hydra][INFO] - Hydra config composed
+[2026-02-24 23:31:25,713][pytorch_lightning.utilities.rank_zero][INFO] - GPU available: False, used: False
+[2026-02-24 23:31:25,713][pytorch_lightning.utilities.rank_zero][INFO] - TPU available: False, using: 0 TPU cores
+[2026-02-24 23:31:25,725][SubspaceNet.kalman_filter.extended][INFO] - EKF debug logging enabled. Logs will be saved to: experiments\debug_logs\ekf_debug_20260224_233125.txt
+[2026-02-24 23:31:25,732][src.trainer_module.simulation.runner][INFO] - Simulation initialized with output directory: D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-24 23:31:25,732][src.trainer_module.simulation.runner][INFO] - Trajectory mode: Disabled
+[2026-02-24 23:31:25,736][src.trainer_module.simulation.runner][INFO] - Starting training pipeline
+[2026-02-24 23:31:25,736][src.trainer_module.simulation.runner][INFO] - Using instantiated Lightning datamodule/trainer; skipping legacy data pipeline
+[2026-02-24 23:31:25,736][src.trainer_module.simulation.runner][INFO] - Skipping training (simulation.train_model=False)
+[2026-02-24 23:31:25,736][src.trainer_module.simulation.eval_pipeline][INFO] - Saving results to D:\LiLei\Python_projects\SubspaceNet_Update
+[2026-02-24 23:31:25,736][SubspaceNet.hydra][INFO] - Hydra run finished: success
