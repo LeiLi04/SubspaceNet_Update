@@ -16,7 +16,9 @@
     "additionalDirectories": [
       "/Users/lilei/.claude/commands",
       "/Users/lilei/.claude/skills/anki-knowledge",
-      "/Users/lilei/Nutstore Files/Nutstore/.claude/skills/anki-knowledge"
+      "/Users/lilei/Nutstore Files/Nutstore/.claude/skills/anki-knowledge",
+      "/Users/lilei/.claude/skills/visualization-best-practices",
+      "/Users/lilei/Nutstore Files/Nutstore/.claude/skills/visualization-best-practices"
     ]
   }
 }
