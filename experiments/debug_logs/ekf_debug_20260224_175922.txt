@@ -1,1 +1,0 @@
-2026-02-24 17:59:22,218 - INFO - EKF debug logging enabled. Logs will be saved to: experiments/debug_logs/ekf_debug_20260224_175922.txt

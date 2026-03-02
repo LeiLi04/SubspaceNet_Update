@@ -38,3 +38,10 @@ Thumbs.db
 
 # Local agent worktrees and logs
 .claude/worktrees/
+.claude/logs/
+
+# Debug logs
+experiments/debug_logs/
+
+# Pytest cache
+.pytest_cache/

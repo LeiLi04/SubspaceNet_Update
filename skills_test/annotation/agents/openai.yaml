@@ -1,4 +1,0 @@
-interface:
-  display_name: "Annotation"
-  short_description: "论文级 Python 深度注释：双语 Docstring + Shape Flow + 不改逻辑"
-  default_prompt: "将给定 Python 代码升级为论文附录级注释：中英双语 Google-style docstring、三级 Step 注释、显式 Shape Flow、Unicode 数学符号；严格只改注释，不改任何代码逻辑。"
