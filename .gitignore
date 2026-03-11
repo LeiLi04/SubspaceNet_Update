@@ -42,6 +42,8 @@ Thumbs.db
 
 # Debug logs
 experiments/debug_logs/
+**/debug_logs/
+**/trajectory_plots/
 
 # Pytest cache
 .pytest_cache/
