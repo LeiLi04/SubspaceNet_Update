@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Dict, Any
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -8,6 +11,46 @@ from src.trainer_module.online_learning import (
     logger,
     TrajectoryResults,
 )
+from src.trainer_module.online_learning_parts.drift_trigger import (
+    DriftTrigger,
+    build_drift_trigger,
+)
+
+
+def _make_drift_trigger(online_config) -> DriftTrigger:
+    """Build drift trigger with a legacy time_to_learn fallback."""
+    drift_cfg = getattr(online_config, "drift_trigger", None)
+    if drift_cfg is None:
+        target = getattr(online_config, "time_to_learn", None)
+        if target is None:
+            target = 2**63 - 1
+        drift_cfg = {"type": "time_to_learn", "target_window": int(target)}
+    elif hasattr(drift_cfg, "model_dump"):
+        drift_cfg = drift_cfg.model_dump()
+    elif hasattr(drift_cfg, "dict"):
+        drift_cfg = drift_cfg.dict()
+    elif not isinstance(drift_cfg, Mapping):
+        from omegaconf import OmegaConf
+
+        drift_cfg = OmegaConf.to_container(drift_cfg, resolve=True)
+    return build_drift_trigger(drift_cfg)
+
+
+def _extract_c_per_step(window_result) -> list[float]:
+    """Sum per-source y_s_inv_y values into scalar c_step statistics."""
+    y_tensor = window_result.step_metrics.y_s_inv_y
+    return [float(v) for v in y_tensor.sum(dim=1).tolist()]
+
+
+def _observe_drift_trigger(self, window_idx: int, window_result) -> tuple[bool, list[float]]:
+    """Extract c_step values and feed them to the configured trigger."""
+    c_per_step = _extract_c_per_step(window_result)
+    triggered = self._drift_trigger.observe_window(
+        window_idx=window_idx,
+        c_per_step=c_per_step,
+    )
+    return triggered, c_per_step
+
 
 def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -> Dict[str, Any]:
     """
@@ -54,6 +97,8 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
         self.learning_done = False
         self.online_training_count = 0
         self.first_eta_change = True
+        self._drift_trigger = _make_drift_trigger(online_config)
+        logger.info(f"Drift trigger initialized: {self._drift_trigger.state}")
         # Reset online optimizer to start fresh for new trajectory
         if hasattr(self, 'online_optimizer'):
             delattr(self, 'online_optimizer')
@@ -114,6 +159,7 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
         window_update_flags = []
         drift_detected_count = 0
         model_updated_count = 0
+        c_per_step_history = []
         last_ekf_predictions = None  # Track last window's EKF predictions
         last_ekf_covariances = None  # Track last window's EKF covariances
 
@@ -173,14 +219,6 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
                     logger.info(f"First eta modification at window {window_idx}")
                     # The dataset holds the generator, which updates the shared self.system_model.params.eta
                     online_learning_dataloader.dataset.update_eta(new_eta)
-                                        # Set drift detected on first eta change only
-            if self.time_to_learn is not None and window_idx == self.time_to_learn:
-                self.drift_detected = True
-                logger.info(f"Drift detected at window {window_idx} (configured time_to_learn)")
-                # Initialize online EKF state with static model's current state
-                online_last_ekf_predictions = last_ekf_predictions
-                online_last_ekf_covariances = last_ekf_covariances
-                logger.info(f"Initialized online EKF state with static model's state at window {window_idx}")
 
             # --- End Dynamic Eta Update Logic ---
 
@@ -267,19 +305,25 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
             trained_subspacenet_loss = window_result.loss_metrics.pre_ekf_loss
             trained_ekf_loss = window_result.loss_metrics.main_loss
 
-            # Check if loss exceeds threshold (drift detected)
-            if window_result.loss_metrics.main_loss > loss_threshold:
-                logger.info(f"Drift detected in window {window_idx} (loss: {window_result.loss_metrics.main_loss:.6f} > threshold: {loss_threshold:.6f})")
-                # window_update_flags.append(False)
-                # self.drift_detected = True
-                # Track when learning started
-                # if self.learning_start_window is None:
-                #     self.learning_start_window = window_idx
-                #     logger.info(f"Online learning started at window {window_idx}")
+            # Drift detection via configured trigger strategy.
+            triggered_this_window, c_per_step = _observe_drift_trigger(self, window_idx, window_result)
+            c_per_step_history.extend(c_per_step)
+            if triggered_this_window:
+                self.drift_detected = True
+                drift_detected_count += 1
+                online_last_ekf_predictions = last_ekf_predictions
+                online_last_ekf_covariances = last_ekf_covariances
+                logger.info(
+                    f"Drift detected in window {window_idx} via "
+                    f"{self._drift_trigger.state['type']} trigger; "
+                    f"state={self._drift_trigger.state}"
+                )
+                logger.info(f"Initialized online EKF state with static model's state at window {window_idx}")
             else:
-                logger.info(f"No drift detected in window {window_idx} (loss: {window_result.loss_metrics.main_loss:.6f} <= threshold: {loss_threshold:.6f})")
+                logger.debug(
+                    f"No drift in window {window_idx}; trigger state={self._drift_trigger.state}"
+                )
                 window_update_flags.append(False)
-                # Keep previous drift_detected state if no drift in current window
 
             # Dual model processing logic
             if self.drift_detected:
@@ -430,6 +474,25 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
             )
             logger.info(f"Saved final online-updated model to {model_save_path}")
 
+        dumped_c_per_step_path = None
+        dump_c_per_step_path = getattr(online_config, "dump_c_per_step_path", None)
+        if dump_c_per_step_path:
+            dump_path = Path(dump_c_per_step_path)
+            if not dump_path.is_absolute():
+                dump_path = self.output_dir / dump_path
+            dump_path.parent.mkdir(parents=True, exist_ok=True)
+
+            drift_state = getattr(self, "_drift_trigger", None).state if hasattr(self, "_drift_trigger") else {}
+            dof = int(drift_state.get("dof", getattr(self.config.system_model, "M", 3)))
+            np.savez(
+                dump_path,
+                c=np.asarray(c_per_step_history, dtype=np.float64),
+                dof=dof,
+                trajectory_idx=trajectory_idx,
+            )
+            dumped_c_per_step_path = str(dump_path)
+            logger.info(f"Dumped {len(c_per_step_history)} c_per_step values to {dump_path}")
+
         # Return results
         return {
             "status": "success",
@@ -454,6 +517,7 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
                 "learning_done_final": self.learning_done,
                 "first_eta_change_final": self.first_eta_change,
                 "online_training_count_final": self.online_training_count,
+                "dump_c_per_step_path": dumped_c_per_step_path,
 
                 # Training and eta change tracking
                 "eta_change_windows": eta_change_windows,

@@ -32,3 +32,8 @@ packages = ["src"]
 dev = [
     "pytest>=9.0.2",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+  "integration: integration and smoke tests",
+]

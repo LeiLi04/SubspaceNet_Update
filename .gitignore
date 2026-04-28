@@ -15,6 +15,7 @@ experiments/results/
 # Distribution / packaging
 .env
 .venv
+.venv-wsl/
 venv/
 ENV/
 
@@ -47,3 +48,6 @@ experiments/debug_logs/
 
 # Pytest cache
 .pytest_cache/
+
+# Local validation outputs
+outputs/null_validation.npz

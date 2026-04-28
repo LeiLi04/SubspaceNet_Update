@@ -290,6 +290,8 @@ def _calculate_metrics_impl(self, step_results_list: List[Dict], current_window_
         kalman_gain_times_innovation=ekf_kalman_gain_times_innovation,
         y_s_inv_y=ekf_y_s_inv_y
     )
+    c_per_step_list = ekf_y_s_inv_y.sum(dim=1).tolist()
+    setattr(step_metrics, "c_per_step", c_per_step_list)
 
     # Create DOA metrics with predictions and true angles
     doa_metrics = DOAMetrics(

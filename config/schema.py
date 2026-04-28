@@ -161,6 +161,21 @@ class OnlineLearningLossConfig(BaseModel):
     multimoment_beta: float = Field(default=1.0, description="Beta parameter for Multi-Moment loss (weight for RMSPE component)")
 
 
+class DriftTriggerConfig(BaseModel):
+    """Configuration for online-learning drift trigger strategies."""
+    type: Literal["time_to_learn", "sigma_y_sq", "whitened_cusum"] = Field(
+        default="time_to_learn",
+        description="Drift trigger strategy.",
+    )
+    target_window: int = Field(default=0, description="Window index used by time_to_learn.")
+    tau_sigma: float = Field(default=1.5, description="Threshold used by sigma_y_sq.")
+    window_size: int = Field(default=5, description="Sliding window used by sigma_y_sq.")
+    p_fa: float = Field(default=0.01, description="Target false-alarm probability for whitened_cusum.")
+    dof: int = Field(default=3, description="Chi-square degrees of freedom for whitened_cusum.")
+    b_offset: float = Field(default=1.0, description="CUSUM reference offset above dof.")
+    reset_after_trigger: bool = Field(default=True, description="Reset CUSUM statistic after firing.")
+
+
 class OnlineLearningConfig(BaseModel):
     """Online learning configuration parameters."""
     enabled: bool = False
@@ -191,6 +206,8 @@ class OnlineLearningConfig(BaseModel):
     
     # Online learning start configuration
     time_to_learn: Optional[int] = Field(default=None, description="Window index at which to start online learning. If None, online learning will not start automatically based on window index.")
+    drift_trigger: Optional[DriftTriggerConfig] = Field(default=None, description="Optional drift trigger strategy configuration.")
+    dump_c_per_step_path: Optional[str] = Field(default=None, description="Optional npz output path for c_per_step null-distribution validation.")
 
 
 class ScenarioSystemModelOverride(BaseModel):

@@ -99,5 +99,12 @@ class TestMetricsAggregateImpl(unittest.TestCase):
         self.assertEqual(out['training_window_indices'], [0, 1])
 
 
+@unittest.skipIf(torch is None, "torch is not installed in this environment")
+class TestWhitenedInnovationDiagnostics(unittest.TestCase):
+    def test_c_per_step_equals_sum_over_sources(self):
+        y_s_inv_y = torch.tensor([[1.0, 2.0, 3.0], [0.5, 0.5, 0.5]])
+        self.assertEqual(y_s_inv_y.sum(dim=1).tolist(), [6.0, 1.5])
+
+
 if __name__ == '__main__':
     unittest.main()

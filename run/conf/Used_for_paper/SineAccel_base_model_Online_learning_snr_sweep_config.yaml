@@ -166,6 +166,22 @@ online_learning:
   # Online learning start configuration
   time_to_learn: 35  # Window index at which to start online learning
 
+  # Drift trigger configuration
+  # Strategies:
+  #   - time_to_learn: legacy fixed window index
+  #   - sigma_y_sq: original sliding-window innovation-energy threshold
+  #   - whitened_cusum: whitened-innovation Page-CUSUM analytical threshold
+  drift_trigger:
+    type: time_to_learn
+    target_window: 35
+    tau_sigma: 1.5
+    window_size: 5
+    p_fa: 0.01
+    dof: 3
+    b_offset: 1.0
+    reset_after_trigger: true
+  dump_c_per_step_path: null  # optional .npz path for null-distribution validation
+
 # Logging configuration
 logging:
   level: "INFO"  # Global logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -176,4 +192,3 @@ logging:
   log_to_file: false  # Whether to log to a file in addition to console
   log_file_path: null  # Path for log file (null = use default)
   log_file_level: "DEBUG"  # Logging level for file output
-
