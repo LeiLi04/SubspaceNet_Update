@@ -1188,3 +1188,69 @@ Expected: 全部 PASS（约 24 用例：drift_trigger 14 + smoke 3 + metrics_agg
 4. **复用 vs 新增**：所有触发器代码、calibration 参数、checkpoint 路径都从 plan_26Apr 已有资产取，新代码集中在 3 个 scripts/ 工具脚本与对应单元测试。
 
 如果实际跑 Task 2 时入口模块路径与 `run.pipeline.online_learning_pipeline` 不一致，按当前仓库实际可执行入口替换 `PIPELINE_ENTRY` 常量；这是已知的"environment-specific"项，不影响计划骨架。
+
+---
+
+## 🔎 验收报告（2026-04-30）
+
+按 plan 步骤执行情况已与本仓库 commit 一一比对，下面是真实状态。
+
+### 步骤完成情况修正
+
+plan 上半段的若干 `- [ ]` 实际已完成；Codex 是按合并 commit 执行的（一个 commit 覆盖多个 step），未逐个勾选 checkbox。映射如下：
+
+| Plan step | 实际 commit | 状态 |
+| --- | --- | --- |
+| Step 0.3 批 A | `c4b8d24 fix(pipeline)` | ✅ |
+| Step 0.3 批 B | `53844ef feat(config) calibrated preset` | ✅ |
+| Step 0.3 批 C | `ecc732d docs(plan) calibration` | ✅ |
+| Step 0.4 push（首次） | 阻塞于 WSL 凭据 | ⏸ → 后由 Windows shell 完成 |
+| Step 1.6 | `7b9cbd5 feat(config) sigma_y_sq=12.0` | ✅ |
+| Step 2.5 / 3.6 / 4.3 / 5.3 | `ad0a8e7 feat(scripts) run+aggregate+plot+results`（合并） | ✅ |
+| Step 3.2 跑 fail test | Codex 跳过（直接走 Step 3.3 → 3.4 全绿） | ⚠ 未严格 TDD，但功能正确 |
+| Step 6.1 push | Windows shell 完成，远端推进至 `b47f4e1` 后再加本节 | ✅ |
+| Step 6.3 人工审阅 | 本节即审阅记录 | ✅ |
+
+### 验收门槛实测对照
+
+| 门槛 | 目标 | whitened_cusum 实测 | 通过 |
+| --- | --- | --- | :---: |
+| 强漂移 η=1.0 检测率 | ≥ 18/20 | 19/20 (95%) | ✅ |
+| 中等漂移 η=0.6 检测率 | ≥ 12/20 | 17/20 (85%) | ✅ |
+| 弱漂移 η=0.3 检测率 | 报告即可 | 19/20 (95%) | ✅ |
+| 强漂移平均延迟 | ≤ 5 windows | 3.21 | ✅ |
+| no-drift 误触发率 | ≤ 1/20 (5%) | **2/20 (10%)** | ❌ |
+| whitened ≥ sigma_y_sq 同 η | 全 η 三档 | 95 < 100 / 85 < 100 / 95 < 100 | ❌ |
+
+**6 项门槛通过 4 项**，未通过的两项是同一根因：N=3 smoke 选定的 `(R_obs=0.125, b_offset=24)` 在 N=20 下 calibration 不够紧。
+
+### 重要测量伪迹说明
+
+`time_to_learn` 在 no-drift 下 false_alarm = 20/20 = 100% 是 **by design**：该策略在 `target_window=6` 处无条件触发，与 drift 与否无关。它是"已知 drift 时刻的 oracle 上界"基线，**不应**在 false-alarm 维度直接与其他两个触发器比较；它的价值仅在于给出"已知漂移时刻能拿到多好的检测延迟"reference（mean_delay=1）。该说明已补到 `results.md §4`。
+
+### 数据/产物核对
+
+| 项 | 期望 | 实测 |
+| --- | --- | --- |
+| `plan/plan_29Apr/summary.csv` 行数 | 12+1 标题 | 13 ✅ |
+| `plan/plan_29Apr/summary.md` 行数 | 14 (标题+分隔+12) | 14 ✅ |
+| `plan/plan_29Apr/figures/*.png` | 3 个，每个 ≥ 50 KB | detect_rate 54 KB / false_alarm 58 KB / delay 81 KB ✅ |
+| pytest（drift_trigger + smoke + scripts + online_learning） | 全绿 | **37 passed, 2 warnings** ✅ |
+| 远端推进 | 6 commit 上云 | `4df6ff1..b47f4e1` 已 push（含本节将作为新 commit 推进 1 条） |
+
+### 整体判断与下一步建议
+
+**触发器的检测有效性已被验证**（4/6 检测类门槛全过），但**当前 calibration 不能直接进论文**：
+
+- N=3 calibration 偏乐观 —— 需要在 N≥20 上重新选 `(R_obs, b_offset)`
+- 在 10% FA 同水平下，`sigma_y_sq(τ=12)` 全 100% 检测 + 延迟 2-5w，**比 whitened CUSUM 略强**；whitened CUSUM 的卖点应聚焦"解析阈值无需手工标定"而非"检测更早"
+
+下一轮（plan_30Apr 或别的目录）建议按以下顺序：
+
+1. 用 N=20 的 closed-loop 数据复扫 `(R_obs, b_offset)`，目标把 no-drift 误触发压到 ≤ 1/20，强漂移检测率保持 ≥ 90%
+2. 同条件用 N=50 复核稳态指标（binomial CI 收紧到 ±10% 量级）
+3. 在论文方法学小节明确说明：whitened CUSUM 的优势是 calibration 简便（解析阈值），而非检测更早 —— 这与 plan_whiten_innov.md 一开始的"超参数黑箱壁垒"问题陈述一致
+
+### 工作树仍带的无关改动
+
+`docs/审稿/` 删除、`notebooks/01_dataset_analysis.ipynb` 修改、`temp/` 仍未提交，与本特性无关，可在切回 ll 分支后处理。
