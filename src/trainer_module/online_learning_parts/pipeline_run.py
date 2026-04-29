@@ -10,7 +10,12 @@ from tqdm import tqdm
 from src.trainer_module.online_learning import (
     logger,
     TrajectoryResults,
+    device,
 )
+from src.data_module.trajectory import create_online_learning_dataset
+from src.trainer_module.training import OnlineTrainer
+from src.trainer_module.sandbox import glrt_changepoint_detection
+from src.utils.utils import log_online_learning_window_summary, save_model_state
 from src.trainer_module.online_learning_parts.drift_trigger import (
     DriftTrigger,
     build_drift_trigger,
@@ -40,6 +45,17 @@ def _extract_c_per_step(window_result) -> list[float]:
     """Sum per-source y_s_inv_y values into scalar c_step statistics."""
     y_tensor = window_result.step_metrics.y_s_inv_y
     return [float(v) for v in y_tensor.sum(dim=1).tolist()]
+
+
+def _extract_c_per_step_per_source(window_result) -> list[list[float]]:
+    """Return per-step, per-source y_s_inv_y values for null diagnostics."""
+    y_tensor = window_result.step_metrics.y_s_inv_y
+    return [[float(v) for v in row] for row in y_tensor.tolist()]
+
+
+def _tensor_to_float_rows(tensor) -> list[list[float]]:
+    """Convert a 2D tensor-like object to Python float rows for diagnostic dumps."""
+    return [[float(v) for v in row] for row in tensor.tolist()]
 
 
 def _observe_drift_trigger(self, window_idx: int, window_result) -> tuple[bool, list[float]]:
@@ -160,6 +176,12 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
         drift_detected_count = 0
         model_updated_count = 0
         c_per_step_history = []
+        c_per_step_per_source_history = []
+        dump_true_angles_history = []
+        dump_pre_ekf_predictions_history = []
+        dump_ekf_predictions_history = []
+        dump_innovations_history = []
+        dump_innovation_covariances_history = []
         last_ekf_predictions = None  # Track last window's EKF predictions
         last_ekf_covariances = None  # Track last window's EKF covariances
 
@@ -308,6 +330,15 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
             # Drift detection via configured trigger strategy.
             triggered_this_window, c_per_step = _observe_drift_trigger(self, window_idx, window_result)
             c_per_step_history.extend(c_per_step)
+            c_per_step_per_source_history.extend(_extract_c_per_step_per_source(window_result))
+            dump_true_angles_history.extend(_tensor_to_float_rows(window_result.doa_metrics.true_angles))
+            dump_pre_ekf_predictions_history.extend(_tensor_to_float_rows(window_result.doa_metrics.pre_ekf_predictions))
+            dump_ekf_predictions_history.extend(_tensor_to_float_rows(window_result.doa_metrics.ekf_predictions))
+            dump_innovations_history.extend(_tensor_to_float_rows(window_result.step_metrics.innovations))
+            if hasattr(window_result.step_metrics, "innovation_covariances"):
+                dump_innovation_covariances_history.extend(
+                    _tensor_to_float_rows(window_result.step_metrics.innovation_covariances)
+                )
             if triggered_this_window:
                 self.drift_detected = True
                 drift_detected_count += 1
@@ -487,11 +518,20 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
             np.savez(
                 dump_path,
                 c=np.asarray(c_per_step_history, dtype=np.float64),
+                c_per_step_per_source=np.asarray(c_per_step_per_source_history, dtype=np.float64),
+                true_angles=np.asarray(dump_true_angles_history, dtype=np.float64),
+                pre_ekf_predictions=np.asarray(dump_pre_ekf_predictions_history, dtype=np.float64),
+                ekf_predictions=np.asarray(dump_ekf_predictions_history, dtype=np.float64),
+                innovations=np.asarray(dump_innovations_history, dtype=np.float64),
+                innovation_covariances=np.asarray(dump_innovation_covariances_history, dtype=np.float64),
                 dof=dof,
                 trajectory_idx=trajectory_idx,
             )
             dumped_c_per_step_path = str(dump_path)
-            logger.info(f"Dumped {len(c_per_step_history)} c_per_step values to {dump_path}")
+            logger.info(
+                f"Dumped {len(c_per_step_history)} c_per_step values "
+                f"and per-source diagnostics to {dump_path}"
+            )
 
         # Return results
         return {

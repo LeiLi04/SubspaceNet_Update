@@ -90,6 +90,7 @@ def _calculate_metrics_impl(self, step_results_list: List[Dict], current_window_
     ekf_kalman_gains = torch.empty((current_window_len, max_sources), dtype=torch.float64)
     ekf_kalman_gain_times_innovation = torch.empty((current_window_len, max_sources), dtype=torch.float64)
     ekf_y_s_inv_y = torch.empty((current_window_len, max_sources), dtype=torch.float64)
+    ekf_innovation_covariances = torch.empty((current_window_len, max_sources), dtype=torch.float64)
     pre_ekf_angles_pred_list = torch.empty((current_window_len, max_sources), dtype=torch.float64)
 
     # Collect all tensors for window-level loss calculation
@@ -119,6 +120,7 @@ def _calculate_metrics_impl(self, step_results_list: List[Dict], current_window_
             ekf_kalman_gains[step, i] = step_result['step_kalman_gains'][i].item()
             ekf_kalman_gain_times_innovation[step, i] = step_result['step_kalman_gain_times_innovation'][i].item()
             ekf_y_s_inv_y[step, i] = step_result['step_y_s_inv_y'][i].item()
+            ekf_innovation_covariances[step, i] = _get_step_innovation_covariance(step_result)[i].item()
 
         # Store pre-EKF predictions (tensor)
         pre_ekf_preds = step_result['pre_ekf_angles_pred_tensor'].flatten()
@@ -292,6 +294,7 @@ def _calculate_metrics_impl(self, step_results_list: List[Dict], current_window_
     )
     c_per_step_list = ekf_y_s_inv_y.sum(dim=1).tolist()
     setattr(step_metrics, "c_per_step", c_per_step_list)
+    setattr(step_metrics, "innovation_covariances", ekf_innovation_covariances)
 
     # Create DOA metrics with predictions and true angles
     doa_metrics = DOAMetrics(

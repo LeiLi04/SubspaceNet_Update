@@ -25,7 +25,11 @@ def test_whitened_cusum_config_builds_trigger():
 
 
 def test_pipeline_extracts_c_per_step_from_window_result():
-    from src.trainer_module.online_learning_parts.pipeline_run import _extract_c_per_step
+    from src.trainer_module.online_learning_parts.pipeline_run import (
+        _extract_c_per_step,
+        _extract_c_per_step_per_source,
+        _tensor_to_float_rows,
+    )
 
     window_result = SimpleNamespace(
         step_metrics=SimpleNamespace(
@@ -34,6 +38,8 @@ def test_pipeline_extracts_c_per_step_from_window_result():
     )
 
     assert _extract_c_per_step(window_result) == [6.0, 1.5]
+    assert _extract_c_per_step_per_source(window_result) == [[1.0, 2.0, 3.0], [0.5, 0.5, 0.5]]
+    assert _tensor_to_float_rows(window_result.step_metrics.y_s_inv_y) == [[1.0, 2.0, 3.0], [0.5, 0.5, 0.5]]
 
 
 def test_pipeline_observe_feeds_c_per_step_to_trigger():

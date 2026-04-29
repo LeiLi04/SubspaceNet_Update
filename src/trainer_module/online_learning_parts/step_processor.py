@@ -9,6 +9,7 @@ from src.trainer_module.online_learning import (
     device,
     WindowEvaluationResult,
 )
+from src.utils.utils import log_window_summary
 from simulation.kalman_filter.extended import ExtendedKalmanFilter1D
 
 
@@ -496,4 +497,3 @@ def _evaluate_window_impl(self, window_time_series, window_sources_num, window_l
                          current_eta, is_near_field, trajectory_idx, window_idx)
 
     return result
-

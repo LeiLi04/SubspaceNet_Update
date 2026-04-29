@@ -13,6 +13,7 @@ from src.trainer_module.online_learning import (
     StepMetrics,
     DOAMetrics,
 )
+from src.trainer_module.sandbox import glrt_changepoint_detection, plot_results
 
 
 def run_online_learning_impl(self) -> Dict[str, Any]:
