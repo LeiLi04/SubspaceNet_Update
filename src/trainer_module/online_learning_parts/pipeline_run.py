@@ -327,8 +327,23 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
             trained_subspacenet_loss = window_result.loss_metrics.pre_ekf_loss
             trained_ekf_loss = window_result.loss_metrics.main_loss
 
-            # Drift detection via configured trigger strategy.
-            triggered_this_window, c_per_step = _observe_drift_trigger(self, window_idx, window_result)
+            # Drift detection via configured trigger strategy. Once the current
+            # trajectory is in the online-learning path, repeated trigger hits do
+            # not represent new drift events, so keep collecting diagnostics but
+            # pause trigger observation.
+            c_per_step = _extract_c_per_step(window_result)
+            triggered_this_window = False
+            if not self.drift_detected:
+                triggered_this_window = self._drift_trigger.observe_window(
+                    window_idx=window_idx,
+                    c_per_step=c_per_step,
+                )
+            else:
+                logger.debug(
+                    f"Skipping drift trigger observation in window {window_idx}; "
+                    "online-learning path is already active."
+                )
+            window_update_flags.append(bool(triggered_this_window))
             c_per_step_history.extend(c_per_step)
             c_per_step_per_source_history.extend(_extract_c_per_step_per_source(window_result))
             dump_true_angles_history.extend(_tensor_to_float_rows(window_result.doa_metrics.true_angles))
@@ -354,7 +369,6 @@ def _run_single_trajectory_online_learning_impl(self, trajectory_idx: int = 0) -
                 logger.debug(
                     f"No drift in window {window_idx}; trigger state={self._drift_trigger.state}"
                 )
-                window_update_flags.append(False)
 
             # Dual model processing logic
             if self.drift_detected:
