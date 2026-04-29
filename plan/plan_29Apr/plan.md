@@ -1114,6 +1114,14 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 git push origin feature/whiten_innov
 ```
 
+实际记录（2026-04-29/30）：已尝试执行，失败于当前非交互 WSL/Codex 环境缺少 GitHub HTTPS 凭据：
+
+```text
+fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+本地 commits 已创建，push 需要在具备 GitHub 凭据的终端中重试。
+
 - [x] **Step 6.2：跑全套既有 pytest 确认无回归**
 
 ```bash
