@@ -40,6 +40,10 @@ Thumbs.db
 # Local agent worktrees and logs
 .claude/worktrees/
 .claude/logs/
+.claude/settings.local.json
+
+# Codex CLI local marker
+.codex
 
 # Debug logs
 experiments/debug_logs/
@@ -51,3 +55,13 @@ experiments/debug_logs/
 
 # Local validation outputs
 outputs/null_validation.npz
+outputs/null_validation_real.npz
+outputs/null_validation_per_source.npz
+outputs/null_validation_noise_*.npz
+outputs/long_null_noise_*.npz
+outputs/long_null_noise_*/
+outputs/trigger_replay_*.npz
+outputs/trigger_replay_*/
+outputs/e2e_whitened_cusum_*.npz
+outputs/e2e_whitened_cusum_*/
+outputs/null_validation_run/
