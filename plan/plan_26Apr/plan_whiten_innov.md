@@ -428,6 +428,770 @@ PYTHONPATH=. .venv-wsl/bin/python -m pytest tests/online_learning/test_drift_tri
 
 二轮报告里**未承诺要修的两条**（dead `loss_threshold`、端到端 `runner.run()` smoke）保持不变，符合预期。
 
+---
+
+## 🧪 Task 2 真实 Null 分布验证（2026-04-29）
+
+### 运行设置
+
+目标：兑现「待解决 #2」，在无阵列漂移条件下收集真实 pipeline 输出的 `c_per_step`，再与理论 `χ²(3)` 做 KS 检验。
+
+本次使用配置等价于：
+
+```text
+system_model.eta=0
+system_model.sv_noise_var=0
+system_model.nominal=true
+online_learning.dataset_size=1
+online_learning.trajectory_length=30
+online_learning.window_size=5
+online_learning.stride=1
+online_learning.eta_update_interval_windows=0
+online_learning.eta_increment=0
+online_learning.max_eta=0
+online_learning.min_eta=0
+online_learning.dump_c_per_step_path=outputs/null_validation_real.npz
+online_learning.drift_trigger.type=time_to_learn
+online_learning.drift_trigger.target_window=999999
+simulation.model_path=checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+说明：当前 legacy CLI 入口依赖缺失的 `config/factory.py`，因此本次通过 Python 片段直接构造 `Simulation` 与 `SubspaceNet`，但执行的是同一个 `sim.execute_online_learning()` / `pipeline_run.py` 路径。运行中还发现并补齐了真实路径所需的拆分模块 import：
+
+- `pipeline_run.py` 显式 import `create_online_learning_dataset`、`OnlineTrainer`、`device`、`glrt_changepoint_detection`、`log_online_learning_window_summary`、`save_model_state`
+- `step_processor.py` 显式 import `log_window_summary`
+- `pipeline.py` 显式 import `glrt_changepoint_detection`、`plot_results`
+
+### 真实 dump
+
+运行成功生成：
+
+```text
+outputs/null_validation_real.npz
+```
+
+dump 摘要：
+
+```text
+keys: ['c', 'dof', 'trajectory_idx']
+N = 130
+mean(c) = 12.444
+std(c) = 16.617
+min(c) = 0.085
+max(c) = 89.146
+dof = 3
+```
+
+### KS 检验
+
+命令：
+
+```bash
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_real.npz
+```
+
+结果：
+
+```text
+Loaded 130 c-values from outputs/null_validation_real.npz
+N=130 samples, mean=12.444 (theoretical 3)
+KS test vs chi2(3): stat=0.4740, p=2.425e-27
+FAIL: p=2.425e-27 <= alpha=0.05; null distribution deviates
+```
+
+### 结论
+
+真实 null 分布验证**未通过**。`mean(c)=12.444` 明显高于理论 `E[χ²(3)]=3`，说明当前 EKF/观测噪声标定下，白化统计量并未被校准到标准 `χ²(3)`。
+
+最可能的后续诊断方向：
+
+1. **`R_obs` / `measurement_noise_std_dev` 偏小**：当前 `S=P+R_obs` 低估实际 AI DoA 输出误差，导致 `y^T S^{-1}y` 系统性偏大。
+2. **SubspaceNet 输出误差非高斯或有偏**：即使 η=0，模型预测误差可能不满足 EKF 一致性假设。
+3. **轨迹动态/重叠 window 相关性**：本次 30-step、stride=1 的短轨迹产生 130 个高度相关样本；相关性不改变均值偏高的事实，但会影响 KS p-value 的严格解释。
+
+下一步建议先做 `R_obs` 标定 sweep：
+
+```text
+kalman_filter.measurement_noise_std_dev ∈ {0.05, 0.1, 0.2, 0.5, 1.0}
+```
+
+每个设置重复生成 `outputs/null_validation_real_<noise>.npz` 并跑 KS test；若某一范围能让 `mean(c)` 接近 3 且 `p>0.05`，即可把该设置作为 CUSUM null 校准默认值或进入更细 sweep。
+
 ### 📌 三轮结论
 
-本特性的代码层面已彻底干净，可以按 `feature/whiten_innov` 分支纪律打第一个正式 commit。剩余唯一未兑现项是 plan_whiten_innov.md「待解决 #2」—— 用 `dump_c_per_step_path` + `validate_null_distribution.py --input <npz>` 跑一次真实 null 分布验证，可作为 commit 后的下一步。
+本特性的代码层面已基本干净，真实 null 分布验证也已执行。当前关键结论不是“验证未跑”，而是“验证未通过”：`mean(c)=12.444` 明显高于理论 `E[χ²(3)]=3`，KS test `p=2.425e-27`。因此下一阶段重点应从触发器实现转入 EKF 观测噪声标定与 null 分布校准。
+
+## 🧭 下一步计划（2026-04-29，按评审修正版）
+
+本节以「下一步计划评审修正」为准，覆盖前一版计划。Task 2 的核心结论保持不变：`mean(c)=12.444` 远高于理论 `E[χ²(3)]=3`，说明当前白化统计量没有校准好。但执行顺序需要先排除 per-source / association 问题，再进入 `R_obs` sweep。
+
+### Step 0：per-source 拆分诊断（新增，优先执行）
+
+目标：判断 `c` 膨胀是三源同步发生，还是由某一个源主导。
+
+已补齐诊断能力：
+
+- `pipeline_run.py` 的 dump 钩子额外保存 `c_per_step_per_source: np.ndarray[steps, sources]`
+- `validate_null_distribution.py` 支持 `--per-source`，逐源对 `χ²(1)` 做统计检验
+- `validate_null_distribution.py` 支持 `--decimate <N>`，用于对重叠 window 产生的高相关样本做二次抽样
+
+建议先重新生成一次 no-drift dump：
+
+```text
+system_model.eta=0
+system_model.sv_noise_var=0
+system_model.nominal=true
+online_learning.dataset_size=1
+online_learning.trajectory_length=30
+online_learning.window_size=5
+online_learning.stride=5
+online_learning.eta_increment=0
+online_learning.max_eta=0
+online_learning.dump_c_per_step_path=outputs/null_validation_per_source.npz
+online_learning.drift_trigger.type=time_to_learn
+online_learning.drift_trigger.target_window=999999
+```
+
+然后运行：
+
+```bash
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_per_source.npz --per-source
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_per_source.npz
+```
+
+判读规则：
+
+- 若三源 `mean(c_source)` 都接近 `1.0`，而总量仍偏大，则检查 source 间相关性或求和假设。
+- 若只有某个源 `mean(c_source) >> 1.0`，优先诊断 source association / EKF 初始化，不进入盲目 `R_obs` sweep。
+- 若三源都同步偏大，才进入 Step 1 的 `R_obs` / `measurement_noise_std_dev` 标定。
+
+### Step 1：做 `R_obs` / `measurement_noise_std_dev` 标定 sweep
+
+目标：找到能让真实 no-drift `c_per_step` 接近 `χ²(3)` 的观测噪声配置。
+
+初始 sweep：
+
+```text
+kalman_filter.measurement_noise_std_dev ∈ {0.05, 0.1, 0.2, 0.5, 1.0}
+```
+
+执行要求：
+
+- `stride >= window_size`，否则 KS test 的 iid 假设不成立。
+- 主要验收指标改为 `mean(c) ∈ [2.5, 3.5]`。
+- KS test 只作为辅助；若使用 `stride=1` 的高密度 dump，必须加 `--decimate <window_size>` 后再解释 KS。
+
+推荐命令形态：
+
+```bash
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_real_<noise>.npz
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_real_<noise>.npz --per-source
+```
+
+若没有任何设置通过，则保留最接近 `mean(c)=3` 且 per-source 最均衡的候选点，并继续细化 sweep。
+
+### Step 2：扩展验证样本，降低短轨迹偶然性
+
+当 Step 0/1 找到候选配置后，用更长或更多轨迹复验：
+
+```text
+dataset_size ∈ {3, 5}
+trajectory_length ∈ {50, 100}
+stride ∈ {window_size, 2*window_size}
+```
+
+重点观察：
+
+- 总量 `mean(c)` 是否稳定落在 `[2.5, 3.5]`
+- 三个 source 的 `mean(c_source)` 是否都接近 `1.0`
+- decimated KS p-value 是否可接受
+
+### Step 3：模型误差 / calibration-data `R_obs` 诊断（与 Step 1 并行）
+
+如果 Step 0 显示单源异常，或 Step 1 单纯放大 `measurement_noise_std_dev` 仍无法让 null 分布接近目标，需要检查 SubspaceNet 在 η=0 条件下的观测误差：
+
+- 统计 AI DoA 预测误差的均值、方差、偏度、峰度
+- 检查误差是否存在系统性 bias 或 source swap
+- 对比 `z - h(x_pred)` 与 EKF 预测协方差 `P` 的量级
+- 评估是否需要用 calibration-data 估计经验 `R_obs`，而不是固定 scalar noise
+
+### Step 4：确定 whitened CUSUM 默认配置（不扩 trigger 接口）
+
+采用评审推荐方案 (a)：当前不新增 `warmup_windows` / `min_gap_windows`，保持 `WhitenedCusumTrigger` 接口简单。
+
+只有当真实 null 分布校准通过后，才进入 CUSUM 阈值默认值定稿：
+
+- 固定通过验证的 `measurement_noise_std_dev`
+- 重新生成 no-drift null dump
+- 用该配置运行 `whitened_cusum` smoke
+- 记录推荐默认值：`p_fa`、`b_offset`、`reset_after_trigger`
+
+### Step 5：文档与测试收尾
+
+完成以上步骤后更新：
+
+- `plan/plan_26Apr/IMPLEMENTATION_NOTES.md`
+- `plan/plan_26Apr/plan_whiten_innov.md`
+- 必要时新增一个 sweep 辅助脚本，避免手动改 YAML 重复执行
+
+最终验收标准：
+
+```text
+pytest tests/online_learning/ -v
+pytest tests/integration/test_whitened_trigger_smoke.py -v -m integration
+python scripts/validate_null_distribution.py --input outputs/null_validation_real_best.npz
+python scripts/validate_null_distribution.py --input outputs/null_validation_real_best.npz --per-source
+```
+
+真实 null 验证必须同时满足：总量 `mean(c) ∈ [2.5, 3.5]`，三源 `mean(c_source)` 均接近 `1.0`。KS test 仅在 `stride >= window_size` 或使用 `--decimate` 后作为辅助判断；若校准不通过，不把 whitened CUSUM 作为默认生产触发器，只保留为实验模式。
+
+---
+
+## 📝 下一步计划评审修正（2026-04-29）
+
+对上一节「🧭 下一步计划」做三处修正。Task 2 失败的诊断方向正确（`mean(c)=12.44 vs 期望 3`，`S` 被低估约 4×），但执行细节有可改进之处。
+
+### 修正 1：把 KS 验收限定在 stride ≥ window_size 的样本上
+
+**问题**：当前 dump 用 `trajectory_length=30, window_size=5, stride=1` 产生 130 个样本，相邻样本来自高度重叠的 EKF 轨迹，**iid 假设被严重违反**，KS p-value 不可解释。报告自己提到这点但仍把 KS 当主要验收指标，自相矛盾。
+
+**两个统计量的鲁棒性差异**：
+
+| 指标 | 对样本相关性鲁棒？ | 当前是否可信 |
+| --- | --- | --- |
+| `mean(c)` 接近理论 dof=3 | ✅ 鲁棒（线性统计量） | ✅ 可信，结论"`S` 被低估"成立 |
+| KS test p > 0.05 | ❌ 假设 iid | ❌ 当前 p=2.4e-27 含相关性偏差 |
+
+**修正**：
+
+- Step 1 sweep 时 `stride` 必须设为 `>= window_size`（即至少 5），否则 KS 输出无意义
+- 主要验收指标改为 `mean(c) ∈ [2.5, 3.5]`（鲁棒），KS 只作辅助
+- 若必须保留高密度 dump（stride=1）做诊断，至少在脚本里支持 `--decimate <stride>` 二次采样后再做 KS
+
+### 修正 2：先做零成本的 per-source 拆分，再决定是否 R_obs sweep
+
+**问题**：当前 `c_step = sum_over_sources(y_s_inv_y[step, src])` 把 3 个源的 χ²(1) 求和成 χ²(3)，**仅当三源独立时**才成立。Task 2 dump 里 `max(c)=89.15`，比 χ²(3) 的 99.9% 分位 16.27 高 **5.5 倍**，是非常强的"单步爆炸"信号——常见原因是 source-association 错位（plan_whiten_innov.md 待解决 #4 / 论文 note L251 都警示过）。
+
+**为什么这是必要的前置步骤**：
+
+- 若**某个源**主导了膨胀（典型的 association swap），盲目 sweep R_obs 会把好源的 R 也一起放大，引入新偏差
+- 若**三源同等膨胀**，才是真正的 R_obs 标定问题，此时 sweep 才有意义
+
+**修正**：在 Step 1 之前插入 **Step 0**：
+
+- `pipeline_run.py` 的 dump 钩子额外保存 `c_per_step_per_source: np.ndarray[steps, num_sources]`（约 5 行改动）
+- `validate_null_distribution.py` 增加 `--per-source` 模式，逐源 KS test 对 χ²(1)
+- 验收：三源 mean 都接近 1.0；若任一源 mean ≫ 1.0 而其他源接近 1.0，问题在 association/EKF 初始化，**不是 R_obs**
+
+### 修正 3：Step 4 的默认值参数对齐当前 trigger 接口
+
+**问题**：Step 4 写了
+
+```text
+记录推荐默认值：alpha、b_offset、warmup_windows、min_gap_windows
+```
+
+但 `WhitenedCusumTrigger.__init__` 当前签名只有 `p_fa, dof, b_offset, reset_after_trigger`（`drift_trigger.py:132-138`）。`alpha` 命名歧义、`warmup_windows` / `min_gap_windows` 在代码里不存在。
+
+**修正**（二选一）：
+
+- **(a) 不扩接口**：Step 4 改为记录 `p_fa, b_offset, reset_after_trigger` 三项的推荐默认值，删除 `warmup_windows / min_gap_windows`
+- **(b) 扩接口**：把"扩展 `WhitenedCusumTrigger` 加 `warmup_windows` 与 `min_gap_windows` + 写对应 unit test"显式列为 Step 4.0 子任务，并在 Step 5 验收命令里覆盖到
+
+推荐 (a)，理由是：CUSUM 已有 `reset_after_trigger` 的 reset 语义，warmup 也可以通过让上层 pipeline 在前 N 个 window 不调用 `observe_window` 简单实现，不必污染 trigger 类。
+
+### 修正后的执行顺序
+
+```text
+Step 0  per-source 拆分诊断          ← 新增，零成本
+  ├─ 若 single-source 异常 → 修 association/EKF 初始化，不进 R_obs sweep
+  └─ 若 three-source 同步异常 → 进入 Step 1
+
+Step 1  R_obs sweep（stride≥window_size）  ← 验收指标主改 mean，KS 辅助
+        与 Step 3（calibration-data R_obs）并行考虑
+
+Step 2  长轨迹复验                    ← 不变
+
+Step 3  模型误差诊断                  ← 改为与 Step 1 并行候选
+
+Step 4  推荐默认值（采用 (a) 不扩接口）
+
+Step 5  文档与测试收尾                ← 不变
+```
+
+### 📌 修正后结论
+
+Task 2 失败本身是 commit 前暴露的好信号。修正后的下一步计划要点：
+
+1. **Step 0 优先**：per-source 诊断 5 行代码即可，可能直接跳过 R_obs sweep
+2. **stride 必须 ≥ window_size 才允许做 KS**，主要验收用 `mean(c)`
+3. **不引入 trigger 接口里不存在的参数**
+
+按此顺序推进，最坏情况能在 1-2 天内确定"白化 CUSUM 在本仓库 SubspaceNet+EKF 下是否真的可用"。
+
+---
+
+## 🔧 下一步计划评审修正执行记录（2026-04-29）
+
+已按评审修正落地三项基础能力：
+
+1. `pipeline_run.py` 的 null dump 现在同时写出总量 `c` 与逐源矩阵 `c_per_step_per_source`，后续可区分 single-source association 问题和 three-source 同步膨胀问题。
+2. `scripts/validate_null_distribution.py` 新增 `--per-source` 与 `--decimate <N>`：
+   - `--per-source`：逐源按 `χ²(1)` 输出 mean 与 KS test。
+   - `--decimate`：对 stride=1 这类重叠 window dump 做二次抽样后再检验。
+3. 「下一步计划」已改为评审修正版：
+   - Step 0 先做 per-source 拆分诊断。
+   - Step 1 的 KS 仅在 `stride >= window_size` 或 decimate 后解释。
+   - Step 4 不扩 trigger 接口，只记录 `p_fa`、`b_offset`、`reset_after_trigger`。
+
+新增/更新的轻量测试：
+
+```text
+tests/online_learning/test_validate_null_distribution.py
+tests/integration/test_whitened_trigger_smoke.py
+```
+
+---
+
+## 🧪 Step 0 per-source 真实诊断结果（2026-04-29）
+
+已按修正版计划先跑 Step 0，而不是直接进入 `R_obs` sweep。
+
+运行配置：
+
+```text
+system_model.eta=0
+system_model.sv_noise_var=0
+system_model.nominal=true
+online_learning.dataset_size=1
+online_learning.trajectory_length=30
+online_learning.window_size=5
+online_learning.stride=5
+online_learning.eta_increment=0
+online_learning.max_eta=0
+online_learning.dump_c_per_step_path=outputs/null_validation_per_source.npz
+online_learning.drift_trigger.type=time_to_learn
+online_learning.drift_trigger.target_window=999999
+```
+
+dump 摘要：
+
+```text
+keys: ['c', 'c_per_step_per_source', 'dof', 'trajectory_idx']
+c_shape = (30,)
+c_per_step_per_source_shape = (30, 3)
+mean(c) = 6.077
+mean(c_source) = [1.176, 1.732, 3.168]
+min(c) = 0.123
+max(c) = 27.784
+max(c_source) = 19.308
+```
+
+逐源验证：
+
+```text
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_per_source.npz --per-source
+
+source[0]: N=30, mean=1.176, KS p=0.1679  PASS
+source[1]: N=30, mean=1.732, KS p=0.4564  PASS
+source[2]: N=30, mean=3.168, KS p=0.0121  FAIL
+```
+
+总量验证：
+
+```text
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_per_source.npz
+
+total: N=30, mean=6.077, KS p=0.002349  FAIL
+```
+
+### 结论
+
+Step 0 显示问题不是干净的 three-source 同步膨胀。`source[2]` 明显主导 null 分布偏离，`source[1]` 也有中等偏高，`source[0]` 基本正常。因此暂不进入盲目的 `R_obs` / `measurement_noise_std_dev` sweep。
+
+下一步应先诊断：
+
+1. source association 是否在第 3 个源附近发生 swap 或排序错位；
+2. EKF 初始化 / 上一窗状态传递是否对 source[2] 更敏感；
+3. `labels`、SubspaceNet 输出、EKF prediction 三者在每一步的 source 顺序是否一致；
+4. 若修正 association 后三源仍同步偏大，再回到 Step 1 做 `R_obs` sweep。
+
+---
+
+## 🔬 Source / R_obs 诊断继续执行（2026-04-29）
+
+在继续诊断时补充了更细的 dump 字段：
+
+```text
+true_angles
+pre_ekf_predictions
+ekf_predictions
+innovations
+innovation_covariances
+```
+
+### 1. 复跑 Step 0 后的观察
+
+由于未固定随机种子，复跑后的异常源不再固定为 `source[2]`，而是 `source[0]`、`source[1]` 更高：
+
+```text
+mean(c_source) = [4.825, 2.393, 1.990]
+mean(c_total) = 9.207
+mean_abs_measurement_error_deg = [9.132, 9.242, 5.160]
+mean_abs_innovation_deg = [7.616, 5.974, 5.073]
+mean_sqrtS_deg = [4.628, 4.628, 4.628]
+```
+
+切片分析显示，第一窗口确实有冷启动大残差，但去掉第一窗口后仍偏高：
+
+```text
+drop_first_window_5:
+mean_total = 7.056
+mean_src = [3.269, 1.656, 2.132]
+```
+
+这说明问题不是某一个固定 source 的 association bug，而是 SubspaceNet 测量误差整体大于当前 EKF 观测噪声假设。
+
+### 2. Oracle EKF 检查
+
+用真实角度作为 EKF measurement 重新计算 null 统计：
+
+```text
+oracle_true_measurement_mean_c_source = [0.005608, 0.000110, 0.047073]
+oracle_true_measurement_mean_total = 0.052792
+oracle_mean_abs_innov_deg = [0.1461, 0.0357, 0.5600]
+oracle_mean_sqrtS_deg = [4.6275, 4.6275, 4.6275]
+```
+
+结论：EKF sine-acceleration 动力学本身没有制造 null 膨胀；主要矛盾是 `R_obs` / `measurement_noise_std_dev` 低估了 pretrained SubspaceNet 的实际测量误差。
+
+### 3. 固定 seed 的短轨迹 `measurement_noise_std_dev` sweep
+
+固定 seed 后，对同一条 no-drift 轨迹做短 sweep：
+
+```text
+measurement_noise_std_dev=0.05 -> mean_total=11.0704, mean_src=[3.4987, 2.0420, 5.5297], sqrtS=4.628°
+measurement_noise_std_dev=0.10 -> mean_total=4.2091,  mean_src=[1.3000, 0.9508, 1.9582], sqrtS=7.300°
+measurement_noise_std_dev=0.12 -> mean_total=3.1839,  mean_src=[0.9912, 0.7520, 1.4408], sqrtS=8.405°
+measurement_noise_std_dev=0.13 -> mean_total=2.8122,  mean_src=[0.8809, 0.6759, 1.2553], sqrtS=8.961°
+measurement_noise_std_dev=0.14 -> mean_total=2.5053,  mean_src=[0.7906, 0.6113, 1.1034], sqrtS=9.518°
+measurement_noise_std_dev=0.20 -> mean_total=1.4333,  mean_src=[0.4806, 0.3683, 0.5844], sqrtS=12.879°
+```
+
+`0.12` 是当前最好的短轨迹候选：
+
+```text
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_noise_0p12.npz
+total: mean=3.184, KS p=0.1366 PASS
+
+.venv-wsl/bin/python scripts/validate_null_distribution.py --input outputs/null_validation_noise_0p12.npz --per-source
+source[0]: mean=0.991, KS p=0.5847 PASS
+source[1]: mean=0.752, KS p=0.3321 PASS
+source[2]: mean=1.441, KS p=0.2660 PASS
+```
+
+### 4. 长轨迹复验
+
+按计划继续跑长轨迹复验，固定：
+
+```text
+dataset_size ∈ {3, 5}
+trajectory_length ∈ {50, 100}
+window_size = 5
+stride = 5
+```
+
+先验证短轨迹候选 `measurement_noise_std_dev=0.12`：
+
+```text
+0.12 / ds=3,len=50:  N=150, mean_total=2.3825, p_total=1.994e-05, mean_src=[0.9369, 0.6430, 0.8025]
+0.12 / ds=3,len=100: N=300, mean_total=2.7235, p_total=0.0003338, mean_src=[0.9601, 0.6944, 1.0690]
+0.12 / ds=5,len=50:  N=250, mean_total=2.3997, p_total=1.066e-06, mean_src=[0.9222, 0.6385, 0.8390]
+0.12 / ds=5,len=100: N=500, mean_total=2.7121, p_total=4.595e-05, mean_src=[0.9366, 0.7415, 1.0340]
+```
+
+结论：`0.12` 在长轨迹上偏保守，短长度组合的 `mean_total < 2.5`，且 `source[1]` 长期偏低。
+
+随后细化到 `0.11`：
+
+```text
+0.11 / ds=3,len=50:  N=150, mean_total=2.7066, p_total=0.007013, mean_src=[1.0690, 0.7228, 0.9148]
+0.11 / ds=3,len=100: N=300, mean_total=3.1048, p_total=0.09671,  mean_src=[1.0948, 0.7830, 1.2269]
+0.11 / ds=5,len=50:  N=250, mean_total=2.7221, p_total=0.003201, mean_src=[1.0487, 0.7145, 0.9589]
+0.11 / ds=5,len=100: N=500, mean_total=3.0879, p_total=0.06506,  mean_src=[1.0639, 0.8370, 1.1870]
+```
+
+结论：`0.11` 的 total mean 四组全部落在 `[2.5, 3.5]`，但 source[1] 仍低，短长度 total KS 仍失败。
+
+最后细化到 `0.105`：
+
+```text
+0.105 / ds=3,len=50:  N=150, mean_total=2.8960, p_total=0.05036, mean_src=[1.1466, 0.7690, 0.9805]
+0.105 / ds=3,len=100: N=300, mean_total=3.3280, p_total=0.48300, mean_src=[1.1737, 0.8345, 1.3198]
+0.105 / ds=5,len=50:  N=250, mean_total=2.9104, p_total=0.03063, mean_src=[1.1230, 0.7582, 1.0293]
+0.105 / ds=5,len=100: N=500, mean_total=3.3076, p_total=0.25540, mean_src=[1.1382, 0.8925, 1.2770]
+```
+
+### 5. 长复验结论
+
+当前最佳 scalar `R_obs` 候选：
+
+```text
+kalman_filter.measurement_noise_std_dev = 0.105
+```
+
+理由：
+
+- 四个长复验组合的 `mean_total` 全部落在 `[2.5, 3.5]`；
+- `trajectory_length=100` 的两组 total KS 都通过；
+- 三源 mean 比 `0.12` 更接近 `[1,1,1]`，且比 `0.11` 更接近总量目标。
+
+限制：
+
+- `source[1]` 仍持续 under-dispersed（约 `0.77-0.89`），说明单一 scalar `R_obs` 不是完美校准；
+- `ds=5,len=50` 的 total KS 仍失败（`p=0.03063`），因此不能声称严格 χ² null 已完全成立；
+- 更严谨的下一步是 source-specific `R_obs` 或 calibration-data empirical `R_obs`。
+
+执行决策：
+
+```text
+measurement_noise_std_dev=0.105 可作为下一阶段 whitened CUSUM 触发实验的 scalar 候选值；
+不要把它写成最终理论默认值；
+下一步进入 b_offset / p_fa 触发效果实验，同时保留 source-specific R_obs 作为研究项。
+```
+
+---
+
+## 🚦 Whitened CUSUM 触发参数回放实验（2026-04-29）
+
+### 1. 实验方式
+
+为了先评估触发器参数，而不引入在线训练带来的额外变量，本轮使用 lightweight replay：
+
+1. 用已校准的 `measurement_noise_std_dev=0.105` 生成 no-drift / drift 的 `c_per_step` 序列；
+2. 离线构造 `WhitenedCusumTrigger(p_fa, dof=3, b_offset, reset_after_trigger=True)`；
+3. 按 window 顺序把每个 window 的 5 个 `c` 喂给 trigger；
+4. 统计 no-drift 误触发率、drift 检测率和首次触发延迟。
+
+执行注意：不能用固定 `system_model.eta=0.6/1.0` 直接调用 `execute_online_learning()` 来生成 drift stream，因为 `run_online_learning_impl()` 会在每条 trajectory 开始时把 eta 重置为 0。本轮 drift stream 改用动态 eta 更新：
+
+```text
+trajectory_length=100
+window_size=5
+stride=5
+eta_update_interval_windows=5
+eta_increment ∈ {0.6, 1.0}
+max_eta ∈ {0.6, 1.0}
+drift_onset_window = 5
+```
+
+### 2. 初始参数矩阵失败
+
+初始矩阵：
+
+```text
+p_fa ∈ {0.01, 0.05, 0.10}
+b_offset ∈ {0.5, 1.0, 1.5}
+```
+
+结果：所有组合都能在动态 drift 后快速触发，但 no-drift replay 中 `null_any_rate=1.0`，即每条 no-drift trajectory 至少误触发一次。
+
+结论：真实 residual tail 比理论 χ²/CUSUM 假设更重，原始解析阈值太激进，不能直接用 `p_fa≤0.1` 与小 `b_offset`。
+
+### 3. 保守参数矩阵
+
+继续扩展：
+
+```text
+p_fa ∈ {1e-6, 1e-5, 1e-4}
+b_offset ∈ {6, 8, 10, 12, 16, 20}
+```
+
+最佳候选：
+
+```text
+p_fa = 1e-6
+b_offset = 20
+reset_after_trigger = true
+```
+
+在全部 `measurement_noise_std_dev=0.105` 长复验 no-drift 文件上回放：
+
+```text
+ds=3,len=50:   0/3 trajectories false-alarmed
+ds=3,len=100:  0/3 trajectories false-alarmed
+ds=5,len=50:   0/5 trajectories false-alarmed
+ds=5,len=100:  0/5 trajectories false-alarmed
+ALL:           0/16 trajectories false-alarmed
+```
+
+动态 drift replay：
+
+```text
+eta=0.6: detect_rate=1.0, avg_delay=1.667 windows
+eta=1.0: detect_rate=1.0, avg_delay=1.000 windows
+```
+
+### 4. 触发实验结论
+
+当前推荐进入下一阶段 end-to-end online-training 的保守 replay 候选：
+
+```yaml
+kalman_filter:
+  measurement_noise_std_dev: 0.105
+
+online_learning:
+  drift_trigger:
+    type: whitened_cusum
+    p_fa: 1e-6
+    dof: 3
+    b_offset: 20.0
+    reset_after_trigger: true
+```
+
+注意措辞：
+
+- 这不是“理论 p_fa=1e-6 已被证明成立”；
+- 这是“在当前 long-null replay 集合上 0/16 trajectory 误触发”的经验候选；
+- `b_offset=20` 远大于原先理论建议，说明真实 residual tail / source imbalance 仍未完全满足理想 χ² 假设；
+- 若后续要写论文，应该把它描述为 **empirically calibrated conservative CUSUM reference**，并把 source-specific `R_obs` 作为进一步收紧理论假设的方向。
+
+下一步：
+
+```text
+用 measurement_noise_std_dev=0.105 + p_fa=1e-6 + b_offset=20 跑一次真正 end-to-end online-training；
+观察 drift_detected_count、training_start_window、RMSPE 是否改善；
+若训练闭环稳定，再与 time_to_learn / sigma_y_sq comparator 对比。
+```
+
+---
+
+## 🧪 Calibrated Whitened CUSUM 闭环 Smoke（2026-04-29）
+
+### 1. 新增 YAML 预设
+
+新增：
+
+```text
+run/conf/Used_for_paper/SineAccel_whitened_cusum_calibrated.yaml
+```
+
+内容要点：
+
+```yaml
+kalman_filter:
+  measurement_noise_std_dev: 0.105
+
+online_learning:
+  drift_trigger:
+    type: whitened_cusum
+    p_fa: 1e-6
+    dof: 3
+    b_offset: 20.0
+    reset_after_trigger: true
+```
+
+### 2. 一条 trajectory 闭环验证
+
+运行设置：
+
+```text
+trajectory_length=100
+window_size=5
+stride=5
+eta_update_interval_windows=5
+eta_increment=0.6
+max_eta=0.6
+max_iterations=1
+dump_c_per_step_path=outputs/e2e_whitened_cusum_calibrated_eta0p6.npz
+```
+
+运行结果：
+
+```text
+E2E_STATUS success
+```
+
+由于 `execute_online_learning()` 顶层返回的是 averaged 结构，本次用 dump replay 与日志共同确认触发窗口。对输出 dump 重新回放 calibrated trigger：
+
+```text
+replay_fired_windows = [6, 12, 13, 16, 18, 19]
+window_mean_first12 = [3.592, 2.285, 1.624, 2.097, 2.808, 1.866, 23.871, 17.641, 5.079, 13.512, 8.295, 13.374]
+```
+
+日志显示：
+
+```text
+window 6 进入 LEARNING PHASE
+window 11 起进入 POST-LEARNING
+```
+
+### 3. Calibrated 候选参数的多轨迹回放验证
+
+闭环 smoke 之外，把同样 `p_fa=1e-6 / b_offset=20 / reset_after_trigger=True` 的 calibrated CUSUM 在已有 dump 上做 windowed replay（`window_size=5, stride=5`），验证候选参数不是单条 trajectory 的偶然结果。
+
+数据来源：
+
+```text
+no-drift（4 个 dump，共 16 条轨迹）:
+  outputs/long_null_noise_0p105_ds3_len50.npz   (3 trajs × 50 steps)
+  outputs/long_null_noise_0p105_ds3_len100.npz  (3 trajs × 100 steps)
+  outputs/long_null_noise_0p105_ds5_len50.npz   (5 trajs × 50 steps)
+  outputs/long_null_noise_0p105_ds5_len100.npz  (5 trajs × 100 steps)
+
+dynamic drift（每条 dump 含 3 条轨迹，onset_window=5）:
+  outputs/trigger_replay_dynamic_eta_0p6_noise_0p105.npz
+  outputs/trigger_replay_dynamic_eta_1p0_noise_0p105.npz
+```
+
+回放结果（已用本仓库 `WhitenedCusumTrigger` 实测复算确认）：
+
+| 场景 | 检测/总轨迹 | 首次触发延迟（window） | 备注 |
+| --- | --- | --- | --- |
+| no-drift | **0 / 16** 出现误触发 | N/A | 跨 ds∈{3,5} × len∈{50,100} 全部 0 误触发 |
+| dynamic eta=0.6 | **3 / 3** | mean=1.667 | onset 后 1-2 window 内全部触发 |
+| dynamic eta=1.0 | **3 / 3** | mean=1.000 | onset 后 1 window 内全部触发 |
+
+补充验证：
+
+- Hydra 加载 `SineAccel_whitened_cusum_calibrated.yaml` 配置 smoke 通过（trigger 正常构建，`measurement_noise_std_dev=0.105` 生效）
+- `pytest tests/online_learning/test_drift_trigger.py tests/integration/test_whitened_trigger_smoke.py -v`：**17 passed, 2 warnings**（剩 Pydantic V2 警告与本特性无关）
+
+### 4. 闭环结论
+
+保守候选：
+
+```text
+measurement_noise_std_dev=0.105
+p_fa=1e-6
+b_offset=20
+reset_after_trigger=true
+```
+
+跨 16 条 no-drift 轨迹零误触发，跨两个漂移幅度 6/6 全部检测且平均延迟 1-2 个 window，已经具备进入正式实验对比的基础。
+
+仍需注意：
+
+- **未做同条件三 trigger 对比**：calibrated whitened CUSUM 与 `time_to_learn` / `sigma_y_sq` 在同一 trajectory 集上的 first-trigger / 漂移后 RMSPE / 误触发率对比仍是 open 项
+- **重复触发问题未修**：闭环 replay 在单条 trajectory 上观察到 `[6, 12, 13, 16, 18, 19]` 多次触发；若要在生产路径里减少冗余 GD 调用，需要在 pipeline 层加 post-trigger cooldown，或在 learning phase 内暂停 drift trigger（**注意**：cooldown 不是 trigger 类的职责，建议放在 `pipeline_run.py` 的窗口循环里，不污染 trigger 接口）
+
+下一步实验建议：
+
+```text
+dataset_size=3
+trajectory_length=100
+eta_update_interval_windows=5
+eta_increment ∈ {0.6, 1.0}
+
+对比：
+1. time_to_learn baseline
+2. sigma_y_sq comparator
+3. calibrated whitened_cusum
+
+指标：
+- first_trigger_window
+- pre-drift false trigger
+- drift_detected_count
+- training_start_window / training_end_window
+- post-learning RMSPE improvement
+```
