@@ -64,4 +64,8 @@ outputs/trigger_replay_*.npz
 outputs/trigger_replay_*/
 outputs/e2e_whitened_cusum_*.npz
 outputs/e2e_whitened_cusum_*/
+outputs/trigger_validation_*/
+outputs/trigger_validation_*.npz
+outputs/sigma_y_sq_retune_*/
+outputs/sigma_y_sq_retune_*.npz
 outputs/null_validation_run/

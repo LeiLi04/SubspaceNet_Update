@@ -224,6 +224,99 @@ window_mean_first12 = [3.592, 2.285, 1.624, 2.097, 2.808, 1.866, 23.871, 17.641,
 
 The online-training logs show training began at window 6 and post-learning evaluation began at window 11. This confirms the conservative whitened CUSUM candidate can drive the full online-training path on one dynamic-drift trajectory.
 
+## Trigger Pause And Comparator Smoke
+
+During the three-trigger short closed-loop comparison, the original pipeline exposed two bookkeeping problems:
+
+1. `window_update_flags` only appended `False` on non-trigger windows, so trigger windows were not represented as `True`.
+2. The trigger continued to be observed after the trajectory had already entered the online-learning path, inflating `drift_detected_count` with repeated detections.
+
+Fix in:
+
+```text
+src/trainer_module/online_learning_parts/pipeline_run.py
+```
+
+Current behavior:
+
+- `window_update_flags` gets one boolean per window.
+- trigger windows append `True`.
+- after `self.drift_detected` becomes true, the pipeline still collects `c_per_step` diagnostics but skips further trigger observation for that trajectory.
+- `drift_detected_count` is now at most one per trajectory in the current single-drift experiment design.
+
+Short comparator smoke output:
+
+```text
+outputs/e2e_whitened_cusum_trigger_comparison_20260429/summary.json
+```
+
+Shared settings:
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_update_interval_windows=5
+eta_increment ∈ {0.6, 1.0}
+max_iterations=1
+measurement_noise_std_dev=0.105
+```
+
+Because the configured pretrained checkpoint is absent in this workspace, the run used `simulation.load_model=false`; treat this as a pipeline/comparator smoke, not a paper-quality performance result.
+
+Post-fix summary:
+
+```text
+eta=0.6
+  time_to_learn: first_online=[6,6,6], pre-false=0/3, drift_count=3, tail5_improve=+0.1415
+  sigma_y_sq:    first_online=[0,0,0], pre-false=3/3, drift_count=3, tail5_improve=+0.0637
+  whitened:      first_online=[2,6,8], pre-false=1/3, drift_count=3, tail5_improve=+0.1010
+
+eta=1.0
+  time_to_learn: first_online=[6,6,6], pre-false=0/3, drift_count=3, tail5_improve=+0.1452
+  sigma_y_sq:    first_online=[0,0,0], pre-false=3/3, drift_count=3, tail5_improve=+0.0709
+  whitened:      first_online=[3,1,0], pre-false=3/3, drift_count=3, tail5_improve=+0.0739
+```
+
+Interpretation: repeat-trigger pollution is fixed, but closed-loop early firing remains. Next validation should use the real pretrained checkpoint and add a closed-loop no-drift smoke before treating the calibrated CUSUM as accepted.
+
+Closed-loop no-drift follow-up:
+
+```text
+outputs/e2e_whitened_cusum_closed_loop_null_20260429/summary.json
+```
+
+With `eta_increment=0`, `max_eta=0`, `b_offset=20`, calibrated CUSUM still entered the online path on all 3 trajectories:
+
+```text
+first_online_windows=[2, 2, 0]
+false_trigger_trajectory_count=3/3
+```
+
+Conservative `b_offset` sweep:
+
+```text
+outputs/e2e_whitened_cusum_closed_loop_null_boffset_sweep_20260429/summary.json
+```
+
+Result: even `b_offset=200` still false-triggered 1/3 trajectories (`first_online_windows=[5, null, null]`).
+
+Single-trajectory diagnostic dump:
+
+```text
+outputs/e2e_whitened_cusum_closed_loop_null_boffset200_traj0_dump_20260429/summary.json
+```
+
+The false trigger is caused by a source-level spike:
+
+```text
+c_max=225.722 at window 5
+argmax_source_values=[0.983, 0.157, 224.582]
+```
+
+Do not keep increasing `b_offset` as the primary fix. The next useful work is source-level association / covariance diagnostics, preferably with the real pretrained checkpoint restored.
+
 ## Verification
 
 Recommended checks:

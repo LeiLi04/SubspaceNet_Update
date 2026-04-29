@@ -1172,7 +1172,7 @@ reset_after_trigger=true
 
 仍需注意：
 
-- **未做同条件三 trigger 对比**：calibrated whitened CUSUM 与 `time_to_learn` / `sigma_y_sq` 在同一 trajectory 集上的 first-trigger / 漂移后 RMSPE / 误触发率对比仍是 open 项
+- **同条件三 trigger 对比已在下一节补做**：calibrated whitened CUSUM 与 `time_to_learn` / `sigma_y_sq` 已完成一轮短闭环 smoke；结果显示 replay 通过不等于闭环路径无提前触发，见下一节。
 - **重复触发问题未修**：闭环 replay 在单条 trajectory 上观察到 `[6, 12, 13, 16, 18, 19]` 多次触发；若要在生产路径里减少冗余 GD 调用，需要在 pipeline 层加 post-trigger cooldown，或在 learning phase 内暂停 drift trigger（**注意**：cooldown 不是 trigger 类的职责，建议放在 `pipeline_run.py` 的窗口循环里，不污染 trigger 接口）
 
 下一步实验建议：
@@ -1194,4 +1194,865 @@ eta_increment ∈ {0.6, 1.0}
 - drift_detected_count
 - training_start_window / training_end_window
 - post-learning RMSPE improvement
+```
+
+---
+
+## ⚖️ 三触发器短闭环对比 Smoke（2026-04-29）
+
+### 1. 执行目的
+
+上一节的 replay 结果说明 `measurement_noise_std_dev=0.105 / p_fa=1e-6 / b_offset=20` 在已有 no-drift dump 上足够保守，但 replay 只把保存好的 `c_per_step` 喂给 trigger，没有覆盖完整在线学习闭环。
+
+本轮补做同条件短闭环对比：
+
+1. `time_to_learn`
+2. `sigma_y_sq`
+3. `whitened_cusum_calibrated`
+
+主要看：
+
+- 首次进入 online path 的窗口（用 `online_trajectory_results.window_indices[0]` 作为 proxy）
+- 是否在 drift onset 前提前进入 online path
+- `drift_detected_count`
+- tail-5 RMSPE 是否比 pretrained 路径改善
+
+### 2. 实验设置
+
+输出目录：
+
+```text
+outputs/e2e_whitened_cusum_trigger_comparison_20260429/
+```
+
+压缩结果：
+
+```text
+outputs/e2e_whitened_cusum_trigger_comparison_20260429/summary.json
+```
+
+共同设置：
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_update_interval_windows=5
+eta_increment ∈ {0.6, 1.0}
+max_eta ∈ {0.6, 1.0}
+drift_onset_window=5
+max_iterations=1
+kalman_filter.measurement_noise_std_dev=0.105
+```
+
+`time_to_learn` 特殊说明：
+
+```text
+target_window=6
+```
+
+原因：短实验只有 20 个 window，原配置 `time_to_learn=35` 不会触发；这里把 fixed-time baseline 设成 onset 后 1 个 window，用来作为“已知漂移大致发生时刻”的乐观固定触发基线。
+
+模型权重说明：
+
+```text
+simulation.load_model=false
+```
+
+原因：当前 workspace 中配置里指向的 checkpoint：
+
+```text
+experiments/results/base_model_random_data_snr_10_SubspaceNet_esprit_N9_M3_SNR10.0_Far_ESPRIT/checkpoints/final_SubspaceNet_20250916_084930.pt
+```
+
+不存在。因此本轮是 pipeline / comparator smoke，不是最终论文级性能实验。后续正式结论必须恢复真实 pretrained checkpoint。
+
+### 3. 结果表
+
+字段说明：
+
+- `first_online_windows`：每条 trajectory 第一次进入 online model 路径的 window；它是闭环里 trigger/training start 的近似 proxy。
+- `pre-false`：`first_online_window < drift_onset_window(5)` 的 trajectory 数。
+- `drift_count`：三条 trajectory 的总触发次数。修复 `pipeline_run.py` 后，同一 trajectory 进入 online-learning path 后会暂停继续观察 trigger，因此该值每条 trajectory 最多计 1 次。
+- `tail5_improve`：最后 5 个窗口中 `pretrained RMSPE - online RMSPE` 的平均值；正数表示 online path 更低。
+
+本节执行过程中顺手修复了一个 pipeline 级问题：
+
+```text
+src/trainer_module/online_learning_parts/pipeline_run.py
+```
+
+修复内容：
+
+- 每个 window 都写入 `window_update_flags`，触发窗口写 `True`，非触发窗口写 `False`；
+- 一旦当前 trajectory 已经进入 online-learning path，就暂停继续调用 drift trigger，只保留 `c_per_step` dump 诊断；
+- 这样 `drift_detected_count` 不再被 post-trigger 重复触发污染。
+
+`eta=0.6`：
+
+| Trigger | first_online_windows | pre-false | drift_count | mean first window | tail5_improve |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `time_to_learn` | `[6, 6, 6]` | 0 / 3 | 3 | 6.000 | +0.1415 |
+| `sigma_y_sq` | `[0, 0, 0]` | 3 / 3 | 3 | 0.000 | +0.0637 |
+| `whitened_cusum_calibrated` | `[2, 6, 8]` | 1 / 3 | 3 | 5.333 | +0.1010 |
+
+`eta=1.0`：
+
+| Trigger | first_online_windows | pre-false | drift_count | mean first window | tail5_improve |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `time_to_learn` | `[6, 6, 6]` | 0 / 3 | 3 | 6.000 | +0.1452 |
+| `sigma_y_sq` | `[0, 0, 0]` | 3 / 3 | 3 | 0.000 | +0.0709 |
+| `whitened_cusum_calibrated` | `[3, 1, 0]` | 3 / 3 | 3 | 1.333 | +0.0739 |
+
+### 4. 本轮结论
+
+正向结论：
+
+- 三个 trigger 的闭环路径均能跑通，`status=success`。
+- `time_to_learn(target_window=6)` 作为乐观固定基线最稳定：无提前触发，tail-5 RMSPE 改善最大。
+- `whitened_cusum_calibrated` 相比 `sigma_y_sq` 更保守一些：`eta=0.6` 时只 1/3 提前触发，而 `sigma_y_sq` 是 3/3 从 window 0 开始触发。
+
+暴露的问题：
+
+- replay 上 `whitened_cusum_calibrated` 的 no-drift 是 `0/16` 误触发，但闭环 smoke 中仍出现 pre-drift 提前进入 online path：
+  - `eta=0.6`: 1 / 3
+  - `eta=1.0`: 3 / 3
+- 原因可能不是 trigger 类本身，而是闭环运行的随机轨迹 / 随机模型 / 数据生成分布与之前 dump replay 不完全一致。
+- `sigma_y_sq(tau_sigma=1.5)` 在短闭环里明显过敏：两组 eta 都是 window 0 开始触发，不能作为当前阈值下的有效 comparator。
+- 重复触发计数已通过 pipeline pause 修复；当前剩余问题集中在 **首次触发过早**，不是重复计数。
+
+### 5. 下一步修正
+
+本轮不应直接把 calibrated CUSUM 宣称为“闭环已优于 baseline”。更合理的下一步是：
+
+```text
+1. 恢复真实 pretrained checkpoint，重跑同条件三触发器对比。
+2. 已执行闭环 no-drift smoke 和 b_offset 复扫，结果见下一小节。
+3. 对 sigma_y_sq 单独扫 tau_sigma；当前 tau=1.5 在本设置下太敏感。
+4. 如果需要支持多次真实漂移，再把当前“触发后暂停”升级为带恢复条件的 cooldown 状态机；当前单漂移实验不需要。
+```
+
+当前状态判断：
+
+```text
+whitened CUSUM 的统计量与 replay 基础能力已经可用；
+但闭环触发策略尚未验收完成，不能进入最终性能结论；
+重复触发污染已修复；
+下一轮优先解决“source-level c 爆点诊断”和真实 checkpoint 复验。
+```
+
+### 6. 闭环 no-drift smoke 与 b_offset 复扫
+
+按上一节修正项，继续跑 calibrated CUSUM 的闭环 no-drift smoke：
+
+```text
+outputs/e2e_whitened_cusum_closed_loop_null_20260429/summary.json
+```
+
+设置：
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_increment=0
+max_eta=0
+measurement_noise_std_dev=0.105
+p_fa=1e-6
+b_offset=20
+simulation.load_model=false
+```
+
+结果：
+
+```text
+first_online_windows = [2, 2, 0]
+false_trigger_trajectory_count = 3 / 3
+total_drift_detected = 3
+```
+
+结论：闭环 no-drift 未通过。虽然 dump replay 的 no-drift 是 `0/16`，但完整 pipeline 的 no-drift 仍会提前进入 online path。
+
+随后扫更保守的 `b_offset`：
+
+```text
+outputs/e2e_whitened_cusum_closed_loop_null_boffset_sweep_20260429/summary.json
+```
+
+| b_offset | first_online_windows | false trigger |
+| ---: | --- | ---: |
+| 20 | `[2, 2, 0]` | 3 / 3 |
+| 24 | `[2, 2, 0]` | 3 / 3 |
+| 28 | `[2, 2, 0]` | 3 / 3 |
+| 32 | `[3, 13, 0]` | 3 / 3 |
+| 40 | `[3, null, 3]` | 2 / 3 |
+| 50 | `[5, null, 11]` | 2 / 3 |
+| 60 | `[5, null, 11]` | 2 / 3 |
+| 80 | `[5, null, 11]` | 2 / 3 |
+| 100 | `[5, null, null]` | 1 / 3 |
+| 150 | `[5, null, null]` | 1 / 3 |
+| 200 | `[5, null, null]` | 1 / 3 |
+
+`b_offset=200` 仍在第 1 条 trajectory 的 window 5 触发，于是单独 dump 该 trajectory：
+
+```text
+outputs/e2e_whitened_cusum_closed_loop_null_boffset200_traj0_dump_20260429/summary.json
+```
+
+关键统计：
+
+```text
+first_online_windows = [5]
+c_max = 225.722
+argmax_step = 25
+argmax_window = 5
+argmax_source_values = [0.983, 0.157, 224.582]
+c_mean = 9.544
+c_p95 = 48.197
+c_p99 = 64.191
+top10 = [225.722, 62.559, 61.449, 54.179, 48.216, 48.196, 38.015, 36.014, 32.841, 27.343]
+```
+
+解释：
+
+- `b_offset=200` 的 reference 是 `dof + b_offset = 203`，threshold 约 `16.63`，单步 `c≈225.7` 足以直接越过阈值。
+- 爆点几乎全部来自 `source[2]`，不是三源均匀偏大。
+- 继续盲目增大 `b_offset` 已经不合理；这会把真实 drift 检测也钝化，并且没有解决 source-level outlier。
+
+更新后的下一步：
+
+```text
+1. 不再继续单纯抬 b_offset。
+2. 回到 source-level 诊断：检查 source[2] 的 association / permutation / innovation covariance。
+3. 用真实 pretrained checkpoint 复验；当前 random/unloaded model 可能放大 measurement residual。
+4. 若真实 checkpoint 下仍有 source-level 爆点，再考虑：
+   - source-specific R_obs
+   - empirical/capped innovation covariance
+   - trigger 侧加入 per-window robust aggregation（例如 winsorize 单步 c），但这属于策略改动，需要单独论证。
+```
+
+验证：
+
+```text
+PYTHONPATH=. .venv-wsl/bin/python -m pytest \
+  tests/online_learning/test_drift_trigger.py \
+  tests/integration/test_whitened_trigger_smoke.py \
+  tests/online_learning/test_validate_null_distribution.py -q
+
+20 passed, 2 warnings
+```
+
+---
+
+## 🧭 Pretrained Checkpoint 复验计划（2026-04-29）
+
+### 1. 规则对齐说明
+
+本节按本仓库本地工作流中记录的 `architecture-design` / `superpowers:executing-plans` 风格继续执行：
+
+- 使用 checkbox 任务追踪；
+- 每一步先写清目标、输入、输出和验收标准；
+- 优先做最小闭环验证，再扩大实验矩阵；
+- 保留配置、输出目录、随机种子、checkpoint 路径，保证实验可复现；
+- 不把 random/unloaded model 的 smoke 结果当成最终性能结论。
+
+说明：当前 Codex 会话没有注册可直接调用的 `/superpowers` 或 `/ll-architecture-design` skill；本节使用仓库内 `docs/workflow_ll/workflow_ll.md` 与已有 `plan_implementation_whiten_innov.md` 的执行规范作为等价本地规则来源。
+
+### 2. Checkpoint 搜索结果
+
+目标配置原本引用：
+
+```text
+experiments/results/base_model_random_data_snr_10_SubspaceNet_esprit_N9_M3_SNR10.0_Far_ESPRIT/checkpoints/final_SubspaceNet_20250916_084930.pt
+```
+
+当前 workspace 中未找到该精确文件。
+
+可用候选：
+
+```text
+checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+兼容性检查：
+
+```text
+exists=True
+size_bytes=172802
+type=collections.OrderedDict
+tensor_key_count=13
+strict_load=success
+```
+
+因此下一轮复验使用：
+
+```text
+simulation.load_model=true
+simulation.model_path=checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+### 3. 执行计划
+
+- [x] **Step A：确认候选 checkpoint 是否存在**
+  - 输入：`checkpoints/saved_SubspaceNet_trained_20260224_180720.pt`
+  - 验收：文件存在，且不是 Lightning wrapper-only artifact。
+  - 结果：通过。
+
+- [x] **Step B：确认 checkpoint 能否加载到当前 SubspaceNet**
+  - 输入：`SineAccel_whitened_cusum_calibrated.yaml` 当前模型结构。
+  - 验收：`model.load_state_dict(state, strict=True)` 成功。
+  - 结果：通过。
+
+- [x] **Step C：用 pretrained checkpoint 重跑闭环 no-drift smoke**
+  - 目的：判断之前 no-drift 提前触发是否主要由 random/unloaded model 放大 residual 导致。
+  - 设置：
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_increment=0
+max_eta=0
+measurement_noise_std_dev=0.105
+p_fa=1e-6
+b_offset=20
+simulation.load_model=true
+simulation.model_path=checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+  - 验收：
+    - `status=success`
+    - `first_online_windows` 为空或全为 `null` 才算 no-drift 通过
+    - 若仍误触发，记录 `c_max / argmax_window / argmax_source_values`
+  - 结果：运行成功，但 no-drift 未完全通过，见「Step C 执行记录」。
+
+- [ ] **Step D：若 Step C 通过，再跑 dynamic drift smoke**
+  - 设置：
+
+```text
+eta_increment ∈ {0.6, 1.0}
+max_eta ∈ {0.6, 1.0}
+其他设置与 Step C 相同
+```
+
+  - 验收：
+    - no pre-drift false trigger
+    - drift onset 后能进入 online path
+    - tail-5 RMSPE improvement 不显著劣化
+
+- [x] **Step E：若 Step C 失败，进入 source-level 诊断**
+  - 重点：
+    - 误触发 window 的 `c_per_step_per_source`
+    - source association / permutation
+    - source[2] 的 innovation covariance 是否被低估
+    - 是否需要 source-specific `R_obs`
+  - 结果：完成初步 source-level dump 诊断，爆点来源从 random model 下的 source[2] 变为 pretrained 下的 source[0]，见下方记录。
+
+当前优先执行下一节「association sanity check」，先判断误触发是否来自 source 对齐问题。
+
+### 4. Step C 执行记录：pretrained no-drift smoke
+
+输出目录：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_null_20260429/
+```
+
+输入 checkpoint：
+
+```text
+checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+运行设置：
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_increment=0
+max_eta=0
+measurement_noise_std_dev=0.105
+p_fa=1e-6
+b_offset=20
+simulation.load_model=true
+simulation.model_path=checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+dump_c_per_step_path=c_dump.npz
+```
+
+结果：
+
+```text
+status = success
+first_online_windows = [null, null, 15]
+false_trigger_trajectory_count = 1 / 3
+avg_drift_detected = 0.3333
+total_drift_detected = 1
+```
+
+和 random/unloaded model 的对比：
+
+| 条件 | first_online_windows | false trigger |
+| --- | --- | ---: |
+| random/unloaded model | `[2, 2, 0]` | 3 / 3 |
+| pretrained checkpoint | `[null, null, 15]` | 1 / 3 |
+
+结论：
+
+- pretrained checkpoint 明显降低 no-drift 提前触发；
+- 但 calibrated CUSUM 仍未通过闭环 no-drift 验收；
+- 这说明 random model 确实放大了 residual，但不是唯一原因。
+
+### 5. Step E 初步 source-level 诊断
+
+dump 文件：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_null_20260429/c_dump.npz
+```
+
+最大统计量：
+
+```text
+c_max = 56.187
+argmax_step = 76
+argmax_window = 15
+argmax_source_values = [53.946, 2.134, 0.107]
+c_mean = 3.887
+c_median = 2.091
+c_p95 = 11.484
+c_p99 = 21.098
+```
+
+对应 step 的详细量：
+
+```text
+true_angles         = [0.0847, 0.0363, -0.0533]
+pre_ekf_predictions = [1.1585, 0.1071, -0.1577]
+ekf_predictions     = [0.5493, 0.2282, -0.1848]
+innovations         = [0.9764, -0.1942, 0.0435]
+innovation_cov      = [0.01767, 0.01767, 0.01767]
+pre_minus_true      = [1.0738, 0.0707, -0.1044]
+ekf_minus_true      = [0.4646, 0.1919, -0.1315]
+```
+
+局部窗口附近的 `c`：
+
+```text
+step 73/window14: c=9.067,  per_source=[4.063, 4.605, 0.399]
+step 74/window14: c=11.616, per_source=[0.359, 10.746, 0.511]
+step 75/window15: c=2.156,  per_source=[0.351, 1.793, 0.012]
+step 76/window15: c=56.187, per_source=[53.946, 2.134, 0.107]
+step 77/window15: c=20.744, per_source=[12.157, 7.907, 0.681]
+step 78/window15: c=1.577,  per_source=[0.470, 0.645, 0.462]
+```
+
+解释：
+
+- pretrained 后爆点从 random model 的 `c≈225.7` 降到 `c≈56.2`；
+- 误触发仍由单源主导，但本次主导源是 `source[0]`，不是之前 random model 的 `source[2]`；
+- `innovation_covariance≈0.01767` 对三个 source 相同，source[0] 的 innovation `0.9764` 会得到：
+
+```text
+0.9764^2 / 0.01767 ≈ 53.95
+```
+
+这与 `c_per_source[0]=53.946` 对上，说明爆点来自「单源 innovation 大 + R/S 估计较小」的组合。
+
+### 6. 更新后的下一步
+
+当前不建议立刻改 trigger 策略。下一步按架构诊断顺序做：
+
+```text
+1. 检查 step_processor / losses 中 source permutation 的应用位置：
+   - true_angles 排序
+   - pre_ekf_predictions 排序
+   - EKF state 与 measurement 的 source 对齐
+
+2. 对 pretrained no-drift dump 做 association sanity check：
+   - 对每个 step 计算 pre_ekf 与 true_angles 的最优 permutation
+   - 比较当前顺序误差 vs 最优 permutation 误差
+   - 如果 spike step 的最优 permutation 能显著降低 source[0] innovation，则优先修 association
+
+3. 如果 association 正常，再诊断 R_obs/S：
+   - 当前 S≈0.01767，sqrt(S)≈0.133 rad
+   - source[0] innovation≈0.976 rad，约 7.35σ
+   - 判断是模型预测 outlier，还是 measurement covariance 低估
+
+4. 只有在 association/R_obs 都解释不了时，才讨论 robust CUSUM：
+   - per-step c winsorization
+   - per-source capped contribution
+   - median/trimmed window aggregation
+```
+
+### 7. Association sanity check 执行记录
+
+输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_null_20260429/association_sanity.json
+```
+
+检查方式：
+
+- 对每个 step 计算当前 source 顺序下的 RMSE；
+- 枚举 3 个 source 的所有 permutation；
+- 比较当前顺序 RMSE 与最优 permutation RMSE；
+- 若 spike step 的最优 permutation 能显著降低误差，则说明可能是 source association 错位。
+
+整体结果：
+
+```text
+pre_perm_changes_count = 0 / 100
+ekf_perm_changes_count = 3 / 100
+mean_pre_current_rmse = 0.18568
+mean_pre_best_rmse    = 0.18568
+mean_ekf_current_rmse = 0.14872
+mean_ekf_best_rmse    = 0.14861
+```
+
+最大爆点 step：
+
+```text
+argmax_step = 76
+argmax_window = 15
+c = 56.187
+c_per_source = [53.946, 2.134, 0.107]
+pre_best_perm = [0, 1, 2]
+ekf_best_perm = [0, 1, 2]
+pre_current_rmse = pre_best_rmse = 0.62421
+ekf_current_rmse = ekf_best_rmse = 0.30000
+```
+
+结论：
+
+- 当前误触发不是 source permutation 错位造成的；
+- spike step 的最佳 permutation 仍是原顺序 `[0,1,2]`；
+- source[0] 的 `pre_ekf_prediction=1.158 rad` 相对 `true_angle=0.085 rad` 是真正的模型 outlier；
+- EKF 把该 outlier 拉回到 `0.549 rad`，但 innovation `0.976 rad` 与 `S≈0.01767` 组合后仍产生 `c≈53.95`。
+
+更新后的下一步：
+
+```text
+1. 不优先修 association。
+2. 检查 checkpoint 是否与当前数据分布匹配：
+   - SNR=10
+   - M=3
+   - Far field
+   - diff_method=esprit
+   - tau=8
+   - 是否训练在 random samples 而非 sine-accel trajectory
+3. 如果 checkpoint 分布不匹配，优先寻找/训练正确 checkpoint。
+4. 如果 checkpoint 分布匹配，则进入 R_obs / robust innovation 诊断：
+   - b_offset 小幅复扫可作为工程缓解，但不能解释根因；
+   - source-specific R_obs 或 innovation clipping 需要单独作为策略改动评审。
+```
+
+### 8. 2 月 24 日候选 checkpoint 筛查
+
+由于当前目录下没有原配置引用的：
+
+```text
+final_SubspaceNet_20250916_084930.pt
+```
+
+因此进一步比较当前可用的两个 2026-02-24 候选：
+
+```text
+checkpoints/saved_SubspaceNet_trained_20260224_180248.pt
+checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+输出：
+
+```text
+outputs/e2e_whitened_cusum_checkpoint_screen_20260429/summary.json
+```
+
+共同设置：
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_increment=0
+max_eta=0
+measurement_noise_std_dev=0.105
+p_fa=1e-6
+b_offset=20
+simulation.load_model=true
+```
+
+结果：
+
+| checkpoint | first_online_windows | false trigger | c_max | argmax_window | argmax_source_values |
+| --- | --- | ---: | ---: | ---: | --- |
+| `20260224_180248.pt` | `[9, 1, 15]` | 3 / 3 | 71.347 | 16 | `[64.397, 2.657, 4.293]` |
+| `20260224_180720.pt` | `[null, null, 15]` | 1 / 3 | 56.187 | 15 | `[53.946, 2.134, 0.107]` |
+
+结论：
+
+- `20260224_180720.pt` 是当前目录下更合适的候选；
+- `20260224_180248.pt` 在同条件 no-drift 下 3/3 误触发，不建议继续使用；
+- 即便使用较优的 `180720`，闭环 no-drift 仍未完全通过，后续仍需解决单源 prediction outlier / covariance 低估问题。
+
+后续 checkpoint 策略：
+
+```text
+1. 若能找回原始 2025-09-16 SNR10 checkpoint，应优先用原始 checkpoint 复验。
+2. 若找不回，短期继续以 20260224_180720.pt 作为当前 workspace 的 best available checkpoint。
+3. 论文级实验前需要重新训练或恢复与当前配置严格匹配的 checkpoint，并记录训练配置。
+```
+
+### 9. R_obs 闭环 no-drift sweep 计划
+
+Association sanity check 已排除明显 source permutation 错位；pretrained checkpoint 也显著降低了爆点幅度。因此下一步先检查 `R_obs` 是否仍偏小。
+
+执行计划：
+
+- [x] **Step R1：用 best available checkpoint 扫 `measurement_noise_std_dev`**
+  - checkpoint：
+
+```text
+checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+  - sweep：
+
+```text
+measurement_noise_std_dev ∈ {0.105, 0.15, 0.20, 0.25, 0.30, 0.40}
+```
+
+  - 固定设置：
+
+```text
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+eta_increment=0
+max_eta=0
+p_fa=1e-6
+b_offset=20
+simulation.load_model=true
+```
+
+  - 验收：
+    - no-drift `false_trigger_trajectory_count=0/3`
+    - 记录 `c_mean / c_p95 / c_p99 / c_max`
+  - 结果：完成，`measurement_noise_std_dev=0.15` 是第一档 no-drift 0/3 误触发的候选。
+
+- [x] **Step R2：若找到 no-drift 通过的 R_obs，再跑 dynamic drift smoke**
+  - `eta_increment ∈ {0.6, 1.0}`
+  - 观察 first online window 和 tail-5 RMSPE improvement。
+  - 结果：`R_obs=0.15` no-drift 通过，但 dynamic drift 检测偏迟钝，需要在 `0.105-0.15` 之间细扫。
+
+- [ ] **Step R3：若 R_obs 需要远大于 0.105 才通过，回写结论**
+  - 说明 scalar `R_obs=0.105` 只适合 dump replay，不足以覆盖闭环 source outlier；
+  - 再决定是否进入 source-specific `R_obs` 或 robust trigger。
+
+#### Step R1 执行记录
+
+输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_null_robs_sweep_20260429/summary.json
+```
+
+结果：
+
+| measurement_noise_std_dev | first_online_windows | false trigger | c_mean | c_p95 | c_p99 | c_max |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0.105 | `[null, null, 15]` | 1 / 3 | 3.887 | 11.484 | 21.098 | 56.187 |
+| 0.150 | `[null, null, null]` | 0 / 3 | 2.334 | 6.275 | 10.331 | 30.437 |
+| 0.200 | `[null, null, null]` | 0 / 3 | 1.533 | 3.839 | 6.452 | 18.213 |
+| 0.250 | `[null, null, null]` | 0 / 3 | 1.102 | 2.691 | 4.435 | 12.146 |
+| 0.300 | `[null, null, null]` | 0 / 3 | 0.839 | 2.263 | 3.249 | 8.690 |
+| 0.400 | `[null, null, null]` | 0 / 3 | 0.542 | 1.339 | 1.974 | 5.091 |
+
+解释：
+
+- `0.15` 是最小的 no-drift 闭环通过候选；
+- `0.20+` 虽然也通过，但 `c_mean` 明显低于理论 `χ²(3)` 期望 3，可能过保守；
+- 下一步用 `0.15` 跑 dynamic drift smoke，检查是否还能及时检测漂移。
+
+#### Step R2 执行记录
+
+输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_dynamic_robs0p15_20260429/summary.json
+```
+
+设置：
+
+```text
+measurement_noise_std_dev=0.15
+eta_increment ∈ {0.6, 1.0}
+max_eta ∈ {0.6, 1.0}
+dataset_size=3
+trajectory_length=100
+window_size=5
+stride=5
+drift_onset_window=5
+p_fa=1e-6
+b_offset=20
+```
+
+结果：
+
+| eta_increment | first_online_windows | pre-drift false | detect rate | mean delay | tail5_improve | c_max |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0.6 | `[null, null, 14]` | 0 / 3 | 1 / 3 | 9.0 | +0.0925 | 42.356 |
+| 1.0 | `[14, null, 9]` | 0 / 3 | 2 / 3 | 6.5 | +0.0706 | 50.690 |
+
+结论：
+
+- `R_obs=0.15` 的闭环 no-drift 表现好，但 dynamic drift 检测偏迟钝；
+- 这说明 `0.15` 可能是保守上界，不是最佳折中；
+- 下一步应在 `0.105-0.15` 之间细扫，例如 `{0.115, 0.12, 0.125, 0.13, 0.135, 0.14, 0.145}`。
+
+#### Step R2b 细扫计划
+
+- [x] 用 best checkpoint 在 no-drift 下细扫 `measurement_noise_std_dev ∈ {0.115, 0.12, 0.125, 0.13, 0.135, 0.14, 0.145}`
+- [x] 选择最小的 0/3 false-trigger 候选
+- [x] 对该候选重跑 dynamic drift smoke
+
+细扫输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_null_robs_fine_sweep_20260429/summary.json
+```
+
+no-drift 结果：
+
+| measurement_noise_std_dev | first_online_windows | false trigger | c_mean | c_p99 | c_max |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 0.115 | `[null, null, 15]` | 1 / 3 | 3.418 | 17.349 | 48.225 |
+| 0.120 | `[null, null, 15]` | 1 / 3 | 3.218 | 15.830 | 44.855 |
+| 0.125 | `[null, null, 15]` | 1 / 3 | 3.035 | 14.497 | 41.822 |
+| 0.130 | `[null, null, null]` | 0 / 3 | 3.116 | 20.481 | 39.085 |
+| 0.135 | `[null, null, null]` | 0 / 3 | 2.718 | 12.285 | 36.607 |
+| 0.140 | `[null, null, null]` | 0 / 3 | 2.579 | 11.536 | 34.357 |
+| 0.145 | `[null, null, null]` | 0 / 3 | 2.452 | 10.908 | 32.308 |
+
+第一档 no-drift 通过候选：
+
+```text
+measurement_noise_std_dev=0.13
+```
+
+dynamic drift 输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_dynamic_robs0p13_20260429/summary.json
+```
+
+| eta_increment | first_online_windows | pre-drift false | detect rate | mean delay | tail5_improve |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 0.6 | `[11, 9, null]` | 0 / 3 | 2 / 3 | 5.0 | -0.0109 |
+| 1.0 | `[7, 6, 12]` | 0 / 3 | 3 / 3 | 3.333 | +0.1132 |
+
+结论：
+
+- `R_obs=0.13, b_offset=20` 是当前最好的 scalar 闭环候选；
+- 它已经解决 no-drift 提前触发，并能稳定检测较强漂移 `eta=1.0`；
+- 对较弱漂移 `eta=0.6` 仍偏迟钝，且 tail-5 improvement 不稳定；
+- 下一步做小范围 joint 调参：尝试更低 `R_obs` 搭配更高 `b_offset`，例如 `(0.125, 24)`、`(0.12, 28)`、`(0.115, 32)`。
+
+#### Step R2c joint R_obs/b_offset 计划
+
+- [x] no-drift 筛查 `(measurement_noise_std_dev, b_offset) ∈ {(0.125, 24), (0.12, 28), (0.115, 32)}`
+- [x] 对 no-drift 通过且 `c_mean` 更接近 3 的候选跑 dynamic drift smoke
+
+no-drift joint sweep 输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_null_joint_sweep_20260429/summary.json
+```
+
+| measurement_noise_std_dev | b_offset | first_online_windows | false trigger | c_mean | c_p99 | c_max |
+| ---: | ---: | --- | ---: | ---: | ---: | ---: |
+| 0.125 | 24 | `[null, null, null]` | 0 / 3 | 3.035 | 14.497 | 41.822 |
+| 0.120 | 28 | `[null, null, null]` | 0 / 3 | 3.217 | 15.830 | 44.855 |
+| 0.115 | 32 | `[null, null, null]` | 0 / 3 | 3.417 | 17.349 | 48.225 |
+
+dynamic joint 输出：
+
+```text
+outputs/e2e_whitened_cusum_pretrained_dynamic_joint_20260429/summary.json
+```
+
+| measurement_noise_std_dev | b_offset | eta | first_online_windows | pre-drift false | detect rate | mean delay | tail5_improve |
+| ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |
+| 0.125 | 24 | 0.6 | `[11, 9, null]` | 0 / 3 | 2 / 3 | 5.0 | +0.0351 |
+| 0.125 | 24 | 1.0 | `[7, 6, 12]` | 0 / 3 | 3 / 3 | 3.333 | +0.0898 |
+| 0.120 | 28 | 0.6 | `[11, 9, null]` | 0 / 3 | 2 / 3 | 5.0 | +0.0525 |
+| 0.120 | 28 | 1.0 | `[7, 9, 13]` | 0 / 3 | 3 / 3 | 4.667 | +0.0803 |
+| 0.115 | 32 | 0.6 | `[11, 9, null]` | 0 / 3 | 2 / 3 | 5.0 | +0.0199 |
+| 0.115 | 32 | 1.0 | `[7, 9, 13]` | 0 / 3 | 3 / 3 | 4.667 | +0.0816 |
+
+选择当前闭环候选：
+
+```text
+measurement_noise_std_dev = 0.125
+b_offset = 24.0
+p_fa = 1e-6
+checkpoint = checkpoints/saved_SubspaceNet_trained_20260224_180720.pt
+```
+
+理由：
+
+- no-drift 0/3 误触发；
+- no-drift `c_mean=3.035`，最接近理论 `χ²(3)` 期望 3；
+- `eta=1.0` 强漂移 3/3 检测，平均延迟 3.333 window，是三组 joint 候选里最快；
+- `eta=0.6` 弱漂移仍只有 2/3 检测，说明 scalar R_obs + CUSUM 当前还不能声称覆盖弱漂移。
+
+新增 YAML preset：
+
+```text
+run/conf/Used_for_paper/SineAccel_whitened_cusum_pretrained_calibrated.yaml
+```
+
+内容要点：
+
+```yaml
+kalman_filter:
+  measurement_noise_std_dev: 0.125
+
+online_learning:
+  drift_trigger:
+    type: whitened_cusum
+    p_fa: 1e-6
+    dof: 3
+    b_offset: 24.0
+    reset_after_trigger: true
+```
+
+注意：旧的 `SineAccel_whitened_cusum_calibrated.yaml` 保留为 replay-calibrated 历史候选；新的 `pretrained_calibrated` 才是当前闭环 best-available checkpoint 下的推荐候选。
+
+验证：
+
+```text
+Hydra config smoke:
+  config_name=SineAccel_whitened_cusum_pretrained_calibrated
+  measurement_noise_std_dev=0.125
+  trigger_state.reference=27.0
+  trigger_state.threshold=16.6265
+
+pytest:
+  PYTHONPATH=. .venv-wsl/bin/python -m pytest \
+    tests/online_learning/test_drift_trigger.py \
+    tests/integration/test_whitened_trigger_smoke.py \
+    tests/online_learning/test_validate_null_distribution.py -q
+
+  20 passed, 2 warnings
+
+git diff --check:
+  pass
 ```
