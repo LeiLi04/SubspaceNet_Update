@@ -1,0 +1,13 @@
+defaults:
+  - SineAccel_base_model_Online_learning_snr_sweep_config
+  - _self_
+
+kalman_filter:
+  measurement_noise_std_dev: 0.125
+
+online_learning:
+  drift_trigger:
+    type: sigma_y_sq
+    tau_sigma: 12.0
+    window_size: 5
+  dump_c_per_step_path: null
