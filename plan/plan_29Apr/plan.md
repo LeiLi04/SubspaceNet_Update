@@ -1254,3 +1254,82 @@ plan 上半段的若干 `- [ ]` 实际已完成；Codex 是按合并 commit 执�
 ### 工作树仍带的无关改动
 
 `docs/审稿/` 删除、`notebooks/01_dataset_analysis.ipynb` 修改、`temp/` 仍未提交，与本特性无关，可在切回 ll 分支后处理。
+
+---
+
+## 🏁 30Apr 验收成果与下一步路径
+
+> 时间：2026-04-30
+> 范围：在前序"🔎 验收报告（2026-04-30）"基础上，再做一次最终状态盘点，并明确给出"plan 是否结束、下一步走 A 还是 B"的决策。
+
+### 1. 实质工作 100% 完成且全部上云
+
+local 与 `origin/feature/whiten_innov` 完全同步（0 ahead / 0 behind）。所有 plan 章节已落到 commit：
+
+| Plan 章节 | 实测状态 |
+| --- | --- |
+| Task 0 锁定 calibration | ✅ 3 commits（`c4b8d24` / `53844ef` / `ecc732d`）+ push |
+| Task 1 sigma_y_sq 重标定 → τ=12.0 | ✅ `7b9cbd5` |
+| Task 2 N=20 三触发器跑通 | ✅ `ad0a8e7` |
+| Task 3 聚合脚本（含 4 单测） | ✅ `ad0a8e7` |
+| Task 4 三张图 | ✅ `ad0a8e7` |
+| Task 5 `results.md` | ✅ `ad0a8e7` |
+| Task 6 push + 验收 | ✅ `b47f4e1` + `140125b` |
+
+**说明**：plan 上半段仍有 9 个 commit 类 step 显示为 `[ ]`，但已逐条映射到合并 commit（见前节"步骤完成情况修正"表）。这些只是文档卫生，不是 blocker。
+
+### 2. 验收门槛通过率：4 / 6
+
+✅ **通过**
+
+- 强漂移 η=1.0 检测率 19/20 (95%)
+- 中等漂移 η=0.6 检测率 17/20 (85%)
+- 弱漂移 η=0.3 检测率 19/20 (95%)
+- 强漂移平均延迟 3.21 windows
+
+❌ **未通过**
+
+- no-drift 误触发率 2/20 (10%)，目标 ≤ 1/20 (5%)
+- 各 η 下 whitened_cusum 检测率全部 < sigma_y_sq(τ=12)（95<100 / 85<100 / 95<100）
+
+**整体判断**：触发器**检测有效性已立**（4 个检测/延迟类门槛全过），但当前 N=3 calibration 选定的 `(R_obs=0.125, b_offset=24)` 在 N=20 下不够紧，**不能直接定稿到论文**。
+
+### 3. 下一步路径（二选一）
+
+#### 路径 A：最小代价收紧 calibration（1-2 天）
+
+仅做一件事：用 N=20 数据**重扫 (R_obs, b_offset)**，目标 no-drift ≤ 1/20、强漂移 ≥ 18/20。
+
+- 候选 sweep：`R_obs ∈ {0.13, 0.135, 0.14, 0.15}` × `b_offset ∈ {26, 28, 30, 32}`，共 16 cells
+- 复用 `scripts/run_trigger_validation.py`，外加一个 wrapper 把 sweep 跑掉
+- 找到第一个 no-drift 0/20 且 η=1.0 ≥ 18/20 的候选，更新 `SineAccel_whitened_cusum_pretrained_calibrated.yaml`
+- 重出 `summary.csv` / 图 / `results.md`
+
+**预期**：很可能 4/6 → 5/6（FA 通过）；但 "whitened ≥ sigma_y_sq" 那条仍可能不过 —— 它本质要求触发器同时具备好 calibration **和** 强 detection power，根因是 plan_26Apr §🧭.5 的 source[0] 残余 outlier，路径 A 不解决该层。
+
+#### 路径 B：进入论文写作 + 同步小修（推荐）
+
+承认 4/6 已经够 paper Section IV 实验部分（"触发器有效"已立），把 selling point 重新框：
+
+- ✅ **核心 selling point**：whitened CUSUM 阈值由 χ²(M) **解析给出**，不依赖经验 τ；这与 plan_whiten_innov.md 最初的"超参数黑箱壁垒"问题陈述一致
+- ❌ **不要 oversell**："检测更早 / RMSPE 更低"在当前实验下没有数据支撑，不写
+- 同步做一遍路径 A 的 16-cell sweep，把 FA 收紧到 ≤ 5% 作为 confirmation；不再追求 ≥ sigma_y_sq 检测率
+
+**这条路是写作 + 实验小修并行**，进度上更接近论文交稿。
+
+### 4. 我的推荐
+
+**路径 B**。理由：
+
+- "触发器有效"是 plan_29Apr 的明确 Goal，已经达成
+- "检测更早 / 比 sigma_y_sq 更强"从来不是计划目标；强行追求需要解决 source[0] outlier，超出 plan_29Apr 范围（明确列入非目标）
+- N=20 binomial CI 是 ±20%；继续刷 calibration 在 N=20 上**信号噪声比已经接近极限**，更精细的差距要 N≥50 才看得清
+- 论文写作的 framing 调整不需要新实验，立即可做
+
+### 5. 文档卫生（可选）
+
+plan.md 上半段 9 个 commit 类 step 显示 `[ ]` 但已对应 commit。如要清理，把已完成的 step 改 [x]、Acceptance checklist 也按本节实测标记。**不影响功能，也不影响 PR/论文**，纯阅读体验。如需统一打到下一次 commit 里，告知即可。
+
+### 6. 工作树仍带的无关改动
+
+`docs/审稿/` 删除、`notebooks/01_dataset_analysis.ipynb` 修改、`temp/` 仍未提交，与本特性无关，可在切回 ll 分支后处理。
