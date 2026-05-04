@@ -69,3 +69,6 @@ outputs/trigger_validation_*.npz
 outputs/sigma_y_sq_retune_*/
 outputs/sigma_y_sq_retune_*.npz
 outputs/null_validation_run/
+
+# Local scratch / experiment artifacts
+temp/
